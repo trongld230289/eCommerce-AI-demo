@@ -1,13 +1,6 @@
+// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { 
-  User as FirebaseUser,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile
-} from 'firebase/auth';
-import { auth } from '../utils/firebase';
+import { mockUserList } from '../utils/mockUserList';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -22,7 +15,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
@@ -32,36 +25,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load user from localStorage on app start
+  useEffect(() => {
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
+  }, []);
+
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const foundUser = mockUserList.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+    );
+
+    if (!foundUser) {
+      throw new Error('Invalid email or password');
+    }
+
+    const userData: User = {
+      uid: foundUser.email, // mock UID
+      email: foundUser.email,
+      displayName: foundUser.displayName
+    };
+
+    setCurrentUser(userData);
+    localStorage.setItem('currentUser', JSON.stringify(userData));
   };
 
   const register = async (email: string, password: string, displayName: string) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCredential.user, { displayName });
+    // Add to mock list in-memory (won’t persist after refresh)
+    mockUserList.push({ email, password, displayName });
+
+    const newUser: User = {
+      uid: email, // mock UID
+      email,
+      displayName
+    };
+
+    setCurrentUser(newUser);
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
   };
 
   const logout = async () => {
-    await signOut(auth);
+    setCurrentUser(null);
+    localStorage.removeItem('currentUser');
   };
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user: FirebaseUser | null) => {
-      if (user) {
-        setCurrentUser({
-          uid: user.uid,
-          email: user.email || '',
-          displayName: user.displayName || undefined,
-          photoURL: user.photoURL || undefined
-        });
-      } else {
-        setCurrentUser(null);
-      }
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
 
   const value: AuthContextType = {
     currentUser,

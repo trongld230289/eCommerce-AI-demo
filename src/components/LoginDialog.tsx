@@ -26,7 +26,7 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isVisible, onClose }) => {
       setEmail('');
       setPassword('');
     } catch (error: any) {
-      setError(error.message || 'Login failed');
+      setError(error.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }

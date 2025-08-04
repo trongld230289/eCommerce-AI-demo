@@ -1,10 +1,12 @@
+// src/pages/Register.tsx
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../utils/firebase';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Register: React.FC = () => {
+  const { register } = useAuth();
   const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,7 +15,13 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // Basic form validation
+    if (!displayName.trim()) {
+      setError('Display name is required');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -26,35 +34,23 @@ const Register: React.FC = () => {
 
     setLoading(true);
     setError('');
-    
+
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      await register(email, password, displayName);
       navigate('/');
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          setError('This email is already registered');
-          break;
-        case 'auth/invalid-email':
-          setError('Invalid email address');
-          break;
-        case 'auth/weak-password':
-          setError('Password is too weak');
-          break;
-        default:
-          setError('Failed to create account');
-      }
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(err.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
       minHeight: '80vh',
       padding: '20px'
     }}>
@@ -69,7 +65,7 @@ const Register: React.FC = () => {
         <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#333' }}>
           Create Account
         </h2>
-        
+
         {error && (
           <div style={{
             backgroundColor: '#f8d7da',
@@ -82,8 +78,29 @@ const Register: React.FC = () => {
             {error}
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Display Name:
+            </label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '16px',
+                boxSizing: 'border-box'
+              }}
+              placeholder="Enter your name"
+            />
+          </div>
+
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
               Email:
@@ -104,7 +121,7 @@ const Register: React.FC = () => {
               placeholder="Enter your email"
             />
           </div>
-          
+
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
               Password:
@@ -125,7 +142,7 @@ const Register: React.FC = () => {
               placeholder="Enter your password"
             />
           </div>
-          
+
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
               Confirm Password:
@@ -146,7 +163,7 @@ const Register: React.FC = () => {
               placeholder="Confirm your password"
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -165,7 +182,7 @@ const Register: React.FC = () => {
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
-        
+
         <div style={{ textAlign: 'center' }}>
           <span>Already have an account? </span>
           <button

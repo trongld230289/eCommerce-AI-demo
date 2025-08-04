@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { mockUserList } from '../utils/mockUserList';
 
 interface User {
   email: string;
@@ -22,15 +23,53 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+	const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
+  }, []);
+
+	useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('currentUser');
+    }
+
+    console.log("🔹 currentUser in localStorage:", localStorage.getItem('currentUser'));
+  }, [currentUser]);
+
+	useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('currentUser');
+    }
+
+    console.log("🔹 currentUser in localStorage:", localStorage.getItem('currentUser'));
+  }, [currentUser]);
 
   const login = async (email: string, password: string) => {
-    // Simple mock login
-    setCurrentUser({ email, displayName: email.split('@')[0] });
+    const user = mockUserList.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+    );
+
+    if (!user) {
+      throw new Error('Invalid email or password');
+    }
+    setCurrentUser({ email: user.email, displayName: user.displayName });
   };
 
   const register = async (email: string, password: string) => {
-    // Simple mock register
-    setCurrentUser({ email, displayName: email.split('@')[0] });
+    const displayName = email.split('@')[0];
+    const newUser = { email, displayName };
+    setCurrentUser(newUser);
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
+		console.log(currentUser);
   };
 
   const logout = async () => {
@@ -46,7 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+       {!loading && children}
     </AuthContext.Provider>
   );
 };
