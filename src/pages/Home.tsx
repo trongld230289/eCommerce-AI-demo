@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
 import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
+import Recommendations from '../components/Recommendations';
 import './Home.css';
 
 const Home: React.FC = () => {
@@ -99,8 +100,19 @@ const Home: React.FC = () => {
         <div className="hero-decoration-2"></div>
       </section>
 
-      {/* Featured Categories Section */}
+      {/* Recommendations Section */}
       <section className="section section-white">
+        <div className="container">
+          <Recommendations 
+            limit={6} 
+            title="Recommended for You" 
+            className=""
+          />
+        </div>
+      </section>
+
+      {/* Featured Categories Section */}
+      <section className="section section-gray">
         <div className="container">
           <div className="section-header">
             <h2 className="section-title">
@@ -139,7 +151,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Featured Products Section - Electro Style */}
-      <section className="section section-gray">
+      <section className="section section-white">
         <div className="container">
           <div className="featured-header">
             <div className="featured-info">

@@ -1,16 +1,103 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
 import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
+import Recommendations from '../components/Recommendations';
+import { searchService } from '../services/searchService';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import './Products.css';
 
 const Products: React.FC = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [chatbotSearch, setChatbotSearch] = useState<{
+    query: string;
+    category?: string;
+    brand?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  } | null>(null);
+  const [backendResults, setBackendResults] = useState<any[]>([]);
+  const [isLoadingBackend, setIsLoadingBackend] = useState(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
+
+  // Initialize from URL parameters
+  useEffect(() => {
+    const query = searchParams.get('q') || '';
+    const category = searchParams.get('category') || 'All';
+    const brand = searchParams.get('brand') || '';
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const chatbotQuery = searchParams.get('chatbot');
+
+    setSearchQuery(query);
+    setSelectedCategory(category);
+
+    // If this is a chatbot-initiated search
+    if (chatbotQuery) {
+      setChatbotSearch({
+        query: chatbotQuery,
+        category: category !== 'All' ? category : undefined,
+        brand: brand || undefined,
+        minPrice: minPrice ? parseFloat(minPrice) : undefined,
+        maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      });
+    }
+  }, [searchParams]);
+
+  // Fetch backend results when chatbot search is set
+  useEffect(() => {
+    if (chatbotSearch) {
+      fetchBackendResults();
+    }
+  }, [chatbotSearch]);
+
+  const fetchBackendResults = async () => {
+    if (!chatbotSearch) return;
+
+    setIsLoadingBackend(true);
+    setBackendError(null);
+
+    try {
+      const results = await searchService.searchProducts({
+        category: chatbotSearch.category,
+        brand: chatbotSearch.brand,
+        min_price: chatbotSearch.minPrice,
+        max_price: chatbotSearch.maxPrice,
+        keywords: chatbotSearch.query
+      });
+
+      setBackendResults(results);
+    } catch (error) {
+      console.error('Error fetching backend results:', error);
+      setBackendError('Failed to load search results from server');
+    } finally {
+      setIsLoadingBackend(false);
+    }
+  };
+
+  // Convert backend Product to frontend Product format
+  const convertBackendProduct = (backendProduct: any): Product => {
+    return {
+      id: parseInt(backendProduct.id),
+      name: backendProduct.name,
+      price: backendProduct.price / 100, // Convert from VND cents to dollars equivalent
+      originalPrice: undefined,
+      image: backendProduct.image,
+      category: backendProduct.category,
+      description: backendProduct.description,
+      brand: backendProduct.brand,
+      tags: [],
+      rating: backendProduct.rating,
+      isNew: false,
+      discount: 0
+    };
+  };
 
   // Popular search suggestions
   const searchSuggestions = [
@@ -145,19 +232,27 @@ const Products: React.FC = () => {
   const categories = ['All', 'Electronics'];
 
   // Enhanced filter products based on search and category
-  const filteredProducts = allProducts.filter(product => {
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = searchQuery === '' || (
-      product.name.toLowerCase().includes(searchLower) ||
-      (product.description && product.description.toLowerCase().includes(searchLower)) ||
-      product.category.toLowerCase().includes(searchLower) ||
-      (product.brand && product.brand.toLowerCase().includes(searchLower)) ||
-      (product.color && product.color.toLowerCase().includes(searchLower)) ||
-      (product.tags && product.tags.some(tag => tag.toLowerCase().includes(searchLower)))
-    );
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = (() => {
+    // If we have backend results from chatbot search, use those
+    if (chatbotSearch && backendResults.length > 0) {
+      return backendResults.map(convertBackendProduct);
+    }
+
+    // Otherwise, use local filtering
+    return allProducts.filter(product => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = searchQuery === '' || (
+        product.name.toLowerCase().includes(searchLower) ||
+        (product.description && product.description.toLowerCase().includes(searchLower)) ||
+        product.category.toLowerCase().includes(searchLower) ||
+        (product.brand && product.brand.toLowerCase().includes(searchLower)) ||
+        (product.color && product.color.toLowerCase().includes(searchLower)) ||
+        (product.tags && product.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+      );
+      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  })();
 
   return (
     <div className="products-container">
@@ -334,6 +429,47 @@ const Products: React.FC = () => {
         </div>
       </div>
 
+      {/* Chatbot Search Context */}
+      {chatbotSearch && (
+        <div style={{
+          backgroundColor: '#f0f8ff',
+          padding: '15px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          border: '1px solid #bee5eb'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '16px' }}>🤖</span>
+            <h3 style={{ margin: 0, color: '#0c5460', fontSize: '16px', fontWeight: '600' }}>
+              Chatbot Search Results
+            </h3>
+          </div>
+          <p style={{ margin: '0 0 8px 0', color: '#0c5460', fontSize: '14px' }}>
+            Showing results for: "{chatbotSearch.query}"
+          </p>
+          {(chatbotSearch.category || chatbotSearch.brand || chatbotSearch.minPrice || chatbotSearch.maxPrice) && (
+            <div style={{ fontSize: '12px', color: '#6c757d' }}>
+              Filters: 
+              {chatbotSearch.category && ` Category: ${chatbotSearch.category}`}
+              {chatbotSearch.brand && ` | Brand: ${chatbotSearch.brand}`}
+              {chatbotSearch.minPrice && ` | Min Price: ${chatbotSearch.minPrice.toLocaleString()} VND`}
+              {chatbotSearch.maxPrice && ` | Max Price: ${chatbotSearch.maxPrice.toLocaleString()} VND`}
+            </div>
+          )}
+          {isLoadingBackend && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+              <FontAwesomeIcon icon={faSpinner} spin />
+              <span style={{ fontSize: '14px', color: '#6c757d' }}>Loading search results...</span>
+            </div>
+          )}
+          {backendError && (
+            <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
+              {backendError}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Search Results Summary */}
       {(searchQuery || selectedCategory !== 'All') && (
         <div style={{
@@ -352,6 +488,10 @@ const Products: React.FC = () => {
       )}
 
       {/* Products Grid */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-4">All Products</h2>
+      </div>
+      
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -380,16 +520,16 @@ const Products: React.FC = () => {
         )}
       </div>
 
-      {/* Results count */}
-      <div style={{
-        textAlign: 'center',
-        marginTop: '30px',
-        color: '#666',
-        fontSize: '14px'
-      }}>
-        Showing {filteredProducts.length} of {allProducts.length} products
-      </div>
+      {/* Recommendations Section */}
+      <div style={{ marginTop: '50px' }}></div>
+      <Recommendations 
+        limit={3} 
+        title="Recommended for You" 
+        className="mb-8"
+      />
+
     </div>
+    
   );
 };
 
