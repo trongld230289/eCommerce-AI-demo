@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
 import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
+import './Home.css';
 
 const Home: React.FC = () => {
   // Sample featured products data
@@ -59,179 +60,58 @@ const Home: React.FC = () => {
 
   const { addToCart, addToWishlist, isInWishlist } = useShop();
 
-  // Electro theme color palette
-  const colors = {
-    primary: '#0066cc',
-    secondary: '#ff6b35',
-    dark: '#2c3e50',
-    light: '#ecf0f1',
-    success: '#27ae60',
-    warning: '#f39c12',
-    danger: '#e74c3c'
-  };
-
   return (
-    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+    <div className="home-container">
       {/* Hero Banner Section - Electro Style */}
-      <section style={{
-        background: `linear-gradient(135deg, ${colors.primary} 0%, #004499 100%)`,
-        color: 'white',
-        padding: '80px 20px',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto',
-          position: 'relative',
-          zIndex: 2
-        }}>
-          <div style={{ marginBottom: '20px' }}>
-            <span style={{
-              backgroundColor: colors.secondary,
-              padding: '8px 20px',
-              borderRadius: '20px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}>
+      <section className="hero-section">
+        <div className="hero-content">
+          <div>
+            <span className="hero-badge">
               THE NEW STANDARD
             </span>
           </div>
-          <h1 style={{ 
-            fontSize: '4rem', 
-            fontWeight: '800', 
-            marginBottom: '20px',
-            lineHeight: '1.2',
-            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-          }}>
+          <h1 className="hero-title">
             PREMIUM ELECTRONICS
           </h1>
-          <h2 style={{
-            fontSize: '1.8rem',
-            fontWeight: '400',
-            marginBottom: '30px',
-            opacity: 0.9
-          }}>
+          <h2 className="hero-subtitle">
             Under Favorable Prices
           </h2>
-          <p style={{ 
-            fontSize: '1.2rem', 
-            marginBottom: '40px', 
-            opacity: 0.8,
-            maxWidth: '600px',
-            margin: '0 auto 40px'
-          }}>
+          <p className="hero-description">
             Discover the latest in technology with unbeatable prices and premium quality
           </p>
-          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="hero-buttons">
             <Link
               to="/products"
-              style={{
-                backgroundColor: colors.secondary,
-                color: 'white',
-                padding: '15px 40px',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                fontSize: '16px',
-                textDecoration: 'none',
-                display: 'inline-block',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#e55a2b';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = colors.secondary;
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
+              className="btn-primary"
             >
               Start Shopping
             </Link>
             <Link
               to="/products"
-              style={{
-                backgroundColor: 'transparent',
-                color: 'white',
-                padding: '15px 40px',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                fontSize: '16px',
-                textDecoration: 'none',
-                display: 'inline-block',
-                border: '2px solid white',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.color = colors.primary;
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'white';
-              }}
+              className="btn-secondary"
             >
               View Catalog
             </Link>
           </div>
         </div>
         {/* Background decorative elements */}
-        <div style={{
-          position: 'absolute',
-          top: '-50px',
-          right: '-50px',
-          width: '200px',
-          height: '200px',
-          backgroundColor: 'rgba(255,255,255,0.1)',
-          borderRadius: '50%',
-          zIndex: 1
-        }}></div>
-        <div style={{
-          position: 'absolute',
-          bottom: '-30px',
-          left: '-30px',
-          width: '150px',
-          height: '150px',
-          backgroundColor: 'rgba(255,255,255,0.05)',
-          borderRadius: '50%',
-          zIndex: 1
-        }}></div>
+        <div className="hero-decoration-1"></div>
+        <div className="hero-decoration-2"></div>
       </section>
 
       {/* Featured Categories Section */}
-      <section style={{ 
-        padding: '60px 20px',
-        backgroundColor: 'white'
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-            <h2 style={{ 
-              fontSize: '2.5rem', 
-              fontWeight: '700', 
-              color: colors.dark,
-              marginBottom: '15px'
-            }}>
+      <section className="section section-white">
+        <div className="container">
+          <div className="section-header">
+            <h2 className="section-title">
               Shop by Category
             </h2>
-            <p style={{ 
-              fontSize: '1.1rem', 
-              color: '#7f8c8d',
-              maxWidth: '600px',
-              margin: '0 auto'
-            }}>
+            <p className="section-subtitle">
               Browse our extensive collection of premium electronics
             </p>
           </div>
           
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '30px'
-          }}>
+          <div className="categories-grid">
             {[
               { icon: '🎧', title: 'Audio & Headphones', count: '250+ Products' },
               { icon: '💻', title: 'Laptops & Computers', count: '180+ Products' },
@@ -241,40 +121,15 @@ const Home: React.FC = () => {
               <Link
                 key={index}
                 to="/products"
-                style={{
-                  display: 'block',
-                  textAlign: 'center',
-                  padding: '40px 20px',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '12px',
-                  textDecoration: 'none',
-                  color: colors.dark,
-                  transition: 'all 0.3s ease',
-                  border: '2px solid transparent'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.borderColor = colors.primary;
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.borderColor = 'transparent';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="category-card"
               >
-                <div style={{ fontSize: '4rem', marginBottom: '20px' }}>
+                <div className="category-icon">
                   {category.icon}
                 </div>
-                <h3 style={{ 
-                  fontSize: '1.3rem', 
-                  fontWeight: '600', 
-                  marginBottom: '10px',
-                  color: colors.dark
-                }}>
+                <h3 className="category-title">
                   {category.title}
                 </h3>
-                <p style={{ color: '#7f8c8d', fontSize: '0.9rem' }}>
+                <p className="category-count">
                   {category.count}
                 </p>
               </Link>
@@ -284,53 +139,26 @@ const Home: React.FC = () => {
       </section>
 
       {/* Featured Products Section - Electro Style */}
-      <section style={{ 
-        padding: '60px 20px',
-        backgroundColor: '#f8f9fa'
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: '50px',
-            flexWrap: 'wrap',
-            gap: '20px'
-          }}>
-            <div>
-              <h2 style={{ 
-                fontSize: '2.5rem', 
-                fontWeight: '700', 
-                color: colors.dark,
-                marginBottom: '10px'
-              }}>
+      <section className="section section-gray">
+        <div className="container">
+          <div className="featured-header">
+            <div className="featured-info">
+              <h2>
                 Featured Products
               </h2>
-              <p style={{ color: '#7f8c8d', fontSize: '1.1rem' }}>
+              <p>
                 Best deals on premium electronics
               </p>
             </div>
             <Link
               to="/products"
-              style={{ 
-                color: colors.primary, 
-                textDecoration: 'none', 
-                fontWeight: '600',
-                fontSize: '1.1rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px'
-              }}
+              className="view-all-link"
             >
               View All Products →
             </Link>
           </div>
           
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-            gap: '2rem' 
-          }}>
+          <div className="products-grid">
             {featuredProducts.map((product: Product) => (
               <SimpleProductCard
                 key={product.id}
@@ -345,58 +173,22 @@ const Home: React.FC = () => {
       </section>
 
       {/* Special Offer Banner */}
-      <section style={{ 
-        padding: '60px 20px',
-        backgroundColor: colors.dark,
-        color: 'white'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto',
-          textAlign: 'center'
-        }}>
-          <div style={{ marginBottom: '20px' }}>
-            <span style={{
-              backgroundColor: colors.warning,
-              color: 'white',
-              padding: '8px 20px',
-              borderRadius: '20px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              textTransform: 'uppercase'
-            }}>
+      <section className="section section-dark">
+        <div className="container offer-section">
+          <div>
+            <span className="offer-badge">
               Special Offer
             </span>
           </div>
-          <h2 style={{ 
-            fontSize: '3rem', 
-            fontWeight: '700', 
-            marginBottom: '20px' 
-          }}>
+          <h2 className="offer-title">
             Save up to 50% on Electronics
           </h2>
-          <p style={{ 
-            fontSize: '1.2rem', 
-            marginBottom: '30px', 
-            opacity: 0.9,
-            maxWidth: '600px',
-            margin: '0 auto 30px'
-          }}>
+          <p className="offer-description">
             Limited time offer on selected premium electronics. Don't miss out!
           </p>
           <Link
             to="/products"
-            style={{
-              backgroundColor: colors.secondary,
-              color: 'white',
-              padding: '15px 40px',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              fontSize: '16px',
-              textDecoration: 'none',
-              display: 'inline-block',
-              transition: 'all 0.3s ease'
-            }}
+            className="offer-button"
           >
             Shop Now & Save
           </Link>
@@ -404,19 +196,9 @@ const Home: React.FC = () => {
       </section>
 
       {/* Trust Indicators - Electro Style */}
-      <section style={{ 
-        padding: '60px 20px',
-        backgroundColor: 'white'
-      }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto'
-        }}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-            gap: '40px'
-          }}>
+      <section className="section section-white">
+        <div className="container">
+          <div className="trust-grid">
             {[
               { 
                 icon: '🚚', 
@@ -439,39 +221,14 @@ const Home: React.FC = () => {
                 desc: 'Round-the-clock customer support'
               }
             ].map((feature, index) => (
-              <div key={index} style={{ 
-                textAlign: 'center', 
-                padding: '30px 20px',
-                borderRadius: '12px',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#f8f9fa';
-                e.currentTarget.style.transform = 'translateY(-5px)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-              >
-                <div style={{ 
-                  fontSize: '3.5rem', 
-                  marginBottom: '20px'
-                }}>
+              <div key={index} className="trust-item">
+                <div className="trust-icon">
                   {feature.icon}
                 </div>
-                <h3 style={{ 
-                  fontSize: '1.3rem', 
-                  fontWeight: '600', 
-                  marginBottom: '10px',
-                  color: colors.dark
-                }}>
+                <h3 className="trust-title">
                   {feature.title}
                 </h3>
-                <p style={{ 
-                  color: '#7f8c8d',
-                  lineHeight: '1.5'
-                }}>
+                <p className="trust-description">
                   {feature.desc}
                 </p>
               </div>

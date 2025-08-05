@@ -1,7 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faEye, faHeart } from '@fortawesome/free-solid-svg-icons';
-import { Product } from '../contexts/ShopContext';
+import { Product } from '../../contexts/ShopContext';
 import './SimpleProductCard.css';
 
 interface SimpleProductCardProps {
@@ -21,11 +22,13 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
     <div className="simple-product-card">
       {/* Product Image */}
       <div className="product-image-container">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="product-image"
-        />
+        <Link to={`/product/${product.id}`} className="product-link">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="product-image"
+          />
+        </Link>
         
         {/* Product Badges */}
         {product.isNew && (
@@ -42,19 +45,22 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
 
         {/* Hover Overlay with Action Buttons */}
         <div className="product-overlay">
-          <button 
+          <Link 
+            to={`/product/${product.id}`}
             className="overlay-button"
             title="Quick View"
           >
             <FontAwesomeIcon icon={faEye} />
-          </button>
+          </Link>
         </div>
       </div>
 
       {/* Product Info */}
       <div className="product-info">
         <h3 className="product-title">
-          {product.name}
+          <Link to={`/product/${product.id}`} className="product-title-link">
+            {product.name}
+          </Link>
         </h3>
 
         {/* Price and Cart Icon */}

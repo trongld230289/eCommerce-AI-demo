@@ -1,10 +1,11 @@
 import React from 'react';
-import { useShop } from './ShopContext';
+import { useShop } from '../../contexts/ShopContext';
 import { Link } from 'react-router-dom';
 import './Cart.css';
 
 const Cart = () => {
-  const { cart, updateCartQuantity, removeFromCart, getCartTotal, clearCart } = useShop();
+  const { state, updateQuantity, removeFromCart, getCartTotal, clearCart } = useShop();
+  const cart = state.cart;
 
   if (cart.length === 0) {
     return (
@@ -60,7 +61,7 @@ const Cart = () => {
               <div className="cart-item-controls">
                 <div className="cart-quantity-controls">
                   <button
-                    onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
                     className="cart-quantity-button"
                   >
                     -
@@ -69,7 +70,7 @@ const Cart = () => {
                     {item.quantity}
                   </span>
                   <button
-                    onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
                     className="cart-quantity-button"
                   >
                     +

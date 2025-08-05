@@ -1,7 +1,7 @@
 import React from 'react';
-import { useShop } from '../contexts/ShopContext';
+import { useShop } from '../../contexts/ShopContext';
 import { Link } from 'react-router-dom';
-import { CartItem } from '../contexts/ShopContext';
+import { CartItem } from '../../contexts/ShopContext';
 import './CartDropdown.css';
 
 interface CartDropdownProps {

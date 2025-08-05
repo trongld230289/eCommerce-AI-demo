@@ -1,12 +1,13 @@
 import React from 'react';
-import { useShop } from './ShopContext';
-import { useToast } from '../contexts/ToastContext';
+import { useShop } from '../../contexts/ShopContext';
+import { useToast } from '../../contexts/ToastContext';
 import { Link } from 'react-router-dom';
-import SimpleProductCard from './SimpleProductCard';
+import SimpleProductCard from '../SimpleProductCard';
 import './Wishlist.css';
 
 const Wishlist = () => {
-  const { wishlist, removeFromWishlist, addToCart } = useShop();
+  const { state, removeFromWishlist, addToCart, isInWishlist } = useShop();
+  const wishlist = state.wishlist;
   const { showSuccess } = useToast();
 
   if (wishlist.length === 0) {

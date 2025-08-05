@@ -1,0 +1,433 @@
+/* AuthDialog.css - Unified authentication dialog styling */
+
+/* CSS Custom Properties */
+:root {
+  --auth-primary: #e4b429;
+  --auth-primary-hover: #d4a017;
+  --auth-blue: #4267b2;
+  --auth-blue-hover: #365899;
+  --auth-red: #dd4b39;
+  --auth-red-hover: #c23321;
+  --auth-white: #ffffff;
+  --auth-black: #000000;
+  --auth-gray-50: #f9fafb;
+  --auth-gray-100: #f3f4f6;
+  --auth-gray-200: #e5e7eb;
+  --auth-gray-300: #d1d5db;
+  --auth-gray-400: #9ca3af;
+  --auth-gray-500: #6b7280;
+  --auth-gray-600: #4b5563;
+  --auth-gray-700: #374151;
+  --auth-gray-800: #1f2937;
+  --auth-gray-900: #111827;
+  --auth-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --auth-shadow-lg: 0 20px 25px rgba(0, 0, 0, 0.1);
+  --auth-border-radius: 8px;
+  --auth-border-radius-lg: 16px;
+  --auth-transition: all 0.2s ease;
+}
+
+/* Dialog Overlay */
+.auth-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Dialog Container */
+.auth-dialog-container {
+  background-color: var(--auth-white);
+  border-radius: var(--auth-border-radius-lg);
+  box-shadow: var(--auth-shadow-lg);
+  width: 100%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Close Button */
+.auth-dialog-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--auth-gray-500);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: var(--auth-transition);
+  z-index: 10;
+}
+
+.auth-dialog-close:hover {
+  background-color: var(--auth-gray-100);
+  color: var(--auth-gray-700);
+}
+
+/* Dialog Header */
+.auth-dialog-header {
+  text-align: center;
+  padding: 2rem 2rem 1rem 2rem;
+}
+
+.auth-dialog-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--auth-gray-800);
+  margin: 0 0 0.5rem 0;
+}
+
+.auth-dialog-subtitle {
+  color: var(--auth-gray-600);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0 0;
+}
+
+/* Error Message */
+.auth-dialog-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: var(--auth-border-radius);
+  font-size: 0.875rem;
+  margin: 0 2rem 1rem 2rem;
+  text-align: center;
+}
+
+/* Form */
+.auth-dialog-form {
+  padding: 0 2rem;
+}
+
+.auth-dialog-form-group {
+  margin-bottom: 1rem;
+}
+
+/* Input Wrapper with Icon */
+.auth-dialog-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-dialog-input-icon {
+  position: absolute;
+  left: 1rem;
+  font-size: 0.875rem;
+  z-index: 2;
+  color: var(--auth-gray-400);
+}
+
+.auth-dialog-input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 3rem;
+  border: 1px solid var(--auth-gray-300);
+  border-radius: var(--auth-border-radius);
+  font-size: 1rem;
+  background-color: var(--auth-white);
+  transition: var(--auth-transition);
+  box-sizing: border-box;
+}
+
+.auth-dialog-input:focus {
+  outline: none;
+  border-color: var(--auth-primary);
+  box-shadow: 0 0 0 3px rgba(228, 180, 41, 0.1);
+}
+
+.auth-dialog-input::placeholder {
+  color: var(--auth-gray-400);
+}
+
+/* Forgot Password */
+.auth-dialog-forgot {
+  text-align: right;
+  margin-bottom: 1.5rem;
+}
+
+.auth-dialog-forgot-link {
+  background: none;
+  border: none;
+  color: var(--auth-gray-600);
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--auth-transition);
+}
+
+.auth-dialog-forgot-link:hover {
+  color: var(--auth-primary);
+  text-decoration: underline;
+}
+
+/* Submit Button */
+.auth-dialog-submit {
+  width: 100%;
+  background-color: var(--auth-primary);
+  color: var(--auth-white);
+  border: none;
+  padding: 0.875rem 1rem;
+  border-radius: var(--auth-border-radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--auth-transition);
+  margin-bottom: 1.5rem;
+}
+
+.auth-dialog-submit:hover:not(:disabled) {
+  background-color: var(--auth-primary-hover);
+}
+
+.auth-dialog-submit:disabled {
+  background-color: var(--auth-gray-400);
+  cursor: not-allowed;
+}
+
+.auth-dialog-submit-loading {
+  position: relative;
+}
+
+.auth-dialog-submit-loading::after {
+  content: "";
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid var(--auth-white);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Mode Switch */
+.auth-dialog-switch {
+  text-align: center;
+  padding: 0 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-dialog-switch-text {
+  color: var(--auth-gray-600);
+  font-size: 0.875rem;
+}
+
+.auth-dialog-switch-button {
+  background: none;
+  border: none;
+  color: var(--auth-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: var(--auth-transition);
+}
+
+.auth-dialog-switch-button:hover {
+  color: var(--auth-primary-hover);
+}
+
+/* Divider */
+.auth-dialog-divider {
+  position: relative;
+  text-align: center;
+  margin: 0 2rem 1.5rem 2rem;
+  padding: 0 1rem;
+}
+
+.auth-dialog-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--auth-gray-200);
+}
+
+.auth-dialog-divider span {
+  background-color: var(--auth-white);
+  color: var(--auth-gray-500);
+  font-size: 0.875rem;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Social Buttons */
+.auth-dialog-social {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 2rem 2rem 2rem;
+}
+
+.auth-dialog-social-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--auth-gray-300);
+  border-radius: var(--auth-border-radius);
+  background-color: var(--auth-white);
+  color: var(--auth-gray-700);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--auth-transition);
+}
+
+.auth-dialog-social-button:hover {
+  background-color: var(--auth-gray-50);
+  border-color: var(--auth-gray-400);
+}
+
+.auth-dialog-facebook {
+  border-color: var(--auth-blue);
+  color: var(--auth-blue);
+}
+
+.auth-dialog-facebook:hover {
+  background-color: var(--auth-blue);
+  color: var(--auth-white);
+}
+
+.auth-dialog-google {
+  border-color: var(--auth-red);
+  color: var(--auth-red);
+}
+
+.auth-dialog-google:hover {
+  background-color: var(--auth-red);
+  color: var(--auth-white);
+}
+
+.auth-dialog-social-icon {
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .auth-dialog-container {
+    max-width: 100%;
+    border-radius: 0;
+    min-height: 100vh;
+    max-height: 100vh;
+  }
+  
+  .auth-dialog-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+  }
+  
+  .auth-dialog-form,
+  .auth-dialog-switch,
+  .auth-dialog-divider,
+  .auth-dialog-social {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .auth-dialog-error {
+    margin-left: 1.5rem;
+    margin-right: 1.5rem;
+  }
+  
+  .auth-dialog-social {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .auth-dialog-close {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+}
+
+/* Animation for mode switching */
+.auth-dialog-form-animation {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Focus styles for accessibility */
+.auth-dialog-input:focus,
+.auth-dialog-submit:focus,
+.auth-dialog-switch-button:focus,
+.auth-dialog-social-button:focus,
+.auth-dialog-forgot-link:focus,
+.auth-dialog-close:focus {
+  outline: 2px solid var(--auth-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .auth-dialog-container {
+    border: 2px solid var(--auth-black);
+  }
+  
+  .auth-dialog-input {
+    border-width: 2px;
+  }
+  
+  .auth-dialog-submit,
+  .auth-dialog-social-button {
+    border-width: 2px;
+  }
+}

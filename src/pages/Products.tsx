@@ -4,6 +4,7 @@ import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import './Products.css';
 
 const Products: React.FC = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
@@ -159,85 +160,39 @@ const Products: React.FC = () => {
   });
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '30px', textAlign: 'center' }}>
+    <div className="products-container">
+      <h1 className="products-title">
         Our Products
       </h1>
 
       {/* Enhanced Search and Filter Section */}
-      <div style={{
-        backgroundColor: '#f8f9fa',
-        padding: '25px',
-        borderRadius: '12px',
-        marginBottom: '30px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{
-          display: 'flex',
-          gap: '15px',
-          flexWrap: 'wrap',
-          alignItems: 'stretch'
-        }}>
+      <div className="search-filter-section">
+        <div className="search-filter-wrapper">
           {/* Search Input with Icon and Suggestions */}
-          <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
-            <div style={{ position: 'relative' }}>
+          <div className="search-input-container">
+            <div className="search-input-wrapper">
               <input
                 type="text"
                 placeholder="Search for Products"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={(e) => {
-                  e.target.style.borderColor = '#fed700';
-                  e.target.style.boxShadow = '0 0 0 3px rgba(254, 215, 0, 0.1)';
-                  setShowSuggestions(true);
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = '#e9ecef';
-                  e.target.style.boxShadow = 'none';
-                  setTimeout(() => setShowSuggestions(false), 150);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '15px 20px',
-                  border: '2px solid #e9ecef',
-                  borderRadius: '25px',
-                  fontSize: '16px',
-                  boxSizing: 'border-box',
-                  outline: 'none',
-                  transition: 'all 0.3s ease',
-                  backgroundColor: 'white'
-                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                className="search-input"
+              />
+
+              <FontAwesomeIcon 
+                icon={faSearch} 
+                className="search-icon"
               />
 
               {/* Search Suggestions Dropdown */}
               {showSuggestions && filteredSuggestions.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  backgroundColor: 'white',
-                  border: '1px solid #e9ecef',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  zIndex: 1000,
-                  marginTop: '4px'
-                }}>
+                <div className="search-suggestions">
                   {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
                     <div
                       key={index}
-                      style={{
-                        padding: '12px 20px',
-                        cursor: 'pointer',
-                        borderBottom: index < filteredSuggestions.length - 1 ? '1px solid #f1f3f4' : 'none',
-                        transition: 'background-color 0.2s ease'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f8f9fa';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = 'white';
-                      }}
+                      className="search-suggestion-item"
                       onMouseDown={() => {
                         setSearchQuery(suggestion);
                         setShowSuggestions(false);

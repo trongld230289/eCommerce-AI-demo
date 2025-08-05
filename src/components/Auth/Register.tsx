@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
 
@@ -33,7 +33,7 @@ const Register = () => {
     try {
       setError('');
       setLoading(true);
-      await register(email, password);
+      await register(email, password, email.split('@')[0]);
       navigate('/');
     } catch (error) {
       setError('Failed to create account');

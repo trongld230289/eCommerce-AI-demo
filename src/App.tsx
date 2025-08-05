@@ -5,24 +5,25 @@ import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ShopProvider, useShop } from './contexts/ShopContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Cart from './pages/Cart';
-import Wishlist from './pages/Wishlist';
+import { Login, Register } from './components/Auth';
+import Cart from './components/Cart';
+import Wishlist from './components/Wishlist';
 import Products from './pages/Products';
+import ProductDetails from './pages/ProductDetails';
 import SimpleProductCard from './components/SimpleProductCard';
 import SearchBar from './components/SearchBar';
 import CartDropdown from './components/CartDropdown';
-import LoginDialog from './components/LoginDialog';
+import AuthDialog from './components/AuthDialog';
+import { useAuthDialog } from './hooks/useAuthDialog';
 import Chatbot from './components/Chatbot';
-import ChatbotIcon from './components/ChatbotIcon';
+import ChatbotIcon from './components/Chatbot/ChatbotIcon';
 
 // Navigation Component
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
   const { getCartItemsCount, getCartTotal } = useShop();
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
-  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
+  const authDialog = useAuthDialog();
   
   const handleLogout = async () => {
     try {
@@ -82,10 +83,23 @@ const Navbar = () => {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <Link to="/register" style={{ color: '#6c757d', textDecoration: 'none', fontFamily: 'Open Sans, Arial, sans-serif' }}>Register</Link>
+                <button
+                  onClick={() => authDialog.openRegister()}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#6c757d',
+                    textDecoration: 'none',
+                    fontFamily: 'Open Sans, Arial, sans-serif',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  Register
+                </button>
                 <span>or</span>
                 <button
-                  onClick={() => setIsLoginDialogOpen(true)}
+                  onClick={() => authDialog.openLogin()}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -284,10 +298,11 @@ const Navbar = () => {
         </div>
       </nav>
       
-      {/* Login Dialog */}
-      <LoginDialog 
-        isVisible={isLoginDialogOpen} 
-        onClose={() => setIsLoginDialogOpen(false)} 
+      {/* Auth Dialog */}
+      <AuthDialog 
+        isOpen={authDialog.isOpen} 
+        onClose={authDialog.close}
+        initialMode={authDialog.mode}
       />
     </>
   );
@@ -1296,6 +1311,7 @@ function App() {
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/products" element={<Products />} />
+                <Route path="/product/:id" element={<ProductDetails />} />
               </Routes>
               
               {/* Chatbot Components */}
