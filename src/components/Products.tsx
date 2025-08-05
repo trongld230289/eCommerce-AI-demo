@@ -1,6 +1,7 @@
 import React from 'react';
 import { useShop } from './ShopContext';
 import SimpleProductCard from './SimpleProductCard';
+import './Products.css';
 
 const Products = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
@@ -167,26 +168,12 @@ const Products = () => {
   };
 
   return (
-    <div style={{
-      maxWidth: '1340px',
-      margin: '0 auto',
-      padding: '2rem 1rem',
-      fontFamily: 'Open Sans, Arial, sans-serif'
-    }}>
-      <h1 style={{
-        fontSize: '2.5rem',
-        marginBottom: '2rem',
-        color: '#2c3e50',
-        textAlign: 'center'
-      }}>
+    <div className="products-container">
+      <h1 className="products-title">
         All Products
       </h1>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '2rem'
-      }}>
+      <div className="products-grid">
         {products.map((product) => (
           <SimpleProductCard
             key={product.id}

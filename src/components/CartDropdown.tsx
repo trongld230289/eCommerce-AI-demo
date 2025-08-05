@@ -2,6 +2,7 @@ import React from 'react';
 import { useShop } from '../contexts/ShopContext';
 import { Link } from 'react-router-dom';
 import { CartItem } from '../contexts/ShopContext';
+import './CartDropdown.css';
 
 interface CartDropdownProps {
   isVisible: boolean;
@@ -23,175 +24,67 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isVisible, onClose }) => {
   };
 
   return (
-    <div style={{
-      position: 'absolute',
-      top: '100%',
-      right: '0',
-      backgroundColor: 'white',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-      borderRadius: '8px',
-      minWidth: '400px',
-      maxWidth: '450px',
-      zIndex: 1000,
-      border: '1px solid #e9ecef',
-      fontFamily: 'Open Sans, Arial, sans-serif'
-    }}>
+    <div className="cart-dropdown">
       {/* Header */}
-      <div style={{
-        padding: '1rem 1.5rem',
-        borderBottom: '1px solid #e9ecef',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <h3 style={{
-          margin: 0,
-          fontSize: '1.1rem',
-          fontWeight: '600',
-          color: '#2c3e50'
-        }}>
+      <div className="cart-dropdown-header">
+        <h3 className="cart-dropdown-title">
           Shopping Cart ({cart.length})
         </h3>
         <button
           onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            fontSize: '1.5rem',
-            cursor: 'pointer',
-            color: '#6c757d',
-            padding: 0,
-            lineHeight: 1
-          }}
+          className="cart-dropdown-close"
         >
           ×
         </button>
       </div>
 
       {/* Cart Items */}
-      <div style={{
-        maxHeight: '300px',
-        overflowY: 'auto'
-      }}>
+      <div className="cart-dropdown-items">
         {cart.length === 0 ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            color: '#6c757d'
-          }}>
-            <p style={{ margin: 0, fontSize: '0.9rem' }}>Your cart is empty</p>
+          <div className="cart-dropdown-empty">
+            <p className="cart-dropdown-empty-text">Your cart is empty</p>
           </div>
         ) : (
           cart.map((item: CartItem) => (
-            <div key={item.id} style={{
-              padding: '1rem 1.5rem',
-              borderBottom: '1px solid #f8f9fa',
-              display: 'flex',
-              gap: '1rem',
-              alignItems: 'center'
-            }}>
+            <div key={item.id} className="cart-dropdown-item">
               {/* Product Image */}
               <img
                 src={item.image}
                 alt={item.name}
-                style={{
-                  width: '60px',
-                  height: '60px',
-                  objectFit: 'cover',
-                  borderRadius: '4px',
-                  flexShrink: 0
-                }}
+                className="cart-dropdown-item-image"
               />
 
               {/* Product Details */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h4 style={{
-                  margin: '0 0 0.5rem 0',
-                  fontSize: '0.9rem',
-                  fontWeight: '500',
-                  color: '#2c3e50',
-                  lineHeight: '1.3',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}>
+              <div className="cart-dropdown-item-details">
+                <h4 className="cart-dropdown-item-name">
                   {item.name}
                 </h4>
                 
                 {/* Quantity and Price */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '1rem'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    <span style={{
-                      fontSize: '0.8rem',
-                      color: '#6c757d'
-                    }}>
+                <div className="cart-dropdown-item-row">
+                  <div className="cart-dropdown-item-price-info">
+                    <span className="cart-dropdown-item-quantity-label">
                       {item.quantity} ×
                     </span>
-                    <span style={{
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      color: '#2c3e50'
-                    }}>
+                    <span className="cart-dropdown-item-price">
                       {formatPrice(item.price)}
                     </span>
                   </div>
 
                   {/* Quantity Controls */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
+                  <div className="cart-dropdown-quantity-controls">
                     <button
                       onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        border: '1px solid #e9ecef',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '14px',
-                        color: '#6c757d'
-                      }}
+                      className="cart-dropdown-quantity-button"
                     >
                       −
                     </button>
-                    <span style={{
-                      fontSize: '0.9rem',
-                      fontWeight: '500',
-                      minWidth: '20px',
-                      textAlign: 'center'
-                    }}>
+                    <span className="cart-dropdown-quantity-display">
                       {item.quantity}
                     </span>
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        border: '1px solid #e9ecef',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '14px',
-                        color: '#6c757d'
-                      }}
+                      className="cart-dropdown-quantity-button"
                     >
                       +
                     </button>
@@ -202,16 +95,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isVisible, onClose }) => {
               {/* Remove Button */}
               <button
                 onClick={() => removeFromCart(item.id)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#dc3545',
-                  cursor: 'pointer',
-                  padding: '0.25rem',
-                  fontSize: '1.2rem',
-                  lineHeight: 1,
-                  flexShrink: 0
-                }}
+                className="cart-dropdown-remove"
                 title="Remove item"
               >
                 ×
@@ -223,86 +107,29 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ isVisible, onClose }) => {
 
       {/* Footer */}
       {cart.length > 0 && (
-        <div style={{
-          padding: '1rem 1.5rem',
-          borderTop: '1px solid #e9ecef',
-          backgroundColor: '#f8f9fa'
-        }}>
+        <div className="cart-dropdown-footer">
           {/* Total */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '1rem'
-          }}>
-            <span style={{
-              fontSize: '1rem',
-              fontWeight: '600',
-              color: '#2c3e50'
-            }}>
+          <div className="cart-dropdown-total">
+            <span className="cart-dropdown-total-label">
               Total:
             </span>
-            <span style={{
-              fontSize: '1.2rem',
-              fontWeight: '700',
-              color: '#2c3e50'
-            }}>
+            <span className="cart-dropdown-total-amount">
               {formatPrice(getCartTotal())}
             </span>
           </div>
 
           {/* Action Buttons */}
-          <div style={{
-            display: 'flex',
-            gap: '0.5rem'
-          }}>
+          <div className="cart-dropdown-actions">
             <Link
               to="/cart"
               onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '0.75rem 1rem',
-                backgroundColor: 'white',
-                color: '#2c3e50',
-                border: '1px solid #e9ecef',
-                borderRadius: '4px',
-                textDecoration: 'none',
-                textAlign: 'center',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#f8f9fa';
-                e.currentTarget.style.borderColor = '#d0d7de';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.borderColor = '#e9ecef';
-              }}
+              className="cart-dropdown-view-cart"
             >
               View Cart
             </Link>
             <button
               onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '0.75rem 1rem',
-                backgroundColor: '#fed700',
-                color: '#333333',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#ffc107';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = '#fed700';
-              }}
+              className="cart-dropdown-checkout"
             >
               Checkout
             </button>

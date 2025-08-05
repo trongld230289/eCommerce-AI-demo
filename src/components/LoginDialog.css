@@ -1,0 +1,270 @@
+/* Login Dialog Backdrop */
+.login-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.login-dialog-backdrop.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Login Dialog Container */
+.login-dialog {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  background-color: white;
+  z-index: 9999;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.login-dialog.visible {
+  transform: translateX(0);
+}
+
+/* Header */
+.login-dialog-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.login-dialog-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.login-dialog-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.login-dialog-close:hover {
+  background-color: #f3f4f6;
+}
+
+/* Content */
+.login-dialog-content {
+  flex: 1;
+  padding: 2rem 1.5rem;
+  overflow-y: auto;
+}
+
+.login-dialog-subtitle {
+  color: #6b7280;
+  margin-bottom: 2rem;
+  font-size: 0.875rem;
+}
+
+/* Error Message */
+.login-dialog-error {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+/* Form Fields */
+.login-dialog-field {
+  margin-bottom: 1rem;
+}
+
+.login-dialog-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-dialog-input-icon {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  font-size: 1rem;
+}
+
+.login-dialog-input {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.login-dialog-input:focus {
+  border-color: #3b82f6;
+}
+
+/* Forgot Password */
+.login-dialog-forgot {
+  text-align: right;
+  margin-bottom: 1.5rem;
+}
+
+.login-dialog-forgot-link {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.login-dialog-forgot-link:hover {
+  color: #374151;
+}
+
+/* Login Button */
+.login-dialog-submit {
+  width: 100%;
+  background-color: #fed700;
+  color: #000;
+  border: none;
+  padding: 0.875rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  opacity: 1;
+}
+
+.login-dialog-submit:hover:not(:disabled) {
+  background-color: #fbbf24;
+}
+
+.login-dialog-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Signup Link */
+.login-dialog-signup {
+  text-align: center;
+  margin: 1.5rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.login-dialog-signup-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.login-dialog-signup-link:hover {
+  color: #2563eb;
+}
+
+/* Divider */
+.login-dialog-divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+.login-dialog-divider-line {
+  flex: 1;
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.login-dialog-divider-text {
+  padding: 0 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Social Buttons */
+.login-dialog-social {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.login-dialog-social-button {
+  flex: 1;
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.login-dialog-social-button.facebook {
+  background-color: #4267B2;
+}
+
+.login-dialog-social-button.facebook:hover {
+  background-color: #365899;
+}
+
+.login-dialog-social-button.google {
+  background-color: #db4437;
+}
+
+.login-dialog-social-button.google:hover {
+  background-color: #c23321;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .login-dialog {
+    width: 100%;
+    right: 0;
+  }
+  
+  .login-dialog-header {
+    padding: 1rem;
+  }
+  
+  .login-dialog-content {
+    padding: 1.5rem 1rem;
+  }
+  
+  .login-dialog-social {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

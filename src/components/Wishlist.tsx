@@ -2,44 +2,23 @@ import React from 'react';
 import { useShop } from './ShopContext';
 import { Link } from 'react-router-dom';
 import SimpleProductCard from './SimpleProductCard';
+import './Wishlist.css';
 
 const Wishlist = () => {
   const { wishlist, removeFromWishlist, addToCart } = useShop();
 
   if (wishlist.length === 0) {
     return (
-      <div style={{
-        maxWidth: '1340px',
-        margin: '0 auto',
-        padding: '4rem 1rem',
-        textAlign: 'center',
-        fontFamily: 'Open Sans, Arial, sans-serif'
-      }}>
-        <h2 style={{
-          fontSize: '2rem',
-          marginBottom: '1rem',
-          color: '#2c3e50'
-        }}>
+      <div className="wishlist-empty-container">
+        <h2 className="wishlist-empty-title">
           Your Wishlist is Empty
         </h2>
-        <p style={{
-          fontSize: '1.1rem',
-          color: '#6c757d',
-          marginBottom: '2rem'
-        }}>
+        <p className="wishlist-empty-text">
           Save items you love for later!
         </p>
         <Link
           to="/products"
-          style={{
-            backgroundColor: '#fed700',
-            color: '#333333',
-            padding: '1rem 2rem',
-            borderRadius: '4px',
-            textDecoration: 'none',
-            fontWeight: '600',
-            display: 'inline-block'
-          }}
+          className="wishlist-button-primary"
         >
           Continue Shopping
         </Link>
@@ -53,26 +32,12 @@ const Wishlist = () => {
   };
 
   return (
-    <div style={{
-      maxWidth: '1340px',
-      margin: '0 auto',
-      padding: '2rem 1rem',
-      fontFamily: 'Open Sans, Arial, sans-serif'
-    }}>
-      <h1 style={{
-        fontSize: '2.5rem',
-        marginBottom: '2rem',
-        color: '#2c3e50',
-        textAlign: 'center'
-      }}>
+    <div className="wishlist-container">
+      <h1 className="wishlist-title">
         My Wishlist
       </h1>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '2rem'
-      }}>
+      <div className="wishlist-grid">
         {wishlist.map((product) => (
           <SimpleProductCard
             key={product.id}
@@ -84,21 +49,10 @@ const Wishlist = () => {
         ))}
       </div>
 
-      <div style={{
-        textAlign: 'center',
-        marginTop: '3rem'
-      }}>
+      <div className="wishlist-continue-section">
         <Link
           to="/products"
-          style={{
-            backgroundColor: '#2c3e50',
-            color: 'white',
-            padding: '1rem 2rem',
-            borderRadius: '4px',
-            textDecoration: 'none',
-            fontWeight: '600',
-            display: 'inline-block'
-          }}
+          className="wishlist-button-secondary"
         >
           Continue Shopping
         </Link>
