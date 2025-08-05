@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -13,10 +13,11 @@ import SimpleProductCard from './components/SimpleProductCard';
 import SearchBar from './components/SearchBar';
 import CartDropdown from './components/CartDropdown';
 import LoginDialog from './components/LoginDialog';
+import Chatbot from './components/Chatbot';
+import ChatbotIcon from './components/ChatbotIcon';
 
 // Navigation Component
 const Navbar = () => {
-  const location = useLocation();
   const { currentUser, logout } = useAuth();
   const { getCartItemsCount, getCartTotal } = useShop();
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
@@ -625,12 +626,6 @@ const Home = () => {
       addToWishlist(product);
       alert(`Added ${product.name} to wishlist!`);
     }
-  };
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <span key={i} style={{ color: i < rating ? '#fed700' : '#e4e5e9', fontSize: '14px' }}>★</span>
-    ));
   };
 
   const homeStyles = {
@@ -1280,11 +1275,13 @@ const Home = () => {
 };
 
 function App() {
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+
   return (
     <AuthProvider>
       <ShopProvider>
         <Router>
-          <div className="App" style={{ 
+          <div className={`App ${isChatbotOpen ? 'chatbot-open' : ''}`} style={{ 
             fontFamily: 'Open Sans, Arial, sans-serif',
             minHeight: '100vh'
           }}>
@@ -1297,6 +1294,16 @@ function App() {
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/products" element={<Products />} />
             </Routes>
+            
+            {/* Chatbot Components */}
+            <ChatbotIcon 
+              onClick={() => setIsChatbotOpen(true)} 
+              isVisible={isChatbotOpen} 
+            />
+            <Chatbot 
+              isVisible={isChatbotOpen} 
+              onClose={() => setIsChatbotOpen(false)} 
+            />
           </div>
         </Router>
       </ShopProvider>
