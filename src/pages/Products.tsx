@@ -1,16 +1,187 @@
 import React, { useState } from 'react';
 import { useShop } from '../contexts/ShopContext';
+import { useToast } from '../contexts/ToastContext';
 import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import './Products.css';
 
 const Products: React.FC = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
+  const { showSuccess, showWishlist, showWarning } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+  const [isTablet, setIsTablet] = useState(window.innerWidth <= 768);
+
+  // Inline styles object
+  const styles = {
+    productsContainer: {
+      padding: isMobile ? '15px' : '20px',
+      maxWidth: '1200px',
+      margin: '0 auto'
+    },
+    productsTitle: {
+      fontSize: isMobile ? '2rem' : '2.5rem',
+      fontWeight: 'bold',
+      marginBottom: '30px',
+      textAlign: 'center' as const
+    },
+    searchFilterSection: {
+      backgroundColor: '#f8f9fa',
+      padding: isMobile ? '20px' : '25px',
+      borderRadius: '12px',
+      marginBottom: '30px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    },
+    searchFilterWrapper: {
+      display: 'flex',
+      gap: '15px',
+      flexWrap: 'wrap' as const,
+      alignItems: 'stretch',
+      flexDirection: isTablet ? 'column' as const : 'row' as const
+    },
+    searchInputContainer: {
+      flex: 1,
+      minWidth: isTablet ? 'auto' : '300px',
+      position: 'relative' as const
+    },
+    searchInputWrapper: {
+      position: 'relative' as const
+    },
+    searchInput: {
+      width: '100%',
+      padding: isMobile ? '12px 45px 12px 15px' : '15px 50px 15px 20px',
+      border: '2px solid #e9ecef',
+      borderRadius: '25px',
+      fontSize: isMobile ? '14px' : '16px',
+      outline: 'none',
+      transition: 'all 0.3s ease',
+      boxSizing: 'border-box' as const
+    },
+    searchIcon: {
+      position: 'absolute' as const,
+      right: '20px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      color: '#6c757d',
+      pointerEvents: 'none' as const
+    },
+    searchSuggestions: {
+      position: 'absolute' as const,
+      top: '100%',
+      left: 0,
+      right: 0,
+      background: 'white',
+      border: '1px solid #e9ecef',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      zIndex: 1000,
+      maxHeight: '200px',
+      overflowY: 'auto' as const
+    },
+    searchSuggestionItem: {
+      padding: '12px 20px',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s',
+      borderBottom: '1px solid #f8f9fa'
+    },
+    categoryDropdownContainer: {
+      position: 'relative' as const,
+      minWidth: isTablet ? 'auto' : '200px'
+    },
+    categoryDropdown: {
+      width: '100%',
+      padding: isMobile ? '12px 35px 12px 15px' : '15px 40px 15px 20px',
+      border: '2px solid #e9ecef',
+      borderRadius: '25px',
+      fontSize: isMobile ? '14px' : '16px',
+      backgroundColor: 'white',
+      outline: 'none',
+      appearance: 'none' as const,
+      cursor: 'pointer',
+      transition: 'all 0.3s ease'
+    },
+    dropdownArrow: {
+      position: 'absolute' as const,
+      right: '15px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      color: '#6c757d',
+      fontSize: '14px',
+      pointerEvents: 'none' as const
+    },
+    resultsSection: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: isTablet ? 'flex-start' : 'center',
+      marginBottom: '25px',
+      flexWrap: 'wrap' as const,
+      gap: '15px',
+      flexDirection: isTablet ? 'column' as const : 'row' as const
+    },
+    resultsInfo: {
+      fontSize: '16px',
+      color: '#6c757d'
+    },
+    resultsCount: {
+      color: '#fed700',
+      fontWeight: 'bold'
+    },
+    sortDropdown: {
+      padding: '10px 15px',
+      border: '2px solid #e9ecef',
+      borderRadius: '20px',
+      fontSize: '14px',
+      backgroundColor: 'white',
+      outline: 'none',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease'
+    },
+    productsGrid: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(auto-fill, minmax(250px, 1fr))' : 'repeat(auto-fill, minmax(280px, 1fr))',
+      gap: isMobile ? '1rem' : isTablet ? '1.5rem' : '2rem',
+      marginBottom: '2rem'
+    },
+    noProducts: {
+      textAlign: 'center' as const,
+      padding: '4rem 2rem',
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      border: '2px dashed #e9ecef'
+    },
+    noProductsIcon: {
+      fontSize: '4rem',
+      marginBottom: '1rem',
+      color: '#6c757d'
+    },
+    noProductsTitle: {
+      fontSize: '1.5rem',
+      color: '#495057',
+      marginBottom: '1rem',
+      fontWeight: 600
+    },
+    noProductsText: {
+      color: '#6c757d',
+      marginBottom: '2rem',
+      fontSize: '1.1rem'
+    },
+    clearSearchButton: {
+      backgroundColor: '#fed700',
+      color: '#212529',
+      border: 'none',
+      padding: '12px 24px',
+      borderRadius: '25px',
+      fontSize: '16px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      transition: 'all 0.3s ease'
+    }
+  };
 
   // Popular search suggestions
   const searchSuggestions = [
@@ -144,6 +315,33 @@ const Products: React.FC = () => {
 
   const categories = ['All', 'Electronics'];
 
+  // Toast handlers for cart and wishlist actions
+  const handleAddToCart = (product: Product) => {
+    addToCart(product);
+    showSuccess(`${product.name} added to cart!`, 'Check your cart to proceed to checkout.');
+  };
+
+  const handleAddToWishlist = (product: Product) => {
+    if (isInWishlist(product.id)) {
+      showWarning(`Already in wishlist!`, `${product.name} is already in your wishlist.`);
+    } else {
+      addToWishlist(product);
+      showWishlist(`${product.name} added to wishlist!`, 'View your wishlist to see all saved items.');
+    }
+  };
+
+  // Search handler with toast feedback
+  const handleSearch = () => {
+    const resultCount = filteredProducts.length;
+    if (searchQuery.trim()) {
+      if (resultCount > 0) {
+        showSuccess(`Found ${resultCount} product${resultCount !== 1 ? 's' : ''}!`, `Search results for "${searchQuery}"`);
+      } else {
+        showWarning('No products found', `Try different keywords for "${searchQuery}"`);
+      }
+    }
+  };
+
   // Enhanced filter products based on search and category
   const filteredProducts = allProducts.filter(product => {
     const searchLower = searchQuery.toLowerCase();
@@ -160,17 +358,17 @@ const Products: React.FC = () => {
   });
 
   return (
-    <div className="products-container">
-      <h1 className="products-title">
+    <div style={styles.productsContainer}>
+      <h1 style={styles.productsTitle}>
         Our Products
       </h1>
 
       {/* Enhanced Search and Filter Section */}
-      <div className="search-filter-section">
-        <div className="search-filter-wrapper">
+      <div style={styles.searchFilterSection}>
+        <div style={styles.searchFilterWrapper}>
           {/* Search Input with Icon and Suggestions */}
-          <div className="search-input-container">
-            <div className="search-input-wrapper">
+          <div style={styles.searchInputContainer}>
+            <div style={styles.searchInputWrapper}>
               <input
                 type="text"
                 placeholder="Search for Products"
@@ -178,21 +376,21 @@ const Products: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                className="search-input"
+                style={styles.searchInput}
               />
 
               <FontAwesomeIcon 
                 icon={faSearch} 
-                className="search-icon"
+                style={styles.searchIcon}
               />
 
               {/* Search Suggestions Dropdown */}
               {showSuggestions && filteredSuggestions.length > 0 && (
-                <div className="search-suggestions">
+                <div style={styles.searchSuggestions}>
                   {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
                     <div
                       key={index}
-                      className="search-suggestion-item"
+                      style={styles.searchSuggestionItem}
                       onMouseDown={() => {
                         setSearchQuery(suggestion);
                         setShowSuggestions(false);
@@ -210,22 +408,11 @@ const Products: React.FC = () => {
           </div>
 
           {/* Category Dropdown */}
-          <div style={{ position: 'relative', minWidth: '200px' }}>
+          <div style={styles.categoryDropdownContainer}>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '15px 40px 15px 20px',
-                border: '2px solid #e9ecef',
-                borderRadius: '25px',
-                fontSize: '16px',
-                backgroundColor: 'white',
-                outline: 'none',
-                appearance: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
+              style={styles.categoryDropdown}
               onFocus={(e) => {
                 e.target.style.borderColor = '#fed700';
                 e.target.style.boxShadow = '0 0 0 3px rgba(254, 215, 0, 0.1)';
@@ -241,21 +428,14 @@ const Products: React.FC = () => {
                 </option>
               ))}
             </select>
-            <div style={{
-              position: 'absolute',
-              right: '15px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#6c757d',
-              fontSize: '14px',
-              pointerEvents: 'none'
-            }}>
+            <div style={styles.dropdownArrow}>
               ▼
             </div>
           </div>
 
           {/* Search Button */}
           <button
+            onClick={handleSearch}
             style={{
               backgroundColor: '#fed700',
               color: '#2c3e50',
@@ -362,8 +542,8 @@ const Products: React.FC = () => {
             <SimpleProductCard
               key={product.id}
               product={product as any}
-              onAddToCart={(product) => addToCart(product as any)}
-              onAddToWishlist={(product) => addToWishlist(product as any)}
+              onAddToCart={handleAddToCart}
+              onAddToWishlist={handleAddToWishlist}
               isInWishlist={isInWishlist}
             />
           ))

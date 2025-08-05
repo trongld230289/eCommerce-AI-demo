@@ -2,7 +2,6 @@ import React from 'react';
 import { useShop } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import './Cart.css';
 
 const Cart = () => {
   const { state, removeFromCart, updateQuantity, clearCart, getCartTotal } = useShop();

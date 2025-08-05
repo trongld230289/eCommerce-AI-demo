@@ -3,12 +3,420 @@ import { Link } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
 import { useToast } from '../contexts/ToastContext';
 import SimpleProductCard from '../components/SimpleProductCard';
-import './Home.css';
 
 // Home Page Component
 const Home = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { showSuccess, showWarning, showWishlist } = useToast();
+  
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isTablet, setIsTablet] = useState(window.innerWidth <= 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      setIsTablet(window.innerWidth <= 1024);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Inline styles
+  const styles = {
+    homeContainer: {
+      backgroundColor: '#ffffff',
+      minHeight: '100vh',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    heroBanner: {
+      background: 'url("https://transvelo.github.io/electro-html/2.0/assets/img/1920X422/img1.jpg")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      color: '#333333',
+      padding: '0',
+      marginBottom: '0'
+    },
+    heroContainer: {
+      maxWidth: '1430px',
+      margin: '0 auto',
+      padding: '0',
+      display: 'flex',
+      gap: '0',
+      alignItems: 'flex-start',
+      flexDirection: isMobile ? 'column' as const : 'row' as const
+    },
+    heroContent: {
+      flex: 1,
+      background: '',
+      color: 'white',
+      padding: isMobile ? '2rem 1rem' : '3rem 2rem',
+      borderRadius: '0',
+      position: 'relative' as const,
+      minHeight: '400px',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      justifyContent: 'center'
+    },
+    heroTitle: {
+      fontSize: isMobile ? '2.5rem' : '3.5rem',
+      fontWeight: 700,
+      marginBottom: '1rem',
+      lineHeight: 1.1,
+      letterSpacing: '0.5px',
+      fontFamily: "'Open Sans', Arial, sans-serif",
+      textTransform: 'uppercase' as const,
+      color: '#353E48'
+    },
+    heroSubtitle: {
+      fontSize: '0.8rem',
+      marginBottom: '0.5rem',
+      opacity: 0.9,
+      lineHeight: 1.5,
+      fontWeight: 500,
+      fontFamily: "'Open Sans', Arial, sans-serif",
+      textTransform: 'uppercase' as const,
+      letterSpacing: '1.5px',
+      color: '#353E48'
+    },
+    heroPrice: {
+      fontSize: isMobile ? '2rem' : '2.5rem',
+      fontWeight: 300,
+      marginBottom: '2rem',
+      color: '#353E48',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    heroButton: {
+      backgroundColor: '#fed700',
+      color: '#333333',
+      padding: '0.7rem 1rem',
+      borderRadius: '4px',
+      textDecoration: 'none',
+      fontWeight: 700,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'all 0.3s ease',
+      border: 'none',
+      cursor: 'pointer',
+      textTransform: 'uppercase' as const,
+      fontFamily: "'Open Sans', Arial, sans-serif",
+      fontSize: '0.8rem',
+      letterSpacing: '0.3px',
+      width: 'auto',
+      maxWidth: '130px',
+      textAlign: 'center' as const,
+      lineHeight: 1,
+      minHeight: '35px'
+    },
+    heroImage: {
+      width: isMobile ? '300px' : '400px',
+      height: 'auto',
+      objectFit: 'contain' as const,
+      position: 'absolute' as const,
+      right: '1rem',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      display: isMobile ? 'none' : 'block'
+    },
+    sideNavigation: {
+      width: isMobile ? '100%' : '250px',
+      backgroundColor: '#f8f9fa',
+      padding: '0',
+      borderRadius: '0',
+      border: '1px solid #e9ecef'
+    },
+    navItem: {
+      padding: '0.6rem 1rem',
+      fontWeight: 500,
+      color: '#2c3e50',
+      borderBottom: '1px solid #e9ecef',
+      fontFamily: "'Open Sans', Arial, sans-serif",
+      fontSize: '0.75rem',
+      textAlign: 'left' as const,
+      cursor: 'pointer'
+    },
+    navItemWithArrow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    },
+    navArrow: {
+      fontSize: '0.6rem',
+      color: '#6c757d'
+    },
+    sliderContainer: {
+      flex: 1,
+      position: 'relative' as const,
+      overflow: 'hidden',
+      width: '100%'
+    },
+    sliderWrapper: {
+      display: 'flex',
+      transition: 'transform 0.5s ease-in-out',
+      height: '100%',
+      transform: `translateX(-${33.33}%)`
+    },
+    slide: {
+      flexShrink: 0,
+      width: '33.33%',
+      minWidth: '33.33%'
+    },
+    navArrowBtn: {
+      position: 'absolute' as const,
+      top: '50%',
+      transform: 'translateY(-50%)',
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      border: 'none',
+      borderRadius: '50%',
+      width: '40px',
+      height: '40px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '1.2rem',
+      color: '#333',
+      transition: 'all 0.3s ease',
+      zIndex: 10
+    },
+    sliderDots: {
+      position: 'absolute' as const,
+      bottom: '1rem',
+      left: '2rem',
+      display: 'flex',
+      gap: '0.5rem',
+      zIndex: 10
+    },
+    dotBtn: {
+      width: '12px',
+      height: '12px',
+      borderRadius: '50%',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease'
+    },
+    activeDot: {
+      backgroundColor: '#fed700'
+    },
+    inactiveDot: {
+      backgroundColor: '#bcbbbb'
+    },
+    dotBtnActive: {
+      backgroundColor: '#fed700'
+    },
+    dotBtnInactive: {
+      backgroundColor: '#bcbcbc'
+    },
+    bigDealSection: {
+      padding: '2rem 0',
+      backgroundColor: '#f8f9fa'
+    },
+    bigDealContainer: {
+      maxWidth: '1430px',
+      margin: '0 auto',
+      padding: '0 1rem'
+    },
+    bigDealGrid: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+      gap: '1rem'
+    },
+    dealBanner: {
+      backgroundColor: 'white',
+      padding: '1.5rem',
+      borderRadius: '8px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1rem',
+      cursor: 'pointer',
+      transition: 'transform 0.3s ease'
+    },
+    dealText: {
+      fontSize: '0.7rem',
+      color: '#6c757d',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    dealHighlight: {
+      fontSize: '0.9rem',
+      fontWeight: 600,
+      color: '#2c3e50',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    dealLink: {
+      fontSize: '0.7rem',
+      color: '#fed700',
+      fontWeight: 600,
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    dealImage: {
+      width: '60px',
+      height: '60px',
+      objectFit: 'cover' as const,
+      borderRadius: '8px'
+    },
+    productsSection: {
+      padding: '3rem 0',
+      backgroundColor: 'white'
+    },
+    productsContainer: {
+      maxWidth: '1430px',
+      margin: '0 auto',
+      padding: '0 1rem'
+    },
+    sectionTitle: {
+      fontSize: '1.5rem',
+      fontWeight: 600,
+      color: '#2c3e50',
+      textAlign: 'center' as const,
+      marginBottom: '2rem',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    productsGrid: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(240px, 1fr))',
+      gap: '1.5rem'
+    },
+    featuredProductsGrid: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(280px, 1fr))',
+      gap: '2rem'
+    },
+    categoriesSection: {
+      padding: '3rem 0',
+      backgroundColor: '#f8f9fa'
+    },
+    categoriesGrid: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(4, 1fr)' : 'repeat(auto-fit, minmax(140px, 1fr))',
+      gap: '1.5rem'
+    },
+    categoryCard: {
+      backgroundColor: 'white',
+      padding: '2rem 1rem',
+      borderRadius: '8px',
+      textAlign: 'center' as const,
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      border: '1px solid #e9ecef'
+    },
+    categoryIcon: {
+      fontSize: '2.5rem',
+      marginBottom: '1rem'
+    },
+    categoryName: {
+      fontSize: '0.85rem',
+      fontWeight: 600,
+      color: '#2c3e50',
+      marginBottom: '0.3rem',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    categoryCount: {
+      fontSize: '0.7rem',
+      color: '#6c757d',
+      margin: '0',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    viewAllContainer: {
+      textAlign: 'center' as const,
+      marginTop: '3rem'
+    },
+    viewAllBtn: {
+      backgroundColor: '#2c3e50',
+      color: 'white',
+      padding: '1rem 3rem',
+      borderRadius: '6px',
+      textDecoration: 'none',
+      fontWeight: 600,
+      display: 'inline-block',
+      fontSize: '1rem',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.5px',
+      transition: 'all 0.3s ease',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    newsletterSection: {
+      backgroundColor: '#fed700',
+      padding: '3rem 0'
+    },
+    newsletterContainer: {
+      maxWidth: '1430px',
+      margin: '0 auto',
+      padding: '0 1rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexDirection: isMobile ? 'column' as const : 'row' as const,
+      gap: isMobile ? '2rem' : '0'
+    },
+    newsletterContent: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1.5rem',
+      flexDirection: isMobile ? 'column' as const : 'row' as const,
+      textAlign: isMobile ? 'center' as const : 'left' as const
+    },
+    newsletterIcon: {
+      fontSize: '3rem'
+    },
+    newsletterTitle: {
+      fontSize: isMobile ? '1.5rem' : '1.8rem',
+      fontWeight: 600,
+      color: '#2c3e50',
+      margin: '0',
+      marginBottom: '0.5rem',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    newsletterSubtitle: {
+      fontSize: '1.1rem',
+      color: '#2c3e50',
+      margin: '0',
+      opacity: 0.8,
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    newsletterForm: {
+      display: 'flex',
+      gap: '0.5rem',
+      flexDirection: isMobile ? 'column' as const : 'row' as const,
+      width: isMobile ? '100%' : 'auto'
+    },
+    newsletterInput: {
+      padding: '1rem 1.5rem',
+      borderRadius: '30px',
+      border: 'none',
+      fontSize: '1rem',
+      minWidth: isMobile ? '100%' : '300px',
+      outline: 'none',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    newsletterBtn: {
+      backgroundColor: '#2c3e50',
+      color: 'white',
+      border: 'none',
+      padding: '1rem 2rem',
+      borderRadius: '30px',
+      cursor: 'pointer',
+      fontWeight: 600,
+      fontSize: '1rem',
+      transition: 'all 0.3s ease',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    footer: {
+      backgroundColor: '#2c3e50',
+      color: 'white',
+      padding: '3rem 0 2rem',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    footerContainer: {
+      maxWidth: '1430px',
+      margin: '0 auto',
+      padding: '0 1rem',
+      textAlign: 'center' as const,
+      fontSize: '0.9rem'
+    }
+  };
   
   // Slider state
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -404,78 +812,78 @@ const Home = () => {
   };
 
   return (
-    <div className="home-container">
+    <div style={styles.homeContainer}>
       {/* Hero Banner với Slider */}
-      <section className="hero-banner">
-        <div className="hero-container">
+      <section style={styles.heroBanner}>
+        <div style={styles.heroContainer}>
           {/* Side Navigation */}
-          <div className="side-navigation">
-            <div className="nav-item">
+          <div style={styles.sideNavigation}>
+            <div style={styles.navItem}>
               Value of the Day
             </div>
-            <div className="nav-item">
+            <div style={styles.navItem}>
               Top 100 Offers
             </div>
-            <div className="nav-item">
+            <div style={styles.navItem}>
               New Arrivals
             </div>
-            <div className="nav-item nav-item-with-arrow">
+            <div style={{...styles.navItem, ...styles.navItemWithArrow}}>
               <span>Computers & Accessories</span>
-              <span className="nav-arrow">→</span>
+              <span style={styles.navArrow}>→</span>
             </div>
-            <div className="nav-item nav-item-with-arrow">
+            <div style={{...styles.navItem, ...styles.navItemWithArrow}}>
               <span>Cameras, Audio & Video</span>
-              <span className="nav-arrow">→</span>
+              <span style={styles.navArrow}>→</span>
             </div>
-            <div className="nav-item nav-item-with-arrow">
+            <div style={{...styles.navItem, ...styles.navItemWithArrow}}>
               <span>Mobiles & Tablets</span>
-              <span className="nav-arrow">→</span>
+              <span style={styles.navArrow}>→</span>
             </div>
-            <div className="nav-item nav-item-with-arrow">
+            <div style={{...styles.navItem, ...styles.navItemWithArrow}}>
               <span>Movies, Music & Video Game</span>
-              <span className="nav-arrow">→</span>
+              <span style={styles.navArrow}>→</span>
             </div>
-            <div className="nav-item nav-item-with-arrow">
+            <div style={{...styles.navItem, ...styles.navItemWithArrow}}>
               <span>TV & Audio</span>
-              <span className="nav-arrow">→</span>
+              <span style={styles.navArrow}>→</span>
             </div>
-            <div className="nav-item nav-item-with-arrow">
+            <div style={{...styles.navItem, ...styles.navItemWithArrow}}>
               <span>Watches & Eyewear</span>
-              <span className="nav-arrow">→</span>
+              <span style={styles.navArrow}>→</span>
             </div>
-            <div className="nav-item nav-item-with-arrow">
+            <div style={{...styles.navItem, ...styles.navItemWithArrow}}>
               <span>Car, Motorbike & Industrial</span>
-              <span className="nav-arrow">→</span>
+              <span style={styles.navArrow}>→</span>
             </div>
-            <div className="nav-item nav-item-with-arrow">
+            <div style={{...styles.navItem, ...styles.navItemWithArrow}}>
               <span>Accessories</span>
-              <span className="nav-arrow">→</span>
+              <span style={styles.navArrow}>→</span>
             </div>
           </div>
           
           {/* Main Hero Content - Slider */}
-          <div className="slider-container">
+          <div style={styles.sliderContainer}>
             {/* Slider Container */}
             <div 
-              className="slider-wrapper"
               style={{
+                ...styles.sliderWrapper,
                 transform: `translateX(-${currentSlide * (100 / slides.length)}%)`,
                 width: `${slides.length * 100}%`
               }}
             >
               {slides.map((slide, index) => (
-                <div key={slide.id} className="hero-content slide">
-                  <h6 className="hero-subtitle">{slide.subtitle}</h6>
-                  <h1 className="hero-title">{slide.title.split('\n').map((line, i) => (
+                <div key={slide.id} style={{...styles.heroContent, ...styles.slide}}>
+                  <h6 style={styles.heroSubtitle}>{slide.subtitle}</h6>
+                  <h1 style={styles.heroTitle}>{slide.title.split('\n').map((line, i) => (
                     <React.Fragment key={i}>
                       {line}
                       {i < slide.title.split('\n').length - 1 && <br />}
                     </React.Fragment>
                   ))}</h1>
-                  <div className="hero-price">
+                  <div style={styles.heroPrice}>
                     {slide.price}<sup>{slide.superscript}</sup>
                   </div>
-                  <Link to={slide.buttonLink} className="hero-button">
+                  <Link to={slide.buttonLink} style={styles.heroButton}>
                     {slide.buttonText}
                   </Link>
                   
@@ -483,7 +891,7 @@ const Home = () => {
                   <img 
                     src={slide.image} 
                     alt={`Slide ${index + 1}`}
-                    className="hero-image"
+                    style={styles.heroImage}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = `https://via.placeholder.com/400x420/fed700/333333?text=Product+${index + 1}`;
                     }}
@@ -508,12 +916,15 @@ const Home = () => {
             </button> */}
             
             {/* Slider Navigation Dots */}
-            <div className="slider-dots">
+            <div style={styles.sliderDots}>
               {slides.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => goToSlide(index)}
-                  className={`dot-btn ${currentSlide === index ? 'active' : 'inactive'}`}
+                  style={{
+                    ...(styles.dotBtn),
+                    ...(currentSlide === index ? styles.activeDot : styles.inactiveDot)
+                  }}
                 />
               ))}
             </div>
@@ -522,23 +933,23 @@ const Home = () => {
       </section>
 
       {/* Big Deal Banners */}
-      <section className="big-deal-section">
-        <div className="big-deal-container">
-          <div className="big-deal-grid">
+      <section style={styles.bigDealSection}>
+        <div style={styles.bigDealContainer}>
+          <div style={styles.bigDealGrid}>
             {[
               { title: 'CATCH BIG', subtitle: 'DEALS ON THE', highlight: 'CAMERAS', image: 'https://transvelo.github.io/electro-html/2.0/assets/img/212X200/img2.jpg' },
               { title: 'CATCH BIG', subtitle: 'DEALS ON THE', highlight: 'CAMERAS', image: 'https://transvelo.github.io/electro-html/2.0/assets/img/212X200/img2.jpg' },
               { title: 'CATCH BIG', subtitle: 'DEALS ON THE', highlight: 'CAMERAS', image: 'https://transvelo.github.io/electro-html/2.0/assets/img/212X200/img2.jpg' },
               { title: 'CATCH BIG', subtitle: 'DEALS ON THE', highlight: 'CAMERAS', image: 'https://transvelo.github.io/electro-html/2.0/assets/img/212X200/img2.jpg' }
             ].map((banner, index) => (
-              <div key={index} className="deal-banner">
+              <div key={index} style={styles.dealBanner}>
                 <div>
-                  <div className="deal-text">{banner.title}</div>
-                  <div className="deal-text">{banner.subtitle}</div>
-                  <div className="deal-highlight">{banner.highlight}</div>
-                  <div className="deal-link">Shop now ➤</div>
+                  <div style={styles.dealText}>{banner.title}</div>
+                  <div style={styles.dealText}>{banner.subtitle}</div>
+                  <div style={styles.dealHighlight}>{banner.highlight}</div>
+                  <div style={styles.dealLink}>Shop now ➤</div>
                 </div>
-                <img src={banner.image} alt="" className="deal-image" />
+                <img src={banner.image} alt="" style={styles.dealImage} />
               </div>
             ))}
           </div>
@@ -546,13 +957,13 @@ const Home = () => {
       </section>
 
       {/* Top Products Section */}
-      <section className="products-section">
-        <div className="products-container">
-          <h2 className="section-title">
+      <section style={styles.productsSection}>
+        <div style={styles.productsContainer}>
+          <h2 style={styles.sectionTitle}>
             Top Products This Week
           </h2>
           
-          <div className="products-grid">
+          <div style={styles.productsGrid}>
             {products.slice(0, 4).map((product) => (
               <SimpleProductCard
                 key={product.id}
@@ -567,22 +978,22 @@ const Home = () => {
       </section>
 
       {/* Categories Section */}
-      <section className="categories-section">
-        <div className="products-container">
-          <h2 className="section-title">
+      <section style={styles.categoriesSection}>
+        <div style={styles.productsContainer}>
+          <h2 style={styles.sectionTitle}>
             Shop by Category
           </h2>
           
-          <div className="categories-grid">
+          <div style={styles.categoriesGrid}>
             {categories.map((category, index) => (
-              <div key={index} className="category-card">
-                <div className="category-icon">
+              <div key={index} style={styles.categoryCard}>
+                <div style={styles.categoryIcon}>
                   {category.icon}
                 </div>
-                <h4 className="category-name">
+                <h4 style={styles.categoryName}>
                   {category.name}
                 </h4>
-                <p className="category-count">
+                <p style={styles.categoryCount}>
                   {category.count}
                 </p>
               </div>
@@ -592,13 +1003,13 @@ const Home = () => {
       </section>
 
       {/* Featured Products Section */}
-      <section className="products-section">
-        <div className="products-container">
-          <h2 className="section-title">
+      <section style={styles.productsSection}>
+        <div style={styles.productsContainer}>
+          <h2 style={styles.sectionTitle}>
             Featured Products
           </h2>
           
-          <div className="featured-products-grid">
+          <div style={styles.featuredProductsGrid}>
             {products.slice(4, 8).map((product) => (
               <SimpleProductCard
                 key={product.id}
@@ -611,8 +1022,8 @@ const Home = () => {
           </div>
 
           {/* View All Products Button */}
-          <div className="view-all-container">
-            <Link to="/products" className="view-all-btn">
+          <div style={styles.viewAllContainer}>
+            <Link to="/products" style={styles.viewAllBtn}>
               View All Products
             </Link>
           </div>
@@ -620,27 +1031,27 @@ const Home = () => {
       </section>
 
       {/* Newsletter Section */}
-      <section className="newsletter-section">
-        <div className="newsletter-container">
-          <div className="newsletter-content">
-            <div className="newsletter-icon">✈️</div>
+      <section style={styles.newsletterSection}>
+        <div style={styles.newsletterContainer}>
+          <div style={styles.newsletterContent}>
+            <div style={styles.newsletterIcon}>✈️</div>
             <div>
-              <h3 className="newsletter-title">
+              <h3 style={styles.newsletterTitle}>
                 Sign up to Newsletter
               </h3>
-              <p className="newsletter-subtitle">
+              <p style={styles.newsletterSubtitle}>
                 ...and receive $20 coupon for first shopping.
               </p>
             </div>
           </div>
           
-          <div className="newsletter-form">
+          <div style={styles.newsletterForm}>
             <input 
               type="email" 
               placeholder="Email address" 
-              className="newsletter-input"
+              style={styles.newsletterInput}
             />
-            <button className="newsletter-btn">
+            <button style={styles.newsletterBtn}>
               Sign Up
             </button>
           </div>
@@ -648,8 +1059,8 @@ const Home = () => {
       </section>
 
       {/* Footer */}
-      <footer className="footer">
-        <div className="footer-container">
+      <footer style={styles.footer}>
+        <div style={styles.footerContainer}>
           © 2024 Electro - All Rights Reserved
         </div>
       </footer>
