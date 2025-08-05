@@ -82,6 +82,184 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setShowSuggestions(false);
   };
 
+  // Inline styles
+  const styles = {
+    searchbarContainer: {
+      position: 'relative' as const,
+      width: '100%',
+      maxWidth: '900px'
+    },
+    searchbarMain: {
+      display: 'flex',
+      backgroundColor: 'white',
+      borderRadius: '25px',
+      boxShadow: isInputFocused ? '0 4px 20px rgba(254, 215, 0, 0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
+      overflow: 'hidden',
+      border: isInputFocused ? '2px solid #fed700' : '2px solid transparent',
+      transition: 'all 0.3s ease'
+    },
+    searchbarInputContainer: {
+      flex: 1,
+      position: 'relative' as const,
+      display: 'flex',
+      alignItems: 'center'
+    },
+    searchbarInput: {
+      width: '100%',
+      padding: '8px 20px',
+      border: 'none',
+      outline: 'none',
+      fontSize: '14px',
+      fontFamily: "'Open Sans', Arial, sans-serif",
+      backgroundColor: 'transparent',
+      boxShadow: 'none'
+    },
+    searchbarClearButton: {
+      position: 'absolute' as const,
+      right: '15px',
+      background: 'none',
+      border: 'none',
+      cursor: 'pointer',
+      color: '#6c757d',
+      fontSize: '14px',
+      padding: '5px'
+    },
+    searchbarCategoryContainer: {
+      borderLeft: '1px solid #e9ecef',
+      position: 'relative' as const
+    },
+    searchbarCategorySelect: {
+      padding: '12px 40px 12px 20px',
+      border: 'none',
+      outline: 'none',
+      fontSize: '14px',
+      fontFamily: "'Open Sans', Arial, sans-serif",
+      backgroundColor: 'transparent',
+      cursor: 'pointer',
+      appearance: 'none' as const,
+      minWidth: '160px',
+      color: '#495057',
+      boxShadow: 'none'
+    },
+    searchbarCategoryArrow: {
+      position: 'absolute' as const,
+      right: '15px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      pointerEvents: 'none' as const,
+      color: '#6c757d'
+    },
+    searchbarSearchButton: {
+      backgroundColor: '#fed700',
+      border: 'none',
+      padding: '12px 25px',
+      cursor: 'pointer',
+      fontSize: '16px',
+      transition: 'all 0.3s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: '70px'
+    },
+    searchbarSuggestions: {
+      position: 'absolute' as const,
+      top: '100%',
+      left: 0,
+      right: 0,
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+      zIndex: 1000,
+      marginTop: '8px',
+      maxHeight: '400px',
+      overflowY: 'auto' as const,
+      border: '1px solid #e9ecef'
+    },
+    searchbarResultsHeader: {
+      padding: '15px 20px',
+      borderBottom: '1px solid #f1f3f4',
+      fontSize: '14px',
+      fontWeight: 600,
+      color: '#495057',
+      backgroundColor: '#f8f9fa'
+    },
+    searchbarSuggestionItem: {
+      padding: '15px 20px',
+      cursor: 'pointer',
+      borderBottom: '1px solid #f1f3f4',
+      transition: 'background-color 0.2s ease',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '15px'
+    },
+    searchbarSuggestionImage: {
+      width: '50px',
+      height: '50px',
+      objectFit: 'cover' as const,
+      borderRadius: '8px',
+      border: '1px solid #e9ecef'
+    },
+    searchbarSuggestionInfo: {
+      flex: 1
+    },
+    searchbarSuggestionName: {
+      fontWeight: 500,
+      color: '#2c3e50',
+      fontSize: '14px',
+      marginBottom: '4px'
+    },
+    searchbarSuggestionCategory: {
+      fontSize: '12px',
+      color: '#6c757d',
+      marginBottom: '4px'
+    },
+    searchbarSuggestionPrice: {
+      fontSize: '14px',
+      color: '#28a745',
+      fontWeight: 600
+    },
+    searchbarSuggestionArrow: {
+      color: '#6c757d',
+      fontSize: '12px'
+    },
+    searchbarPopularContainer: {
+      position: 'absolute' as const,
+      top: '100%',
+      left: 0,
+      right: 0,
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+      zIndex: 1000,
+      marginTop: '8px',
+      border: '1px solid #e9ecef'
+    },
+    searchbarPopularContent: {
+      padding: '20px'
+    },
+    searchbarPopularTitle: {
+      fontSize: '14px',
+      fontWeight: 600,
+      color: '#495057',
+      marginBottom: '15px'
+    },
+    searchbarPopularTags: {
+      display: 'flex',
+      flexWrap: 'wrap' as const,
+      gap: '8px'
+    },
+    searchbarPopularTag: {
+      backgroundColor: '#f8f9fa',
+      border: '1px solid #e9ecef',
+      padding: '8px 15px',
+      borderRadius: '20px',
+      fontSize: '12px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      color: '#495057'
+    }
+  };
+
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -96,28 +274,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }, []);
 
   return (
-    <div ref={searchRef} style={{
-      position: 'relative',
-      width: '100%',
-      maxWidth: '900px'
-    }}>
+    <div ref={searchRef} style={styles.searchbarContainer}>
       {/* Main Search Container */}
-      <div style={{
-        display: 'flex',
-        backgroundColor: 'white',
-        borderRadius: '25px',
-        boxShadow: isInputFocused ? '0 4px 20px rgba(254, 215, 0, 0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
-        overflow: 'hidden',
-        border: isInputFocused ? '2px solid #fed700' : '2px solid transparent',
-        transition: 'all 0.3s ease'
-      }}>
+      <div style={styles.searchbarMain}>
         {/* Search Input */}
-        <div style={{ 
-          flex: 1, 
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
+        <div style={styles.searchbarInputContainer}>
           <input
             type="text"
             placeholder={placeholder}
@@ -131,56 +292,24 @@ const SearchBar: React.FC<SearchBarProps> = ({
               setShowSuggestions(searchQuery.length > 0);
             }}
             onKeyPress={handleKeyPress}
-            style={{
-              width: '100%',
-              padding: '8px 20px',
-              border: 'none',
-              outline: 'none',
-              fontSize: '14px',
-              fontFamily: 'Open Sans, Arial, sans-serif',
-              backgroundColor: 'transparent'
-            }}
+            style={styles.searchbarInput}
           />
           {searchQuery && (
             <button
               onClick={clearSearch}
-              style={{
-                position: 'absolute',
-                right: '15px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#6c757d',
-                fontSize: '14px',
-                padding: '5px'
-              }}
+              style={styles.searchbarClearButton}
             >
-              <FontAwesomeIcon icon={faTimes} 
-              />
+              <FontAwesomeIcon icon={faTimes} />
             </button>
           )}
         </div>
 
         {/* Category Dropdown */}
-        <div style={{
-          borderLeft: '1px solid #e9ecef',
-          position: 'relative'
-        }}>
+        <div style={styles.searchbarCategoryContainer}>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            style={{
-              padding: '12px 40px 12px 20px',
-              border: 'none',
-              outline: 'none',
-              fontSize: '14px',
-              fontFamily: 'Open Sans, Arial, sans-serif',
-              backgroundColor: 'transparent',
-              cursor: 'pointer',
-              appearance: 'none',
-              minWidth: '160px',
-              color: '#495057'
-            }}
+            style={styles.searchbarCategorySelect}
           >
             {categories.map(category => (
               <option key={category} value={category}>
@@ -188,14 +317,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
               </option>
             ))}
           </select>
-          <div style={{
-            position: 'absolute',
-            right: '15px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            pointerEvents: 'none',
-            color: '#6c757d'
-          }}>
+          <div style={styles.searchbarCategoryArrow}>
             ▼
           </div>
         </div>
@@ -203,18 +325,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         {/* Search Button */}
         <button
           onClick={handleSearch}
-          style={{
-            backgroundColor: '#fed700',
-            border: 'none',
-            padding: '12px 25px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            transition: 'all 0.3s ease',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: '70px'
-          }}
+          style={styles.searchbarSearchButton}
           onMouseOver={(e) => {
             e.currentTarget.style.backgroundColor = '#e6c200';
           }}
@@ -228,29 +339,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
       {/* Search Suggestions Dropdown */}
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-          zIndex: 1000,
-          marginTop: '8px',
-          maxHeight: '400px',
-          overflowY: 'auto',
-          border: '1px solid #e9ecef'
-        }}>
+        <div style={styles.searchbarSuggestions}>
           {/* Search Results Header */}
-          <div style={{
-            padding: '15px 20px',
-            borderBottom: '1px solid #f1f3f4',
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#495057',
-            backgroundColor: '#f8f9fa'
-          }}>
+          <div style={styles.searchbarResultsHeader}>
             <FontAwesomeIcon icon={faSearch} style={{ marginRight: '8px', color: '#6c757d' }} />
             Search Results for "{searchQuery}"
           </div>
@@ -261,65 +352,38 @@ const SearchBar: React.FC<SearchBarProps> = ({
               key={suggestion.id}
               onClick={() => handleSuggestionClick(suggestion)}
               style={{
-                padding: '15px 20px',
-                cursor: 'pointer',
-                borderBottom: index < filteredSuggestions.length - 1 ? '1px solid #f1f3f4' : 'none',
-                transition: 'background-color 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '15px'
+                ...styles.searchbarSuggestionItem,
+                borderBottom: index === filteredSuggestions.length - 1 ? 'none' : '1px solid #f1f3f4'
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = '#f8f9fa';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >
               {/* Product Image */}
               <img
                 src={suggestion.image}
                 alt={suggestion.name}
-                style={{
-                  width: '50px',
-                  height: '50px',
-                  objectFit: 'cover',
-                  borderRadius: '8px',
-                  border: '1px solid #e9ecef'
-                }}
+                style={styles.searchbarSuggestionImage}
               />
               
               {/* Product Info */}
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  fontWeight: '500',
-                  color: '#2c3e50',
-                  fontSize: '14px',
-                  marginBottom: '4px'
-                }}>
+              <div style={styles.searchbarSuggestionInfo}>
+                <div style={styles.searchbarSuggestionName}>
                   {suggestion.name}
                 </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#6c757d',
-                  marginBottom: '4px'
-                }}>
+                <div style={styles.searchbarSuggestionCategory}>
                   in {suggestion.category}
                 </div>
-                <div style={{
-                  fontSize: '14px',
-                  color: '#28a745',
-                  fontWeight: '600'
-                }}>
+                <div style={styles.searchbarSuggestionPrice}>
                   ${suggestion.price}
                 </div>
               </div>
 
               {/* Arrow Icon */}
-              <div style={{
-                color: '#6c757d',
-                fontSize: '12px'
-              }}>
+              <div style={styles.searchbarSuggestionArrow}>
                 →
               </div>
             </div>
@@ -329,34 +393,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
       {/* Popular Search Tags */}
       {showSuggestions && searchQuery.length === 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-          zIndex: 1000,
-          marginTop: '8px',
-          border: '1px solid #e9ecef'
-        }}>
-          <div style={{
-            padding: '20px',
-          }}>
-            <div style={{
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#495057',
-              marginBottom: '15px'
-            }}>
+        <div style={styles.searchbarPopularContainer}>
+          <div style={styles.searchbarPopularContent}>
+            <div style={styles.searchbarPopularTitle}>
               Popular Searches
             </div>
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '8px'
-            }}>
+            <div style={styles.searchbarPopularTags}>
               {['iPhone', 'MacBook', 'AirPods', 'iPad', 'Gaming', 'Camera'].map((tag) => (
                 <button
                   key={tag}
@@ -364,16 +406,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                     setSearchQuery(tag);
                     setShowSuggestions(false);
                   }}
-                  style={{
-                    backgroundColor: '#f8f9fa',
-                    border: '1px solid #e9ecef',
-                    padding: '8px 15px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    color: '#495057'
-                  }}
+                  style={styles.searchbarPopularTag}
                   onMouseOver={(e) => {
                     e.currentTarget.style.backgroundColor = '#fed700';
                     e.currentTarget.style.color = '#2c3e50';
