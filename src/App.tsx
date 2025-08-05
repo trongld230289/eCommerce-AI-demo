@@ -11,9 +11,10 @@ import Wishlist from './components/Wishlist';
 import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
 import SimpleProductCard from './components/SimpleProductCard';
+import Recommendations from './components/Recommendations';
 import SearchBar from './components/SearchBar';
 import CartDropdown from './components/CartDropdown';
-import AuthDialog from './components/AuthDialog';
+import MockAuthDialog from './components/MockAuthDialog';
 import { useAuthDialog } from './hooks/useAuthDialog';
 import Chatbot from './components/Chatbot';
 import ChatbotIcon from './components/Chatbot/ChatbotIcon';
@@ -299,7 +300,7 @@ const Navbar = () => {
       </nav>
       
       {/* Auth Dialog */}
-      <AuthDialog 
+      <MockAuthDialog 
         isOpen={authDialog.isOpen} 
         onClose={authDialog.close}
         initialMode={authDialog.mode}
@@ -1027,7 +1028,16 @@ const Home = () => {
           </div>
         </div>
       </section>
-
+            {/* Recommendations Section */}
+      <section style={{ padding: '3rem 0', backgroundColor: '#f8fafc' }}>
+        <div style={{ maxWidth: '1430px', margin: '0 auto', padding: '0 1rem' }}>
+          <Recommendations 
+            limit={8} 
+            title="Recommended for You" 
+            className=""
+          />
+        </div>
+      </section>
       {/* Top Products Section */}
       <section style={{ padding: '3rem 0', backgroundColor: 'white' }}>
         <div style={{ maxWidth: '1430px', margin: '0 auto', padding: '0 1rem' }}>
@@ -1196,6 +1206,8 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      
 
       {/* Newsletter Section */}
       <section style={{

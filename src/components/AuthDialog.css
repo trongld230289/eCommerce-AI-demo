@@ -352,6 +352,148 @@
   font-size: 1rem;
 }
 
+/* Test Credentials Section Styles */
+.test-credentials-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--auth-gray-50);
+  border-radius: var(--auth-border-radius);
+  border: 1px solid var(--auth-gray-200);
+}
+
+.test-credentials-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--auth-gray-600);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--auth-border-radius);
+  transition: var(--auth-transition);
+  width: 100%;
+  justify-content: center;
+}
+
+.test-credentials-toggle:hover {
+  background-color: var(--auth-gray-100);
+  color: var(--auth-gray-800);
+}
+
+.test-credentials-list {
+  margin-top: 1rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.test-credentials-list h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--auth-gray-700);
+}
+
+.test-credentials-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.test-credential-item {
+  background-color: var(--auth-white);
+  padding: 0.75rem;
+  border-radius: var(--auth-border-radius);
+  border: 1px solid var(--auth-gray-200);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.test-credential-item strong {
+  font-size: 0.875rem;
+  color: var(--auth-gray-800);
+  font-weight: 600;
+}
+
+.test-credential-item p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--auth-gray-500);
+  line-height: 1.4;
+}
+
+.quick-login-btn {
+  padding: 0.375rem 0.75rem;
+  background-color: var(--auth-primary);
+  color: var(--auth-white);
+  border: none;
+  border-radius: var(--auth-border-radius);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--auth-transition);
+  align-self: flex-start;
+}
+
+.quick-login-btn:hover:not(:disabled) {
+  background-color: var(--auth-primary-hover);
+  transform: translateY(-1px);
+}
+
+.quick-login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.manual-credentials {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--auth-gray-200);
+}
+
+.manual-credentials h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--auth-gray-700);
+}
+
+.credentials-info {
+  background-color: var(--auth-gray-100);
+  padding: 0.75rem;
+  border-radius: var(--auth-border-radius);
+  font-family: 'Courier New', monospace;
+}
+
+.credentials-info p {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.75rem;
+  color: var(--auth-gray-600);
+}
+
+.credentials-info p:last-child {
+  margin-top: 0.5rem;
+  font-style: italic;
+  font-family: inherit;
+  color: var(--auth-gray-500);
+}
+
+.credentials-info strong {
+  color: var(--auth-gray-800);
+}
+
 /* Responsive Design */
 @media (max-width: 480px) {
   .auth-dialog-container {
@@ -429,5 +571,12 @@
   .auth-dialog-submit,
   .auth-dialog-social-button {
     border-width: 2px;
+  }
+}
+
+/* Responsive adjustments for test credentials */
+@media (min-width: 480px) {
+  .test-credentials-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
 }

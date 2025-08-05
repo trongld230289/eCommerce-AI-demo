@@ -15,6 +15,7 @@ import {
 import { useShop } from '../contexts/ShopContext';
 import { useToast } from '../contexts/ToastContext';
 import SimpleProductCard from '../components/SimpleProductCard';
+import Recommendations from '../components/Recommendations';
 import type { Product } from '../contexts/ShopContext';
 import './ProductDetails.css';
 
@@ -449,6 +450,17 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
           </div>
         </div>
       )}
+
+      {/* You Might Also Like Section */}
+      <div className="recommendations-section" style={{ marginTop: '3rem', padding: '2rem 0', backgroundColor: '#f8fafc' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1rem' }}>
+          <Recommendations 
+            limit={4} 
+            title="You Might Also Like" 
+            className=""
+          />
+        </div>
+      </div>
     </div>
   );
 };

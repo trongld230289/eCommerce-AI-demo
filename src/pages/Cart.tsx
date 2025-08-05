@@ -2,6 +2,7 @@ import React from 'react';
 import { useShop } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import Recommendations from '../components/Recommendations';
 import './Cart.css';
 
 const Cart = () => {
@@ -736,6 +737,24 @@ const Cart = () => {
           </div>
         </div>
       </div>
+
+      {/* Recommendations Section */}
+      {state.cart.length > 0 && (
+        <div style={{ 
+          marginTop: '3rem', 
+          padding: '2rem 1rem', 
+          backgroundColor: '#f8fafc',
+          borderTop: '1px solid #e2e8f0' 
+        }}>
+          <div style={{ maxWidth: '1340px', margin: '0 auto' }}>
+            <Recommendations 
+              limit={6} 
+              title="You Might Also Like" 
+              className=""
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
