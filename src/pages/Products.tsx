@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useShop } from '../contexts/ShopContext';
 import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
 const Products: React.FC = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
@@ -11,14 +13,14 @@ const Products: React.FC = () => {
 
   // Popular search suggestions
   const searchSuggestions = [
-    'wireless headphones', 'gaming laptop', 'smartphone', 'rgb keyboard', 
+    'wireless headphones', 'gaming laptop', 'smartphone', 'rgb keyboard',
     'bluetooth speaker', 'smart watch', 'gaming mouse', 'tablet'
   ];
 
   // Filter suggestions based on current search
   const filteredSuggestions = searchSuggestions.filter(suggestion =>
-    suggestion.toLowerCase().includes(searchQuery.toLowerCase()) && 
-    searchQuery.length > 0 && 
+    suggestion.toLowerCase().includes(searchQuery.toLowerCase()) &&
+    searchQuery.length > 0 &&
     suggestion.toLowerCase() !== searchQuery.toLowerCase()
   );
 
@@ -163,16 +165,16 @@ const Products: React.FC = () => {
       </h1>
 
       {/* Enhanced Search and Filter Section */}
-      <div style={{ 
+      <div style={{
         backgroundColor: '#f8f9fa',
         padding: '25px',
         borderRadius: '12px',
         marginBottom: '30px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
-        <div style={{ 
-          display: 'flex', 
-          gap: '15px', 
+        <div style={{
+          display: 'flex',
+          gap: '15px',
           flexWrap: 'wrap',
           alignItems: 'stretch'
         }}>
@@ -196,7 +198,7 @@ const Products: React.FC = () => {
                 }}
                 style={{
                   width: '100%',
-                  padding: '15px 20px 15px 50px',
+                  padding: '15px 20px',
                   border: '2px solid #e9ecef',
                   borderRadius: '25px',
                   fontSize: '16px',
@@ -206,17 +208,7 @@ const Products: React.FC = () => {
                   backgroundColor: 'white'
                 }}
               />
-              <div style={{
-                position: 'absolute',
-                left: '18px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#6c757d',
-                fontSize: '18px'
-              }}>
-                🔍
-              </div>
-              
+
               {/* Search Suggestions Dropdown */}
               {showSuggestions && filteredSuggestions.length > 0 && (
                 <div style={{
@@ -288,161 +280,161 @@ const Products: React.FC = () => {
                 e.target.style.boxShadow = 'none';
               }}
             >
-            {categories.map(category => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-          <div style={{
-            position: 'absolute',
-            right: '15px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: '#6c757d',
-            fontSize: '14px',
-            pointerEvents: 'none'
-          }}>
-            ▼
+              {categories.map(category => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+            <div style={{
+              position: 'absolute',
+              right: '15px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#6c757d',
+              fontSize: '14px',
+              pointerEvents: 'none'
+            }}>
+              ▼
+            </div>
           </div>
-        </div>
 
-        {/* Search Button */}
-        <button
-          style={{
-            backgroundColor: '#fed700',
-            color: '#2c3e50',
-            border: 'none',
-            padding: '15px 30px',
-            borderRadius: '25px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            minWidth: '120px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = '#e6c200';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = '#fed700';
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-          }}
-        >
-          🔍 Search
-        </button>
-      </div>
-
-      {/* Popular Search Tags */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '10px',
-        marginTop: '15px',
-        alignItems: 'center'
-      }}>
-        <span style={{
-          fontSize: '14px',
-          color: '#6c757d',
-          fontWeight: '500',
-          marginRight: '10px'
-        }}>
-          Popular:
-        </span>
-        {['gaming', 'wireless', 'rgb', 'bluetooth', 'smartphone'].map((tag) => (
+          {/* Search Button */}
           <button
-            key={tag}
-            onClick={() => setSearchQuery(tag)}
             style={{
-              backgroundColor: searchQuery.toLowerCase().includes(tag) ? '#fed700' : '#f8f9fa',
-              color: searchQuery.toLowerCase().includes(tag) ? '#2c3e50' : '#6c757d',
-              border: '1px solid #e9ecef',
-              padding: '6px 12px',
-              borderRadius: '15px',
-              fontSize: '12px',
+              backgroundColor: '#fed700',
+              color: '#2c3e50',
+              border: 'none',
+              padding: '15px 30px',
+              borderRadius: '25px',
+              fontSize: '16px',
+              fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.3s ease',
-              fontWeight: '500'
+              minWidth: '120px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
             }}
             onMouseOver={(e) => {
-              if (!searchQuery.toLowerCase().includes(tag)) {
-                e.currentTarget.style.backgroundColor = '#e9ecef';
-                e.currentTarget.style.color = '#495057';
-              }
+              e.currentTarget.style.backgroundColor = '#e6c200';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
             }}
             onMouseOut={(e) => {
-              if (!searchQuery.toLowerCase().includes(tag)) {
-                e.currentTarget.style.backgroundColor = '#f8f9fa';
-                e.currentTarget.style.color = '#6c757d';
-              }
+              e.currentTarget.style.backgroundColor = '#fed700';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
             }}
           >
-            {tag}
+            <FontAwesomeIcon icon={faSearch} /> Search
           </button>
-        ))}
-      </div>
-    </div>
+        </div>
 
-    {/* Search Results Summary */}
-    {(searchQuery || selectedCategory !== 'All') && (
-      <div style={{
-        backgroundColor: '#e8f4fd',
-        padding: '15px',
-        borderRadius: '8px',
-        marginBottom: '20px',
-        border: '1px solid #bee5eb'
-      }}>
-        <p style={{ margin: 0, color: '#0c5460', fontSize: '14px' }}>
-          {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
-          {searchQuery && ` for "${searchQuery}"`}
-          {selectedCategory !== 'All' && ` in ${selectedCategory}`}
-        </p>
-      </div>
-    )}
-
-    {/* Products Grid */}
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-      gap: '2rem' 
-    }}>
-      {filteredProducts.length > 0 ? (
-        filteredProducts.map((product: Product) => (
-          <SimpleProductCard
-            key={product.id}
-            product={product as any}
-            onAddToCart={(product) => addToCart(product as any)}
-            onAddToWishlist={(product) => addToWishlist(product as any)}
-            isInWishlist={isInWishlist}
-          />
-        ))
-      ) : (
-        <div style={{ 
-          gridColumn: '1 / -1', 
-          textAlign: 'center', 
-          padding: '60px 20px',
-          color: '#666'
+        {/* Popular Search Tags */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '10px',
+          marginTop: '15px',
+          alignItems: 'center'
         }}>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>No products found</h3>
-          <p>Try adjusting your search or filter criteria</p>
+          <span style={{
+            fontSize: '14px',
+            color: '#6c757d',
+            fontWeight: '500',
+            marginRight: '10px'
+          }}>
+            Popular:
+          </span>
+          {['gaming', 'wireless', 'rgb', 'bluetooth', 'smartphone'].map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setSearchQuery(tag)}
+              style={{
+                backgroundColor: searchQuery.toLowerCase().includes(tag) ? '#fed700' : '#f8f9fa',
+                color: searchQuery.toLowerCase().includes(tag) ? '#2c3e50' : '#6c757d',
+                border: '1px solid #e9ecef',
+                padding: '6px 12px',
+                borderRadius: '15px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontWeight: '500'
+              }}
+              onMouseOver={(e) => {
+                if (!searchQuery.toLowerCase().includes(tag)) {
+                  e.currentTarget.style.backgroundColor = '#e9ecef';
+                  e.currentTarget.style.color = '#495057';
+                }
+              }}
+              onMouseOut={(e) => {
+                if (!searchQuery.toLowerCase().includes(tag)) {
+                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                  e.currentTarget.style.color = '#6c757d';
+                }
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Search Results Summary */}
+      {(searchQuery || selectedCategory !== 'All') && (
+        <div style={{
+          backgroundColor: '#e8f4fd',
+          padding: '15px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          border: '1px solid #bee5eb'
+        }}>
+          <p style={{ margin: 0, color: '#0c5460', fontSize: '14px' }}>
+            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+            {searchQuery && ` for "${searchQuery}"`}
+            {selectedCategory !== 'All' && ` in ${selectedCategory}`}
+          </p>
         </div>
       )}
-    </div>
 
-    {/* Results count */}
-    <div style={{ 
-      textAlign: 'center', 
-      marginTop: '30px', 
-      color: '#666',
-      fontSize: '14px'
-    }}>
-      Showing {filteredProducts.length} of {allProducts.length} products
+      {/* Products Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '2rem'
+      }}>
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product: Product) => (
+            <SimpleProductCard
+              key={product.id}
+              product={product as any}
+              onAddToCart={(product) => addToCart(product as any)}
+              onAddToWishlist={(product) => addToWishlist(product as any)}
+              isInWishlist={isInWishlist}
+            />
+          ))
+        ) : (
+          <div style={{
+            gridColumn: '1 / -1',
+            textAlign: 'center',
+            padding: '60px 20px',
+            color: '#666'
+          }}>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>No products found</h3>
+            <p>Try adjusting your search or filter criteria</p>
+          </div>
+        )}
+      </div>
+
+      {/* Results count */}
+      <div style={{
+        textAlign: 'center',
+        marginTop: '30px',
+        color: '#666',
+        fontSize: '14px'
+      }}>
+        Showing {filteredProducts.length} of {allProducts.length} products
+      </div>
     </div>
-  </div>
   );
 };
 
