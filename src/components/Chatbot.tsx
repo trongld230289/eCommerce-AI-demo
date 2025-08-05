@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMicrophone, faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
 import './Chatbot.css';
+
+// Add type declarations for Web Speech API
+interface Window {
+  SpeechRecognition: any;
+  webkitSpeechRecognition: any;
+}
 
 interface Message {
   id: number;
@@ -24,7 +32,36 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognitionInstance = new SpeechRecognition();
+      recognitionInstance.continuous = false;
+      recognitionInstance.interimResults = false;
+      recognitionInstance.lang = 'en-US';
+
+      recognitionInstance.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputValue(transcript);
+        setIsListening(false);
+      };
+
+      recognitionInstance.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognitionInstance.onend = () => {
+        setIsListening(false);
+      };
+
+      setRecognition(recognitionInstance);
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,6 +109,21 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
       setMessages(prev => [...prev, botResponse]);
       setIsTyping(false);
     }, 1000 + Math.random() * 1000);
+  };
+
+  const toggleVoiceRecording = () => {
+    if (!recognition) {
+      alert('Speech recognition is not supported in your browser.');
+      return;
+    }
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
   };
 
   const getBotResponse = (userInput: string): string => {
@@ -156,10 +208,21 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={isListening ? "Listening..." : "Type your message..."}
             className="chatbot-input"
             maxLength={500}
           />
+          <button 
+            type="button" 
+            className={`chatbot-voice-btn ${isListening ? 'listening' : ''}`}
+            onClick={toggleVoiceRecording}
+            title={isListening ? "Stop recording" : "Start voice recording"}
+          >
+            <FontAwesomeIcon 
+              icon={isListening ? faMicrophoneSlash : faMicrophone} 
+              className={isListening ? 'recording' : ''}
+            />
+          </button>
           <button type="submit" className="chatbot-send-btn" disabled={!inputValue.trim()}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>

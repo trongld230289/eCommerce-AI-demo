@@ -251,6 +251,64 @@ body.chatbot-open {
   cursor: not-allowed;
 }
 
+/* Voice Button */
+.chatbot-voice-btn {
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.chatbot-voice-btn:hover {
+  background: #2ecc71;
+  transform: scale(1.05);
+}
+
+.chatbot-voice-btn.listening {
+  background: #e74c3c;
+  animation: pulse 1.5s infinite;
+}
+
+.chatbot-voice-btn.listening:hover {
+  background: #c0392b;
+}
+
+.chatbot-voice-btn .recording {
+  animation: recordingPulse 0.8s infinite alternate;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+  }
+}
+
+@keyframes recordingPulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.2);
+  }
+}
+
 /* Footer */
 .chatbot-footer {
   padding: 0.5rem 1.5rem;
