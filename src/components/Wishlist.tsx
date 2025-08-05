@@ -1,11 +1,13 @@
 import React from 'react';
 import { useShop } from './ShopContext';
+import { useToast } from '../contexts/ToastContext';
 import { Link } from 'react-router-dom';
 import SimpleProductCard from './SimpleProductCard';
 import './Wishlist.css';
 
 const Wishlist = () => {
   const { wishlist, removeFromWishlist, addToCart } = useShop();
+  const { showSuccess } = useToast();
 
   if (wishlist.length === 0) {
     return (
@@ -28,7 +30,7 @@ const Wishlist = () => {
 
   const handleAddToCart = (product: any) => {
     addToCart(product);
-    alert(`Added ${product.name} to cart!`);
+    showSuccess(`Added to Cart!`, `${product.name} has been added to your cart.`);
   };
 
   return (

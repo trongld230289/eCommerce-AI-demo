@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faExclamationTriangle, faInfoCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faExclamationTriangle, faInfoCircle, faTimes, faHeart } from '@fortawesome/free-solid-svg-icons';
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
+export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'wishlist';
 
 export interface ToastProps {
   id: string;
@@ -69,6 +69,11 @@ const Toast: React.FC<ToastProps> = ({
         borderColor: '#3b82f6',
         borderLeftWidth: '4px',
         borderLeftColor: '#3b82f6'
+      },
+      wishlist: {
+        borderColor: '#dc2626',
+        borderLeftWidth: '4px',
+        borderLeftColor: '#dc2626'
       }
     };
 
@@ -80,7 +85,8 @@ const Toast: React.FC<ToastProps> = ({
       success: { icon: faCheck, color: '#22c55e' },
       error: { icon: faTimes, color: '#ef4444' },
       warning: { icon: faExclamationTriangle, color: '#f59e0b' },
-      info: { icon: faInfoCircle, color: '#3b82f6' }
+      info: { icon: faInfoCircle, color: '#3b82f6' },
+      wishlist: { icon: faHeart, color: '#dc2626' }
     };
     return configs[type];
   };

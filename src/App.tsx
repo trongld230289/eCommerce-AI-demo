@@ -296,7 +296,7 @@ const Navbar = () => {
 // Home Page Component
 const Home = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
-  const { showSuccess, showWarning } = useToast();
+  const { showSuccess, showWarning, showWishlist } = useToast();
   
   const products = [
     { 
@@ -626,7 +626,7 @@ const Home = () => {
       showWarning(`Already in Wishlist!`, `${product.name} is already in your wishlist.`);
     } else {
       addToWishlist(product);
-      showSuccess(`Added to Wishlist!`, `${product.name} has been added to your wishlist.`);
+      showWishlist(`Added to Wishlist!`, `${product.name} has been added to your wishlist.`);
     }
   };
 

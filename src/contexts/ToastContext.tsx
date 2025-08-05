@@ -17,6 +17,7 @@ interface ToastContextType {
   showError: (title: string, message?: string) => void;
   showInfo: (title: string, message?: string) => void;
   showWarning: (title: string, message?: string) => void;
+  showWishlist: (title: string, message?: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -67,6 +68,10 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     addToast({ type: 'warning', title, message });
   }, [addToast]);
 
+  const showWishlist = useCallback((title: string, message?: string) => {
+    addToast({ type: 'wishlist', title, message });
+  }, [addToast]);
+
   const value: ToastContextType = {
     toasts,
     addToast,
@@ -74,7 +79,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     showSuccess,
     showError,
     showInfo,
-    showWarning
+    showWarning,
+    showWishlist
   };
 
   return (
