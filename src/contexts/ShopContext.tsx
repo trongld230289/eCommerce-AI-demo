@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 
 export interface Product {
@@ -60,13 +60,13 @@ const shopReducer = (state: ShopState, action: ShopAction): ShopState => {
         cart: [...state.cart, { ...action.payload, quantity: 1 }]
       };
     }
-    
+
     case 'REMOVE_FROM_CART':
       return {
         ...state,
         cart: state.cart.filter(item => item.id !== action.payload)
       };
-    
+
     case 'UPDATE_QUANTITY':
       return {
         ...state,
@@ -76,13 +76,13 @@ const shopReducer = (state: ShopState, action: ShopAction): ShopState => {
             : item
         )
       };
-    
+
     case 'CLEAR_CART':
       return {
         ...state,
         cart: []
       };
-    
+
     case 'ADD_TO_WISHLIST': {
       const isInWishlist = state.wishlist.some(item => item.id === action.payload.id);
       if (isInWishlist) return state;
@@ -91,16 +91,16 @@ const shopReducer = (state: ShopState, action: ShopAction): ShopState => {
         wishlist: [...state.wishlist, action.payload]
       };
     }
-    
+
     case 'REMOVE_FROM_WISHLIST':
       return {
         ...state,
         wishlist: state.wishlist.filter(item => item.id !== action.payload)
       };
-    
+
     case 'LOAD_USER_DATA':
       return action.payload;
-    
+
     default:
       return state;
   }
@@ -135,34 +135,36 @@ interface ShopProviderProps {
 
 export const ShopProvider = ({ children }: ShopProviderProps) => {
   const [state, dispatch] = useReducer(shopReducer, initialState);
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth(); // also grab auth loading
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Load user data from localStorage when user changes
+  // Load from localStorage after auth is ready
   useEffect(() => {
+    if (authLoading) return;
     if (currentUser) {
       const userDataKey = `shop_data_${currentUser.uid}`;
       const savedData = localStorage.getItem(userDataKey);
       if (savedData) {
         try {
-          const parsedData = JSON.parse(savedData);
-          dispatch({ type: 'LOAD_USER_DATA', payload: parsedData });
-        } catch (error) {
-          console.error('Error loading user shop data:', error);
+          dispatch({ type: 'LOAD_USER_DATA', payload: JSON.parse(savedData) });
+        } catch (e) {
+          console.error("Error parsing saved shop data", e);
         }
       }
     } else {
-      // Clear state when user logs out
       dispatch({ type: 'LOAD_USER_DATA', payload: initialState });
     }
-  }, [currentUser]);
+    setHasLoaded(true); // Mark that we've done our first load
+  }, [authLoading, currentUser]);
 
-  // Save user data to localStorage whenever state changes
+  // Save only after we've loaded once
   useEffect(() => {
-    if (currentUser) {
+    if (!authLoading && currentUser && hasLoaded) {
       const userDataKey = `shop_data_${currentUser.uid}`;
       localStorage.setItem(userDataKey, JSON.stringify(state));
     }
-  }, [state, currentUser]);
+  }, [state, currentUser, authLoading, hasLoaded]);
+
 
   const addToCart = (product: Product) => {
     dispatch({ type: 'ADD_TO_CART', payload: product });

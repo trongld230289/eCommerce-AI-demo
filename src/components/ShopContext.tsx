@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext'; // <-- to get currentUser
 
 interface Product {
   id: number;
@@ -40,8 +41,32 @@ interface ShopProviderProps {
 }
 
 export const ShopProvider: React.FC<ShopProviderProps> = ({ children }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const { currentUser, loading: authLoading } = useAuth();
   const [wishlist, setWishlist] = useState<Product[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  
+  useEffect(() => {
+    console.log("🔍 Auth loading state:", authLoading);
+    console.log("🔍 Current user in ShopContext:", currentUser);
+  
+    if (!authLoading && currentUser?.email) {
+      const stored = localStorage.getItem(`wishlist_${currentUser.email}`);
+      console.log("🔍 Stored wishlist:", stored);
+      if (stored) {
+        setWishlist(JSON.parse(stored));
+      } else {
+        setWishlist([]);
+      }
+    }
+  }, [authLoading, currentUser]);
+
+ // Save wishlist whenever it changes
+ useEffect(() => {
+  if (currentUser?.email) {
+    localStorage.setItem(`wishlist_${currentUser.email}`, JSON.stringify(wishlist));
+    console.log(`💾 Wishlist saved for ${currentUser.email}`, wishlist);
+  }
+  }, [wishlist, currentUser]);
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {

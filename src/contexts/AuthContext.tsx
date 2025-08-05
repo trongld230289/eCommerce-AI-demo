@@ -34,6 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
+  /*useEffect(() => {
+    console.log("🔹 AuthContext currentUser:", currentUser);
+  }, [currentUser]);*/
+
   const login = async (email: string, password: string) => {
     const foundUser = mockUserList.find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
