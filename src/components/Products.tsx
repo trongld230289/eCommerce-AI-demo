@@ -1,10 +1,12 @@
 import React from 'react';
 import { useShop } from './ShopContext';
+import { useToast } from '../contexts/ToastContext';
 import SimpleProductCard from './SimpleProductCard';
 import './Products.css';
 
 const Products = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
+  const { showSuccess, showWarning } = useToast();
 
   const products = [
     { 
@@ -155,15 +157,15 @@ const Products = () => {
 
   const handleAddToCart = (product: any) => {
     addToCart(product);
-    alert(`Added ${product.name} to cart!`);
+    showSuccess(`Added to Cart!`, `${product.name} has been added to your cart.`);
   };
 
   const handleAddToWishlist = (product: any) => {
     if (isInWishlist(product.id)) {
-      alert(`${product.name} is already in wishlist!`);
+      showWarning(`Already in Wishlist!`, `${product.name} is already in your wishlist.`);
     } else {
       addToWishlist(product);
-      alert(`Added ${product.name} to wishlist!`);
+      showSuccess(`Added to Wishlist!`, `${product.name} has been added to your wishlist.`);
     }
   };
 

@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ShopProvider, useShop } from './contexts/ShopContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Cart from './pages/Cart';
@@ -295,6 +296,7 @@ const Navbar = () => {
 // Home Page Component
 const Home = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
+  const { showSuccess, showWarning } = useToast();
   
   const products = [
     { 
@@ -616,15 +618,15 @@ const Home = () => {
 
   const handleAddToCart = (product: any) => {
     addToCart(product);
-    alert(`Added ${product.name} to cart!`);
+    showSuccess(`Added to Cart!`, `${product.name} has been added to your cart.`);
   };
   
   const handleAddToWishlist = (product: any) => {
     if (isInWishlist(product.id)) {
-      alert(`${product.name} is already in wishlist!`);
+      showWarning(`Already in Wishlist!`, `${product.name} is already in your wishlist.`);
     } else {
       addToWishlist(product);
-      alert(`Added ${product.name} to wishlist!`);
+      showSuccess(`Added to Wishlist!`, `${product.name} has been added to your wishlist.`);
     }
   };
 
@@ -1280,32 +1282,34 @@ function App() {
   return (
     <AuthProvider>
       <ShopProvider>
-        <Router>
-          <div className={`App ${isChatbotOpen ? 'chatbot-open' : ''}`} style={{ 
-            fontFamily: 'Open Sans, Arial, sans-serif',
-            minHeight: '100vh'
-          }}>
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/wishlist" element={<Wishlist />} />
-              <Route path="/products" element={<Products />} />
-            </Routes>
-            
-            {/* Chatbot Components */}
-            <ChatbotIcon 
-              onClick={() => setIsChatbotOpen(true)} 
-              isVisible={isChatbotOpen} 
-            />
-            <Chatbot 
-              isVisible={isChatbotOpen} 
-              onClose={() => setIsChatbotOpen(false)} 
-            />
-          </div>
-        </Router>
+        <ToastProvider>
+          <Router>
+            <div className={`App ${isChatbotOpen ? 'chatbot-open' : ''}`} style={{ 
+              fontFamily: 'Open Sans, Arial, sans-serif',
+              minHeight: '100vh'
+            }}>
+              <Navbar />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/products" element={<Products />} />
+              </Routes>
+              
+              {/* Chatbot Components */}
+              <ChatbotIcon 
+                onClick={() => setIsChatbotOpen(true)} 
+                isVisible={isChatbotOpen} 
+              />
+              <Chatbot 
+                isVisible={isChatbotOpen} 
+                onClose={() => setIsChatbotOpen(false)} 
+              />
+            </div>
+          </Router>
+        </ToastProvider>
       </ShopProvider>
     </AuthProvider>
   );
