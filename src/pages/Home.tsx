@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
 import { useToast } from '../contexts/ToastContext';
 import SimpleProductCard from '../components/SimpleProductCard';
+import Recommendations from '../components/Recommendations';
 
 // Home Page Component
 const Home = () => {
@@ -955,7 +956,20 @@ const Home = () => {
           </div>
         </div>
       </section>
+       {/* Recommendations Section */}
 
+
+      <section style={styles.productsSection}>
+        <div style={styles.productsContainer}>
+          <Recommendations 
+            limit={4} 
+            title="Recommended for You"
+            className=""
+          />
+        </div>
+
+
+      </section>
       {/* Top Products Section */}
       <section style={styles.productsSection}>
         <div style={styles.productsContainer}>
