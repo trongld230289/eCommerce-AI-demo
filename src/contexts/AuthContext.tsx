@@ -1,13 +1,22 @@
-// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { mockUserList } from '../utils/mockUserList';
+import { 
+  User as FirebaseUser,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  signInWithPopup
+} from 'firebase/auth';
+import { auth, googleProvider } from '../utils/firebase';
 import { User } from '../types';
 
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  register: (email: string, password: string, displayName?: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -15,7 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
@@ -25,62 +34,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage on app start
-  useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
-
-  /*useEffect(() => {
-    console.log("🔹 AuthContext currentUser:", currentUser);
-  }, [currentUser]);*/
-
   const login = async (email: string, password: string) => {
-    const foundUser = mockUserList.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (!foundUser) {
-      throw new Error('Invalid email or password');
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      if (error.code === 'auth/configuration-not-found') {
+        console.error('Firebase Auth configuration error: Email/Password authentication is not enabled in Firebase Console');
+      }
+      throw error;
     }
-
-    const userData: User = {
-      uid: foundUser.email, // mock UID
-      email: foundUser.email,
-      displayName: foundUser.displayName
-    };
-
-    setCurrentUser(userData);
-    localStorage.setItem('currentUser', JSON.stringify(userData));
   };
 
-  const register = async (email: string, password: string, displayName: string) => {
-    // Add to mock list in-memory (won’t persist after refresh)
-    mockUserList.push({ email, password, displayName });
+  const register = async (email: string, password: string, displayName?: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      if (displayName) {
+        await updateProfile(userCredential.user, { displayName });
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      if (error.code === 'auth/configuration-not-found') {
+        console.error('Firebase Auth configuration error: Email/Password authentication is not enabled in Firebase Console');
+      }
+      throw error;
+    }
+  };
 
-    const newUser: User = {
-      uid: email, // mock UID
-      email,
-      displayName
-    };
-
-    setCurrentUser(newUser);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
+  const loginWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log('Google sign-in successful:', result.user);
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+      if (error.code === 'auth/configuration-not-found') {
+        console.error('Firebase Auth configuration error: Google authentication is not enabled in Firebase Console');
+      }
+      throw error;
+    }
   };
 
   const logout = async () => {
-    setCurrentUser(null);
-    localStorage.removeItem('currentUser');
+    try {
+      await signOut(auth);
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      throw error;
+    }
   };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user: FirebaseUser | null) => {
+      if (user) {
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || undefined,
+          photoURL: user.photoURL || undefined
+        });
+      } else {
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
 
   const value: AuthContextType = {
     currentUser,
     loading,
     login,
     register,
+    loginWithGoogle,
     logout
   };
 

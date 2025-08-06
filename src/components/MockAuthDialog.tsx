@@ -1,28 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { mockUsers } from '../utils/mockUsers';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFacebookF, faGoogle } from '@fortawesome/free-brands-svg-icons';
-import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faLock, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import './AuthDialog.css';
 
-interface AuthDialogProps {
+interface MockAuthDialogProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'login' | 'register';
 }
 
-const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
+const MockAuthDialog: React.FC<MockAuthDialogProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
-  const { login, register, loginWithGoogle } = useAuth();
+  const [showTestCredentials, setShowTestCredentials] = useState(false);
+  const { login, register } = useAuth();
 
   // Sync internal mode state with initialMode prop
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -48,71 +49,38 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
       if (mode === 'login') {
         await login(email, password);
       } else {
-        await register(email, password, displayName || undefined);
+        await register(email, password);
       }
       onClose();
       // Reset form
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-      setDisplayName('');
       setError('');
     } catch (error: any) {
       console.error('Authentication error:', error);
-      switch (error.code) {
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-        case 'auth/invalid-credential':
-          setError('Invalid email or password');
-          break;
-        case 'auth/email-already-in-use':
-          setError('This email is already registered');
-          break;
-        case 'auth/invalid-email':
-          setError('Invalid email address');
-          break;
-        case 'auth/weak-password':
-          setError('Password is too weak');
-          break;
-        case 'auth/too-many-requests':
-          setError('Too many failed attempts. Please try again later');
-          break;
-        case 'auth/configuration-not-found':
-          setError('Authentication not configured. Please enable Email/Password authentication in Firebase Console');
-          break;
-        default:
-          setError(mode === 'login' ? 'Failed to sign in' : 'Failed to create account');
-      }
+      setError(error.message || (mode === 'login' ? 'Failed to sign in' : 'Failed to create account'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
+  const handleQuickLogin = async (credentials: { email: string; password: string }) => {
+    setEmail(credentials.email);
+    setPassword(credentials.password);
     setError('');
     
     try {
-      await loginWithGoogle();
+      setLoading(true);
+      await login(credentials.email, credentials.password);
       onClose();
+      // Reset form
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setError('');
     } catch (error: any) {
-      console.error('Google sign-in error:', error);
-      switch (error.code) {
-        case 'auth/popup-closed-by-user':
-          setError('Sign-in cancelled');
-          break;
-        case 'auth/popup-blocked':
-          setError('Popup blocked. Please allow popups and try again');
-          break;
-        case 'auth/configuration-not-found':
-          setError('Google authentication not configured. Please enable Google sign-in in Firebase Console');
-          break;
-        case 'auth/network-request-failed':
-          setError('Network error. Please check your connection');
-          break;
-        default:
-          setError('Failed to sign in with Google');
-      }
+      setError('Quick login failed');
     } finally {
       setLoading(false);
     }
@@ -124,7 +92,6 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
     setEmail('');
     setPassword('');
     setConfirmPassword('');
-    setDisplayName('');
   };
 
   if (!isOpen) return null;
@@ -142,10 +109,52 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
           </h2>
           <p className="auth-dialog-subtitle">
             {mode === 'login' 
-              ? 'Login to manage your account.' 
+              ? 'Login to manage your account and get personalized recommendations.' 
               : 'Join us and start shopping today!'
             }
           </p>
+        </div>
+
+        {/* Test Credentials Section */}
+        <div className="test-credentials-section">
+          <button
+            type="button"
+            onClick={() => setShowTestCredentials(!showTestCredentials)}
+            className="test-credentials-toggle"
+          >
+            <FontAwesomeIcon icon={faInfoCircle} />
+            {showTestCredentials ? 'Hide' : 'Show'} Test Accounts
+          </button>
+          
+          {showTestCredentials && (
+            <div className="test-credentials-list">
+              <h4>Quick Login Options:</h4>
+              <div className="test-credentials-grid">
+                {mockUsers.slice(0, 3).map((user, index) => (
+                  <div key={index} className="test-credential-item">
+                    <strong>{user.displayName}</strong>
+                    <p>{user.description}</p>
+                    <button
+                      onClick={() => handleQuickLogin({ email: user.email, password: user.password })}
+                      className="quick-login-btn"
+                      disabled={loading}
+                    >
+                      Quick Login
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="manual-credentials">
+                <h4>Manual Login Credentials:</h4>
+                <div className="credentials-info">
+                  <p><strong>Email:</strong> {mockUsers[0].email}</p>
+                  <p><strong>Password:</strong> {mockUsers[0].password}</p>
+                  <p><em>Or use any of the other test accounts listed above</em></p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -165,7 +174,6 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
                 required
                 className="auth-dialog-input"
                 placeholder="Email"
-                autoComplete="email"
               />
             </div>
           </div>
@@ -180,26 +188,9 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
                 required
                 className="auth-dialog-input"
                 placeholder="Password"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
             </div>
           </div>
-
-          {mode === 'register' && (
-            <div className="auth-dialog-form-group">
-              <div className="auth-dialog-input-wrapper">
-                <FontAwesomeIcon icon={faUser} className="auth-dialog-input-icon" />
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="auth-dialog-input"
-                  placeholder="Display Name (optional)"
-                  autoComplete="name"
-                />
-              </div>
-            </div>
-          )}
 
           {mode === 'register' && (
             <div className="auth-dialog-form-group">
@@ -212,21 +203,8 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
                   required
                   className="auth-dialog-input"
                   placeholder="Confirm Password"
-                  autoComplete="new-password"
                 />
               </div>
-            </div>
-          )}
-
-          {mode === 'login' && (
-            <div className="auth-dialog-forgot">
-              <button 
-                type="button"
-                className="auth-dialog-forgot-link"
-                onClick={() => alert('Password reset functionality will be implemented soon!')}
-              >
-                Forgot Password?
-              </button>
             </div>
           )}
 
@@ -245,7 +223,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
         <div className="auth-dialog-switch">
           <span className="auth-dialog-switch-text">
             {mode === 'login' 
-              ? "Do not have an account? " 
+              ? "Don't have an account? " 
               : "Already have an account? "
             }
           </span>
@@ -254,27 +232,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
             className="auth-dialog-switch-button"
             type="button"
           >
-            {mode === 'login' ? 'Signup' : 'Sign In'}
-          </button>
-        </div>
-
-        <div className="auth-dialog-divider">
-          <span>OR</span>
-        </div>
-
-        <div className="auth-dialog-social">
-          <button 
-            className="auth-dialog-social-button auth-dialog-google"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            type="button"
-          >
-            <FontAwesomeIcon icon={faGoogle} className="auth-dialog-social-icon" />
-            {loading ? 'Signing in...' : 'Google'}
-          </button>
-          <button className="auth-dialog-social-button auth-dialog-facebook">
-            <FontAwesomeIcon icon={faFacebookF} className="auth-dialog-social-icon" />
-            Facebook
+            {mode === 'login' ? 'Sign Up' : 'Sign In'}
           </button>
         </div>
       </div>
@@ -282,4 +240,4 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
   );
 };
 
-export default AuthDialog;
+export default MockAuthDialog;

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
+import Recommendations from '../components/Recommendations';
 import type { Product } from '../contexts/ShopContext';
 
 const Wishlist: React.FC = () => {
@@ -325,12 +326,12 @@ const Wishlist: React.FC = () => {
                       disabled={Math.random() > 0.8}
                       onMouseOver={(e) => {
                         if (!e.currentTarget.disabled) {
-                          e.currentTarget.style.backgroundColor = '#2563eb';
+                          e.currentTarget.style.backgroundColor = 'rgb(44, 62, 80)';
                         }
                       }}
                       onMouseOut={(e) => {
                         if (!e.currentTarget.disabled) {
-                          e.currentTarget.style.backgroundColor = '#3b82f6';
+                          e.currentTarget.style.backgroundColor = 'rgb(44, 62, 80)';
                         }
                       }}
                     >
@@ -342,6 +343,22 @@ const Wishlist: React.FC = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Recommendations Section */}
+      <div style={{ 
+        marginTop: '3rem', 
+        padding: '2rem 0', 
+        backgroundColor: '#f8fafc',
+        borderTop: '1px solid #e2e8f0' 
+      }}>
+        <div style={{ maxWidth: '1340px', margin: '0 auto', padding: '0 2rem' }}>
+          <Recommendations 
+            limit={6} 
+            title={state.wishlist.length === 0 ? "Discover Products You'll Love" : "You Might Also Like"} 
+            className=""
+          />
+        </div>
       </div>
     </div>
   );

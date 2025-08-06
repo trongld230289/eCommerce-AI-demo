@@ -1,17 +1,169 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
 import { useToast } from '../contexts/ToastContext';
 import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
+import Recommendations from '../components/Recommendations';
+import { searchService } from '../services/searchService';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faSearch, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 const Products: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { showSuccess, showWishlist, showWarning } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [chatbotSearch, setChatbotSearch] = useState<{
+    query: string;
+    category?: string;
+    brand?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  } | null>(null);
+  const [backendResults, setBackendResults] = useState<any[]>([]);
+  const [isLoadingBackend, setIsLoadingBackend] = useState(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
+
+  // Add state for regular backend search
+  const [useBackendSearch, setUseBackendSearch] = useState(false);
+  const [allBackendProducts, setAllBackendProducts] = useState<any[]>([]);
+  const [backendCategories, setBackendCategories] = useState<string[]>(['All']);
+
+  // Initialize from URL parameters
+  useEffect(() => {
+    const query = searchParams.get('q') || '';
+    const category = searchParams.get('category') || 'All';
+    const brand = searchParams.get('brand') || '';
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const chatbotQuery = searchParams.get('chatbot');
+
+    setSearchQuery(query);
+    setSelectedCategory(category);
+
+    // If this is a chatbot-initiated search
+    if (chatbotQuery) {
+      console.log('Setting chatbot search:', chatbotQuery); // Debug log
+      setChatbotSearch({
+        query: chatbotQuery,
+        category: category !== 'All' ? category : undefined,
+        brand: brand || undefined,
+        minPrice: minPrice ? parseFloat(minPrice) : undefined,
+        maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      });
+    } else {
+      // Clear chatbot search if no chatbot parameter
+      setChatbotSearch(null);
+    }
+  }, [searchParams]);
+
+  // Fetch backend results when chatbot search is set
+  useEffect(() => {
+    if (chatbotSearch) {
+      fetchBackendResults();
+    }
+  }, [chatbotSearch]);
+
+  // Fetch all products from backend on component mount
+  useEffect(() => {
+    fetchAllProductsFromBackend();
+  }, []);
+
+  // Auto-search when query or category changes (with debounce)
+  useEffect(() => {
+    if (!chatbotSearch && useBackendSearch) {
+      const timer = setTimeout(() => {
+        if (searchQuery.trim() || selectedCategory !== 'All') {
+          performBackendSearch(searchQuery, selectedCategory);
+        } else {
+          // Clear results when no search/filter to show all products
+          setBackendResults([]);
+        }
+      }, 500); // 500ms debounce
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery, selectedCategory, useBackendSearch, chatbotSearch]);
+
+  const fetchBackendResults = async () => {
+    if (!chatbotSearch) return;
+
+    console.log('Fetching backend results for chatbot search:', chatbotSearch); // Debug log
+    setIsLoadingBackend(true);
+    setBackendError(null);
+
+    try {
+      const results = await searchService.searchProducts({
+        category: chatbotSearch.category,
+        brand: chatbotSearch.brand,
+        min_price: chatbotSearch.minPrice,
+        max_price: chatbotSearch.maxPrice,
+        keywords: chatbotSearch.query // This should be a string, backend will split by comma
+      });
+
+      console.log('Backend search results:', results); // Debug log
+      setBackendResults(results);
+    } catch (error) {
+      console.error('Error fetching backend results:', error);
+      setBackendError('Failed to load search results from server');
+    } finally {
+      setIsLoadingBackend(false);
+    }
+  };
+
+  const fetchAllProductsFromBackend = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/products');
+      if (response.ok) {
+        const products = await response.json();
+        setAllBackendProducts(products);
+
+        // Extract unique categories from backend products
+        const categorySet = new Set<string>();
+        products.forEach((p: any) => {
+          if (p.category && typeof p.category === 'string') {
+            categorySet.add(p.category);
+          }
+        });
+        const categories: string[] = ['All', ...Array.from(categorySet)];
+        setBackendCategories(categories);
+
+        setUseBackendSearch(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products from backend:', error);
+      setUseBackendSearch(false);
+      // Fall back to local categories
+      setBackendCategories(['All', 'Electronics']);
+    }
+  };
+
+  const performBackendSearch = async (query: string, category: string) => {
+    if (!useBackendSearch) return [];
+
+    setIsLoadingBackend(true);
+    setBackendError(null);
+
+    try {
+      const searchParams: any = {};
+
+      if (query) searchParams.keywords = query;
+      if (category && category !== 'All') searchParams.category = category;
+
+      const results = await searchService.searchProducts(searchParams);
+      setBackendResults(results);
+      return results;
+    } catch (error) {
+      console.error('Error performing backend search:', error);
+      setBackendError('Failed to search products from server');
+      return [];
+    } finally {
+      setIsLoadingBackend(false);
+    }
+  };
 
   // Responsive state
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
@@ -19,9 +171,21 @@ const Products: React.FC = () => {
 
   // Inline styles object
   const styles = {
+    productsSection: {
+      padding: '3rem 0',
+      backgroundColor: 'white'
+    },
+    sectionTitle: {
+      fontSize: '1.5rem',
+      fontWeight: 600,
+      color: '#2c3e50',
+      textAlign: 'center' as const,
+      marginBottom: '2rem',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
     productsContainer: {
       padding: isMobile ? '15px' : '20px',
-      maxWidth: '1200px',
+      maxWidth: '1430px',
       margin: '0 auto'
     },
     productsTitle: {
@@ -313,7 +477,8 @@ const Products: React.FC = () => {
     }
   ];
 
-  const categories = ['All', 'Electronics'];
+  // Use dynamic categories from backend or fallback to static
+  const categories = useBackendSearch ? backendCategories : ['All', 'Electronics'];
 
   // Toast handlers for cart and wishlist actions
   const handleAddToCart = (product: Product) => {
@@ -330,8 +495,23 @@ const Products: React.FC = () => {
     }
   };
 
-  // Search handler with toast feedback
-  const handleSearch = () => {
+  // Search handler with toast feedback and backend integration
+  const handleSearch = async () => {
+    // Clear any previous chatbot search when doing manual search
+    setChatbotSearch(null);
+
+    // If backend is available, perform backend search
+    if (useBackendSearch) {
+      await performBackendSearch(searchQuery, selectedCategory);
+    }
+
+    // Update URL parameters
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set('q', searchQuery);
+    if (selectedCategory !== 'All') params.set('category', selectedCategory);
+    setSearchParams(params);
+
+    // Count results (will be updated after backend search completes)
     const resultCount = filteredProducts.length;
     if (searchQuery.trim()) {
       if (resultCount > 0) {
@@ -343,19 +523,40 @@ const Products: React.FC = () => {
   };
 
   // Enhanced filter products based on search and category
-  const filteredProducts = allProducts.filter(product => {
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = searchQuery === '' || (
-      product.name.toLowerCase().includes(searchLower) ||
-      (product.description && product.description.toLowerCase().includes(searchLower)) ||
-      product.category.toLowerCase().includes(searchLower) ||
-      (product.brand && product.brand.toLowerCase().includes(searchLower)) ||
-      (product.color && product.color.toLowerCase().includes(searchLower)) ||
-      (product.tags && product.tags.some(tag => tag.toLowerCase().includes(searchLower)))
-    );
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = (() => {
+    // If we have backend results from chatbot search, use those
+    if (chatbotSearch && backendResults.length > 0) {
+      return backendResults;
+    }
+
+    // If backend is available and we have a search query or category filter, use backend search
+    if (useBackendSearch && (searchQuery.trim() || selectedCategory !== 'All')) {
+      // Use backend results if available, otherwise fall back to local
+      if (backendResults.length > 0) {
+        return backendResults;
+      }
+    }
+
+    // For backend products without search (show all), use backend products directly
+    if (useBackendSearch && !searchQuery.trim() && selectedCategory === 'All') {
+      return allBackendProducts;
+    }
+
+    // Fallback to local filtering when backend is not available
+    return allProducts.filter(product => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = searchQuery === '' || (
+        product.name.toLowerCase().includes(searchLower) ||
+        (product.description && product.description.toLowerCase().includes(searchLower)) ||
+        product.category.toLowerCase().includes(searchLower) ||
+        (product.brand && product.brand.toLowerCase().includes(searchLower)) ||
+        (product.color && product.color.toLowerCase().includes(searchLower)) ||
+        (product.tags && product.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+      );
+      const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  })();
 
   return (
     <div style={styles.productsContainer}>
@@ -379,8 +580,8 @@ const Products: React.FC = () => {
                 style={styles.searchInput}
               />
 
-              <FontAwesomeIcon 
-                icon={faSearch} 
+              <FontAwesomeIcon
+                icon={faSearch}
                 style={styles.searchIcon}
               />
 
@@ -514,6 +715,47 @@ const Products: React.FC = () => {
         </div>
       </div>
 
+      {/* Chatbot Search Context */}
+      {chatbotSearch && (
+        <div style={{
+          backgroundColor: '#f0f8ff',
+          padding: '15px',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          border: '1px solid #bee5eb'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '16px' }}>🤖</span>
+            <h3 style={{ margin: 0, color: '#0c5460', fontSize: '16px', fontWeight: '600' }}>
+              Chatbot Search Results
+            </h3>
+          </div>
+          <p style={{ margin: '0 0 8px 0', color: '#0c5460', fontSize: '14px' }}>
+            Showing results for: "{chatbotSearch.query}"
+          </p>
+          {(chatbotSearch.category || chatbotSearch.brand || chatbotSearch.minPrice || chatbotSearch.maxPrice) && (
+            <div style={{ fontSize: '12px', color: '#6c757d' }}>
+              Filters:
+              {chatbotSearch.category && ` Category: ${chatbotSearch.category}`}
+              {chatbotSearch.brand && ` | Brand: ${chatbotSearch.brand}`}
+              {chatbotSearch.minPrice && ` | Min Price: $${chatbotSearch.minPrice.toFixed(2)}`}
+              {chatbotSearch.maxPrice && ` | Max Price: $${chatbotSearch.maxPrice.toFixed(2)}`}
+            </div>
+          )}
+          {isLoadingBackend && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+              <FontAwesomeIcon icon={faSpinner} spin />
+              <span style={{ fontSize: '14px', color: '#6c757d' }}>Loading search results...</span>
+            </div>
+          )}
+          {backendError && (
+            <div style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
+              {backendError}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Search Results Summary */}
       {(searchQuery || selectedCategory !== 'All') && (
         <div style={{
@@ -532,45 +774,52 @@ const Products: React.FC = () => {
       )}
 
       {/* Products Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '2rem'
-      }}>
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((product: Product) => (
-            <SimpleProductCard
-              key={product.id}
-              product={product as any}
-              onAddToCart={handleAddToCart}
-              onAddToWishlist={handleAddToWishlist}
-              isInWishlist={isInWishlist}
-            />
-          ))
-        ) : (
+      <section style={styles.productsSection}>
+        <div style={styles.productsContainer}>
+          <h2 style={styles.sectionTitle}>
+            All Products
+          </h2>
           <div style={{
-            gridColumn: '1 / -1',
-            textAlign: 'center',
-            padding: '60px 20px',
-            color: '#666'
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '2rem'
           }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>No products found</h3>
-            <p>Try adjusting your search or filter criteria</p>
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product: Product) => (
+                <SimpleProductCard
+                  key={product.id}
+                  product={product as any}
+                  onAddToCart={handleAddToCart}
+                  onAddToWishlist={handleAddToWishlist}
+                  isInWishlist={isInWishlist}
+                />
+              ))
+            ) : (
+              <div style={{
+                gridColumn: '1 / -1',
+                textAlign: 'center',
+                padding: '60px 20px',
+                color: '#666'
+              }}>
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>No products found</h3>
+                <p>Try adjusting your search or filter criteria</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      </section>
 
-      {/* Results count */}
-      <div style={{
-        textAlign: 'center',
-        marginTop: '30px',
-        color: '#666',
-        fontSize: '14px'
-      }}>
-        Showing {filteredProducts.length} of {allProducts.length} products
-      </div>
+      {/* Recommendations Section */}
+      <div style={{ marginTop: '50px' }}></div>
+      <Recommendations
+        limit={3}
+        title="Recommended for You"
+        className="mb-8"
+      />
+
     </div>
   );
 };
 
 export default Products;
+
