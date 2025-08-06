@@ -4,7 +4,6 @@ import { useShop } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 import Recommendations from '../components/Recommendations';
 import type { Product } from '../contexts/ShopContext';
-import './Wishlist.css';
 
 const Wishlist: React.FC = () => {
   const { state, addToCart, removeFromWishlist } = useShop();

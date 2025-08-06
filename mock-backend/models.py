@@ -2,17 +2,19 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 class Product(BaseModel):
-    id: str
+    id: int
     name: str
-    description: str
-    price: int
+    price: float
+    originalPrice: Optional[float] = None
     image: str
     category: str
+    description: str
     brand: str
-    inStock: bool
-    stock: int
+    tags: List[str] = []
+    color: Optional[str] = None
     rating: float
-    reviews: int
+    isNew: bool = False
+    discount: float = 0
 
 class RecommendationResponse(BaseModel):
     products: List[Product]

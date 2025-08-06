@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 # Helper function to get products by IDs
-def get_products_by_ids(product_ids: List[str]) -> List[Product]:
+def get_products_by_ids(product_ids: List[int]) -> List[Product]:
     """Get products by their IDs"""
     return [product for product in products_data if product.id in product_ids]
 
@@ -89,8 +89,8 @@ async def get_recommendations(
         # If we don't have enough recommendations, add popular products
         if len(recommended_products) < limit:
             remaining_products = [p for p in products_data if p not in recommended_products]
-            # Sort by rating and reviews (popularity)
-            remaining_products.sort(key=lambda x: (x.rating, x.reviews), reverse=True)
+            # Sort by rating (popularity)
+            remaining_products.sort(key=lambda x: x.rating, reverse=True)
             recommended_products.extend(remaining_products[:limit - len(recommended_products)])
         
         # Shuffle to add some variety
@@ -109,7 +109,7 @@ async def get_recommendations(
         # If we need more products, add popular ones
         if len(recommended_products) < limit:
             remaining_products = [p for p in products_data if p.id not in default_recommendations]
-            remaining_products.sort(key=lambda x: (x.rating, x.reviews), reverse=True)
+            remaining_products.sort(key=lambda x: x.rating, reverse=True)
             recommended_products.extend(remaining_products[:limit - len(recommended_products)])
         
         return RecommendationResponse(
@@ -156,12 +156,12 @@ async def get_all_products():
     return products_data
 
 @app.get("/products/{product_id}", response_model=Product)
-async def get_product(product_id: str):
+async def get_product(product_id: int):
     """Get a specific product by ID"""
     for product in products_data:
         if product.id == product_id:
             return product
-    return {"error": "Product not found"}
+    raise HTTPException(status_code=404, detail="Product not found")
 
 # Chatbot models
 class ChatbotRequest(BaseModel):
