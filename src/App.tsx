@@ -12,7 +12,7 @@ import ProductDetails from './pages/ProductDetails';
 import Home from './pages/Home';
 import SearchBar from './components/SearchBar';
 import CartDropdown from './components/CartDropdown';
-import AuthDialog from './components/AuthDialog';
+import MockAuthDialog from './components/MockAuthDialog';
 import { useAuthDialog } from './hooks/useAuthDialog';
 import Chatbot from './components/Chatbot';
 import ChatbotIcon from './components/Chatbot/ChatbotIcon';
@@ -298,7 +298,7 @@ const Navbar = () => {
       </nav>
       
       {/* Auth Dialog */}
-      <AuthDialog 
+      <MockAuthDialog 
         isOpen={authDialog.isOpen} 
         onClose={authDialog.close}
         initialMode={authDialog.mode}

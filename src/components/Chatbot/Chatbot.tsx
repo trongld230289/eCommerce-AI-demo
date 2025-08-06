@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
+import { useAuth } from '../../contexts/AuthContext';
+import { chatbotService } from '../../services/chatbotService';
+import { Product } from '../../contexts/ShopContext';
 import './Chatbot.css';
 
 // Add type declarations for Web Speech API
@@ -14,6 +18,7 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  products?: Product[];
 }
 
 interface ChatbotProps {
@@ -22,6 +27,8 @@ interface ChatbotProps {
 }
 
 const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -83,7 +90,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     };
   }, [isVisible]);
 
-  const sendMessage = (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
@@ -95,20 +102,63 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageText = inputValue;
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      // Call the backend chatbot API
+      const response = await chatbotService.sendMessage({
+        message: messageText,
+        user_id: currentUser?.uid
+      });
+
+      console.log('Chatbot response received:', response);
+      console.log('Products in response:', response.products);
+
+      // Check if we should redirect to search page
+      if (response.should_redirect && response.redirect_url) {
+        // Add a message about redirecting
+        const redirectMessage: Message = {
+          id: Date.now() + 1,
+          text: `${response.response}\n\nRedirecting you to the search page to show all results...`,
+          isUser: false,
+          timestamp: new Date(),
+          products: response.products?.slice(0, 2) // Show just a preview
+        };
+        
+        setMessages(prev => [...prev, redirectMessage]);
+        
+        // Close chatbot and redirect after a short delay
+        setTimeout(() => {
+          onClose();
+          navigate(response.redirect_url!);
+        }, 2000);
+      } else {
+        // Normal chatbot response
+        const botResponse: Message = {
+          id: Date.now() + 1,
+          text: response.response,
+          isUser: false,
+          timestamp: new Date(),
+          products: response.products
+        };
+
+        setMessages(prev => [...prev, botResponse]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Fallback to local response
       const botResponse: Message = {
         id: Date.now() + 1,
-        text: getBotResponse(inputValue),
+        text: getBotResponse(messageText),
         isUser: false,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    }
   };
 
   const toggleVoiceRecording = () => {
@@ -183,6 +233,39 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
               <div className="chatbot-message-content">
                 {message.text}
               </div>
+              
+              {/* Render products if available */}
+              {message.products && message.products.length > 0 && (
+                <div className="chatbot-products">
+                  <div className="chatbot-products-grid">
+                    {message.products.slice(0, 3).map((product) => (
+                      <div key={product.id} className="chatbot-product-item">
+                        <div className="chatbot-product-card">
+                          <img src={product.image} alt={product.name} className="chatbot-product-image" />
+                          <div className="chatbot-product-info">
+                            <h4 className="chatbot-product-name">{product.name}</h4>
+                            <p className="chatbot-product-brand">{product.brand}</p>
+                            <p className="chatbot-product-price">
+                              ${product.price}
+                              {product.originalPrice && (
+                                <span className="chatbot-product-original-price" style={{ marginLeft: '8px', textDecoration: 'line-through', color: '#999' }}>
+                                  ${product.originalPrice}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {message.products.length > 3 && (
+                    <div className="chatbot-more-products">
+                      and {message.products.length - 3} more products...
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="chatbot-message-time">
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
