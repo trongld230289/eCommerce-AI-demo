@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { recommendationService, convertApiProductToProduct } from '../services/recommendationService';
-import { Product } from '../types';
+import { recommendationService } from '../services/recommendationService';
+import { Product } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 
 export const useRecommendations = (limit: number = 10) => {
@@ -18,8 +18,7 @@ export const useRecommendations = (limit: number = 10) => {
       const userId = currentUser?.uid;
       console.log('Fetching recommendations for userId:', userId); // Debug log
       const result = await recommendationService.getRecommendations(userId, limit);
-      const convertedProducts = result.products.map(convertApiProductToProduct);
-      setRecommendations(convertedProducts);
+      setRecommendations(result.products);
       setIsPersonalized(result.is_personalized);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch recommendations');
@@ -52,8 +51,7 @@ export const useAllProducts = () => {
     
     try {
       const result = await recommendationService.getAllProducts();
-      const convertedProducts = result.map(convertApiProductToProduct);
-      setProducts(convertedProducts);
+      setProducts(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch products');
     } finally {

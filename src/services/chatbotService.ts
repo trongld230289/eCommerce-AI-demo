@@ -1,4 +1,4 @@
-import { Product } from '../types';
+import { Product } from '../contexts/ShopContext';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -32,6 +32,10 @@ export const chatbotService = {
 
       const data = await response.json();
       
+      // Debug logging
+      console.log('Chatbot API response:', data);
+      console.log('Products returned:', data.products);
+      
       // Check if this is a product search query
       const hasSearchParams = data.search_params && (
         data.search_params.category || 
@@ -44,7 +48,6 @@ export const chatbotService = {
       if (hasSearchParams && data.products && data.products.length > 0) {
         // Create search URL
         const searchParams = new URLSearchParams();
-        searchParams.append('chatbot', request.message);
         
         if (data.search_params.category) {
           searchParams.append('category', data.search_params.category);
@@ -59,7 +62,12 @@ export const chatbotService = {
           searchParams.append('maxPrice', data.search_params.max_price.toString());
         }
         if (data.search_params.keywords) {
-          searchParams.append('q', data.search_params.keywords.join(' '));
+          const keywordsString = Array.isArray(data.search_params.keywords) 
+            ? data.search_params.keywords.join(' ') 
+            : data.search_params.keywords;
+          searchParams.append('q', keywordsString);
+          // Also add chatbot parameter to indicate this is from chatbot
+          searchParams.append('chatbot', keywordsString);
         }
 
         return {

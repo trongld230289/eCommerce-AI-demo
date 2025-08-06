@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { chatbotService } from '../../services/chatbotService';
-import { Product } from '../../types';
+import { Product } from '../../contexts/ShopContext';
 import './Chatbot.css';
 
 // Add type declarations for Web Speech API
@@ -112,6 +112,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         message: messageText,
         user_id: currentUser?.uid
       });
+
+      console.log('Chatbot response received:', response);
+      console.log('Products in response:', response.products);
 
       // Check if we should redirect to search page
       if (response.should_redirect && response.redirect_url) {
@@ -243,10 +246,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                             <h4 className="chatbot-product-name">{product.name}</h4>
                             <p className="chatbot-product-brand">{product.brand}</p>
                             <p className="chatbot-product-price">
-                              {new Intl.NumberFormat('vi-VN', {
-                                style: 'currency',
-                                currency: 'VND'
-                              }).format(product.price)}
+                              ${product.price}
+                              {product.originalPrice && (
+                                <span className="chatbot-product-original-price" style={{ marginLeft: '8px', textDecoration: 'line-through', color: '#999' }}>
+                                  ${product.originalPrice}
+                                </span>
+                              )}
                             </p>
                           </div>
                         </div>
