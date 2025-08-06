@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebookF, faGoogle } from '@fortawesome/free-brands-svg-icons';
@@ -15,7 +13,7 @@ interface AuthDialogProps {
 
 const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
-  const { loginWithGoogle } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
 
   // Sync internal mode state with initialMode prop
   useEffect(() => {
@@ -24,6 +22,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -47,15 +46,16 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
     
     try {
       if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
+        await login(email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await register(email, password, displayName || undefined);
       }
       onClose();
       // Reset form
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+      setDisplayName('');
       setError('');
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -124,6 +124,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
     setEmail('');
     setPassword('');
     setConfirmPassword('');
+    setDisplayName('');
   };
 
   if (!isOpen) return null;
@@ -183,6 +184,22 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
               />
             </div>
           </div>
+
+          {mode === 'register' && (
+            <div className="auth-dialog-form-group">
+              <div className="auth-dialog-input-wrapper">
+                <FontAwesomeIcon icon={faUser} className="auth-dialog-input-icon" />
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="auth-dialog-input"
+                  placeholder="Display Name (optional)"
+                  autoComplete="name"
+                />
+              </div>
+            </div>
+          )}
 
           {mode === 'register' && (
             <div className="auth-dialog-form-group">
