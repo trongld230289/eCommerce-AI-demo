@@ -5,7 +5,6 @@ import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ShopProvider, useShop } from './contexts/ShopContext';
 import { ToastProvider } from './contexts/ToastContext';
-import { Login, Register } from './components/Auth';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import Products from './pages/Products';
@@ -323,8 +322,6 @@ function App() {
               <Navbar />
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/products" element={<Products />} />
