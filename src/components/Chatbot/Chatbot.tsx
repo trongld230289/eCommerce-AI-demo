@@ -41,6 +41,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
+  const [error, setError] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize speech recognition
@@ -49,16 +50,19 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     if (SpeechRecognition) {
       const recognitionInstance = new SpeechRecognition();
       recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
       recognitionInstance.lang = 'en-US';
+      recognitionInstance.interimResults = false;
+      recognitionInstance.maxAlternatives = 1;
 
       recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputValue(transcript);
-        setIsListening(false);
+        const text = event.results[0][0].transcript;
+        setInputValue(text);
+        // Automatically send message when voice input is received
+        handleMessageSubmit(text);
       };
 
-      recognitionInstance.onerror = () => {
+      recognitionInstance.onerror = (event: any) => {
+        setError('Error occurred in recognition: ' + event.error);
         setIsListening(false);
       };
 
@@ -67,6 +71,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
       };
 
       setRecognition(recognitionInstance);
+    } else {
+      setError('Speech recognition not supported in your browser');
     }
   }, []);
 
@@ -90,18 +96,85 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     };
   }, [isVisible]);
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
+  const handleMessageSubmit = async (text: string) => {
+    if (!text.trim()) return;
 
     const userMessage: Message = {
       id: Date.now(),
-      text: inputValue,
+      text: text,
       isUser: true,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsTyping(true);
+
+    try {
+      // Call the backend chatbot API
+      const response = await chatbotService.sendMessage({
+        message: text,
+        user_id: currentUser?.uid
+      });
+
+      console.log('Chatbot response received:', response);
+      console.log('Products in response:', response.products);
+
+      // Check if we should redirect to search page
+      if (response.should_redirect && response.redirect_url) {
+        // Add a message about redirecting
+        const redirectMessage: Message = {
+          id: Date.now() + 1,
+          text: `${response.response}\n\nRedirecting you to the search page to show all results...`,
+          isUser: false,
+          timestamp: new Date(),
+          products: response.products?.slice(0, 2) // Show just a preview
+        };
+        
+        setMessages(prev => [...prev, redirectMessage]);
+        
+        // Close chatbot and redirect after a short delay
+        setTimeout(() => {
+          onClose();
+          navigate(response.redirect_url!);
+        }, 2000);
+      } else {
+        // Normal chatbot response
+        const botResponse: Message = {
+          id: Date.now() + 1,
+          text: response.response,
+          isUser: false,
+          timestamp: new Date(),
+          products: response.products
+        };
+
+        setMessages(prev => [...prev, botResponse]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Fallback to local response
+      const botResponse: Message = {
+        id: Date.now() + 1,
+        text: getBotResponse(text),
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botResponse]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleMessageSubmit(inputValue);
+    
+    setMessages(prev => [...prev, {
+      id: Date.now(),
+      text: inputValue,
+      isUser: true,
+      timestamp: new Date()
+    }]);
     const messageText = inputValue;
     setInputValue('');
     setIsTyping(true);

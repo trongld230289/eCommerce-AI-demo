@@ -1,7 +1,7 @@
 import json
 import os
 from typing import List, Optional, Dict, Any
-from openai import AzureOpenAI
+from openai import OpenAI
 from data import products_data
 from models import Product
 
@@ -22,10 +22,9 @@ if not azure_endpoint or not api_key:
     )
 client = None
 try:
-    client = AzureOpenAI(
-    api_version="2024-07-01-preview",
-    azure_endpoint=azure_endpoint,
-    api_key=api_key,
+    client = OpenAI(
+        base_url=azure_endpoint,
+        api_key=api_key
     )
 except Exception as e:
     print(f"Warning: OpenAI client not initialized. Set AZURE_OPENAI_API_KEY environment variable. Error: {e}")
@@ -147,13 +146,40 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
         return await fallback_product_search(user_message)
     
     try:
+        print("DEBUG: Starting to process message:", user_message)
         # Create system prompt
-        system_prompt = """You are a helpful e-commerce assistant. When users ask about products, use the search_products function to find relevant items. 
-        
-        Available categories: Electronics
-        Available brands: AudioTech, TechWatch, GameMaster, PhoneTech, SoundWave, GamerGear, KeyMaster, TabletPro
-        
-        Extract category, brand, price range, and relevant keywords from user queries. Prices are in USD."""
+        system_prompt = """You are Electro AI, a friendly and personable AI assistant who happens to work at an electronics store. Your primary role is to be a helpful, engaging conversation partner first, and a shopping assistant second.
+
+        Core Personality Traits:
+        - Friendly and empathetic - you genuinely care about the customer's day and feelings
+        - Natural and conversational - you chat like a friend, not a robot
+        - Patient - you don't rush to sell products
+        - Helpful - but only with products when specifically asked
+
+        Conversation Guidelines:
+        1. Always prioritize natural conversation over product recommendations
+        2. Respond appropriately to personal questions (like "how are you?")
+        3. Show genuine interest in the customer's needs and feelings
+        4. Only talk about products when the customer explicitly asks
+        5. Never force product suggestions into casual conversation
+
+        Response Examples:
+        - "How are you?" → Respond about your day, ask them back
+        - "Hey there!" → Warm greeting, maybe ask how they're doing
+        - "I'm looking for a laptop" → Now you can help with products
+        - "I'm having a bad day" → Show empathy, don't push products
+
+        Product Search Guidelines (only when relevant):
+        - Categories: Electronics
+        - Brands: AudioTech, TechWatch, GameMaster, PhoneTech, SoundWave, GamerGear, KeyMaster, TabletPro
+        - Include price ranges and keywords only when specifically mentioned
+        - All prices in USD
+
+        Remember:
+        - Not every interaction requires product search
+        - Build rapport through conversation first
+        - Only use search_products when the user's intent is clearly about finding products
+        - Maintain a helpful and friendly tone while being natural in conversation"""
         
         # Call OpenAI with function calling
         response = client.chat.completions.create(
@@ -168,7 +194,9 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
         
         message = response.choices[0].message
         
+        print("DEBUG: Got response from OpenAI")
         if message.tool_calls:
+            print("DEBUG: Model decided to search for products")
             # Extract function arguments from the first tool call
             tool_call = message.tool_calls[0]
             function_args = json.loads(tool_call.function.arguments)
@@ -200,6 +228,7 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
                 "search_params": function_args
             }
         else:
+            print("DEBUG: Model is responding conversationally:", message.content)
             # No function call, return regular response
             return {
                 "response": message.content,
@@ -208,14 +237,67 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
             }
             
     except Exception as e:
-        print(f"OpenAI API error: {e}")
+        print(f"DEBUG: OpenAI API error occurred: {e}")
+        # If the AI model fails, use the basic product search as last resort
         return await fallback_product_search(user_message)
 
 async def fallback_product_search(user_message: str) -> Dict[str, Any]:
     """
-    Fallback product search using simple keyword matching when OpenAI is not available
+    Fallback conversation handler with product search as a last resort
     """
+    print("DEBUG: Entered fallback_product_search with message:", user_message)
     message_lower = user_message.lower()
+    
+    # Handle different types of messages
+    
+    # 1. Greetings
+    greetings = ["hi", "hello", "hey", "hi there", "hello there", "hey there"]
+    if any(greeting in message_lower for greeting in greetings):
+        return {
+            "response": "Hi there! It's great to meet you! How are you doing today?",
+            "products": [],
+            "search_params": {}
+        }
+    
+    # 2. How are you / Personal questions
+    how_are_you = ["how are you", "how's it going", "how are things", "how do you do", "what's up"]
+    if any(phrase in message_lower for phrase in how_are_you):
+        return {
+            "response": "I'm doing great, thanks for asking! It's always nice to have a friendly chat. How about you - how's your day going?",
+            "products": [],
+            "search_params": {}
+        }
+    
+    # 3. Check if this is explicitly about products
+    # First check for direct product mentions
+    product_keywords = [
+        "laptop", "phone", "headphone", "speaker", "mouse", "keyboard", 
+        "tablet", "watch", "smartphone", "computer", "monitor", "gadget"
+    ]
+    has_product_mention = any(keyword in message_lower for keyword in product_keywords)
+    
+    # Check for price-related queries
+    price_indicators = ["$", "dollar", "bucks", "price", "cost", "cheap", "expensive", "about", "around"]
+    has_price_mention = any(indicator in message_lower for indicator in price_indicators)
+    
+    # Then check for search intent phrases
+    search_phrases = ["looking for", "search for", "find me", "show me", "need a", "want to buy", 
+                     "recommend", "suggestion", "do you have", "i want", "give me", "anything"]
+    has_search_intent = any(phrase in message_lower for phrase in search_phrases)
+    
+    # If any condition is true, proceed with product search
+    is_product_query = has_product_mention or has_search_intent or has_price_mention
+    
+    if not is_product_query:
+        response = "I'm not sure what you're looking for. Could you please be more specific? You can:\n"
+        response += "• Ask about specific products (like laptops, phones, headphones)\n"
+        response += "• Mention a price range (like 'around $500' or 'under $1000')\n"
+        response += "• Or just tell me what features you're looking for!"
+        return {
+            "response": response,
+            "products": [],
+            "search_params": {}
+        }
     
     # Simple keyword extraction
     category = None
@@ -255,20 +337,61 @@ async def fallback_product_search(user_message: str) -> Dict[str, Any]:
     
     # Extract price range (simple regex-like matching)
     import re
-    price_patterns = [
-        r'under\s*\$?(\d+(?:,\d{3})*)',
-        r'below\s*\$?(\d+(?:,\d{3})*)',
-        r'less than\s*\$?(\d+(?:,\d{3})*)',
-        r'maximum\s*\$?(\d+(?:,\d{3})*)',
-        r'max\s*\$?(\d+(?:,\d{3})*)'
-    ]
+    # Patterns for price matching
+    price_patterns = {
+        'exact': [
+            r'(?:about|around|approximately)\s*\$?(\d+(?:,\d{3})*)',
+            r'\$?(\d+(?:,\d{3})*)\s*(?:price|cost|dollars?|bucks)',
+            r'(?:at|for)\s*\$?(\d+(?:,\d{3})*)',
+            r'\$(\d+(?:,\d{3})*)',
+            r'(\d+(?:,\d{3})*)\s*(?:\$|dollars?|bucks)'
+        ],
+        'max': [
+            r'under\s*\$?(\d+(?:,\d{3})*)',
+            r'below\s*\$?(\d+(?:,\d{3})*)',
+            r'less than\s*\$?(\d+(?:,\d{3})*)',
+            r'maximum\s*\$?(\d+(?:,\d{3})*)',
+            r'max\s*\$?(\d+(?:,\d{3})*)'
+        ],
+        'min': [
+            r'over\s*\$?(\d+(?:,\d{3})*)',
+            r'above\s*\$?(\d+(?:,\d{3})*)',
+            r'more than\s*\$?(\d+(?:,\d{3})*)',
+            r'minimum\s*\$?(\d+(?:,\d{3})*)',
+            r'at least\s*\$?(\d+(?:,\d{3})*)',
+            r'starting (?:at|from)\s*\$?(\d+(?:,\d{3})*)'
+        ]
+    }
     
-    for pattern in price_patterns:
+    # Try to match exact price first (for "about" queries)
+    for pattern in price_patterns['exact']:
         match = re.search(pattern, message_lower)
         if match:
             price_str = match.group(1).replace(',', '')
-            max_price = convert_price_to_usd(price_str)
-            break
+            price = convert_price_to_usd(price_str)
+            if price:
+                # For "about" queries, set a range of ±20%
+                min_price = price * 0.8
+                max_price = price * 1.2
+                break
+
+    # If no exact match, try max price patterns
+    if min_price is None and max_price is None:
+        for pattern in price_patterns['max']:
+            match = re.search(pattern, message_lower)
+            if match:
+                price_str = match.group(1).replace(',', '')
+                max_price = convert_price_to_usd(price_str)
+                break
+
+    # If still no match, try min price patterns
+    if min_price is None and max_price is None:
+        for pattern in price_patterns['min']:
+            match = re.search(pattern, message_lower)
+            if match:
+                price_str = match.group(1).replace(',', '')
+                min_price = convert_price_to_usd(price_str)
+                break
     
     # Search products
     products = search_products(
