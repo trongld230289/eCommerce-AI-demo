@@ -17,7 +17,6 @@ import { useToast } from '../contexts/ToastContext';
 import SimpleProductCard from '../components/SimpleProductCard';
 import Recommendations from '../components/Recommendations';
 import type { Product } from '../contexts/ShopContext';
-import './ProductDetails.css';
 
 // Sample products data - in a real app this would come from an API or context
 const sampleProducts: Product[] = [
@@ -82,6 +81,420 @@ const ProductDetails: React.FC = () => {
   const navigate = useNavigate();
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { showSuccess, showWishlist } = useToast();
+  
+  // Add responsive state
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isSmallMobile, setIsSmallMobile] = useState(window.innerWidth <= 480);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      setIsSmallMobile(window.innerWidth <= 480);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Inline styles object
+  const styles = {
+    productDetails: {
+      maxWidth: '1200px',
+      margin: '0 auto',
+      padding: isMobile ? '15px' : '20px',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
+    breadcrumb: {
+      padding: '10px 0',
+      marginBottom: '20px',
+      fontSize: isSmallMobile ? '12px' : '14px',
+      color: '#6c757d'
+    },
+    breadcrumbLink: {
+      color: '#007bff',
+      textDecoration: 'none'
+    },
+    productDetailsLoading: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '50vh',
+      fontSize: '18px',
+      color: '#6c757d'
+    },
+    productMain: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+      gap: isMobile ? '30px' : '40px',
+      marginBottom: '40px'
+    },
+    productImages: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '15px'
+    },
+    mainImage: {
+      width: '100%',
+      aspectRatio: '1',
+      overflow: 'hidden',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+    },
+    mainProductImage: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover' as const,
+      transition: 'transform 0.3s ease'
+    },
+    imageThumbnails: {
+      display: 'flex',
+      gap: '10px',
+      overflowX: 'auto' as const,
+      padding: '5px 0',
+      justifyContent: isMobile ? 'center' : 'flex-start'
+    },
+    thumbnail: {
+      width: '80px',
+      height: '80px',
+      objectFit: 'cover' as const,
+      borderRadius: '6px',
+      cursor: 'pointer',
+      opacity: 0.7,
+      transition: 'all 0.3s ease',
+      border: '2px solid transparent'
+    },
+    thumbnailActive: {
+      opacity: 1,
+      borderColor: '#fed700',
+      boxShadow: '0 0 10px rgba(254, 215, 0, 0.3)'
+    },
+    productInfo: {
+      padding: isMobile ? '0' : '0 20px'
+    },
+    productCategory: {
+      color: '#007bff',
+      fontSize: '14px',
+      fontWeight: 600,
+      marginBottom: '10px',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.5px'
+    },
+    productTitle: {
+      fontSize: isSmallMobile ? '20px' : isMobile ? '24px' : '28px',
+      fontWeight: 700,
+      color: '#333',
+      marginBottom: '15px',
+      lineHeight: 1.3
+    },
+    productRating: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      marginBottom: '15px'
+    },
+    stars: {
+      display: 'flex',
+      gap: '2px'
+    },
+    starFilled: {
+      color: '#ffc107',
+      fontSize: '16px'
+    },
+    starEmpty: {
+      color: '#e9ecef',
+      fontSize: '16px'
+    },
+    ratingText: {
+      color: '#6c757d',
+      fontSize: '14px'
+    },
+    productAvailability: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      marginBottom: '20px',
+      color: '#28a745',
+      fontWeight: 600
+    },
+    checkIcon: {
+      color: '#28a745'
+    },
+    productFeatures: {
+      backgroundColor: '#f8f9fa',
+      padding: '20px',
+      borderRadius: '8px',
+      marginBottom: '20px'
+    },
+    featureItem: {
+      marginBottom: '8px',
+      color: '#495057',
+      fontSize: '14px',
+      lineHeight: 1.5
+    },
+    productShortDescription: {
+      color: '#6c757d',
+      fontSize: '16px',
+      lineHeight: 1.6,
+      marginBottom: '20px'
+    },
+    productSku: {
+      fontSize: '14px',
+      color: '#6c757d',
+      marginBottom: '20px'
+    },
+    productPrice: {
+      marginBottom: '30px'
+    },
+    currentPrice: {
+      fontSize: isSmallMobile ? '24px' : isMobile ? '28px' : '32px',
+      fontWeight: 700,
+      color: '#dc3545'
+    },
+    originalPrice: {
+      fontSize: isSmallMobile ? '18px' : isMobile ? '20px' : '24px',
+      color: '#6c757d',
+      textDecoration: 'line-through',
+      marginLeft: '15px'
+    },
+    productOptions: {
+      marginBottom: '30px'
+    },
+    colorSelection: {
+      marginBottom: '20px'
+    },
+    quantitySelection: {
+      marginBottom: '20px'
+    },
+    optionLabel: {
+      display: 'block',
+      fontWeight: 600,
+      marginBottom: '10px',
+      color: '#333'
+    },
+    colorOptions: {
+      display: 'flex',
+      gap: '10px',
+      flexWrap: 'wrap' as const
+    },
+    colorOption: {
+      padding: '8px 16px',
+      border: '2px solid #e9ecef',
+      borderRadius: '6px',
+      backgroundColor: 'white',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      fontSize: '14px'
+    },
+    colorOptionSelected: {
+      borderColor: '#fed700',
+      backgroundColor: '#fed700',
+      color: '#333',
+      fontWeight: 600
+    },
+    quantityControls: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0',
+      border: '2px solid #e9ecef',
+      borderRadius: '6px',
+      overflow: 'hidden',
+      width: isSmallMobile ? '100%' : 'fit-content'
+    },
+    quantityBtn: {
+      backgroundColor: '#f8f9fa',
+      border: 'none',
+      padding: '12px 16px',
+      cursor: 'pointer',
+      transition: 'background-color 0.3s ease',
+      color: '#495057'
+    },
+    quantityBtnDisabled: {
+      opacity: 0.5,
+      cursor: 'not-allowed'
+    },
+    quantityDisplay: {
+      padding: '12px 20px',
+      backgroundColor: 'white',
+      fontWeight: 600,
+      minWidth: '60px',
+      textAlign: 'center' as const,
+      borderLeft: '1px solid #e9ecef',
+      borderRight: '1px solid #e9ecef',
+      flex: isSmallMobile ? 1 : 'none'
+    },
+    productActions: {
+      display: 'flex',
+      gap: '15px',
+      flexWrap: 'wrap' as const,
+      flexDirection: isMobile ? 'column' as const : 'row' as const
+    },
+    addToCartBtn: {
+      backgroundColor: '#fed700',
+      color: '#333',
+      border: 'none',
+      padding: '15px 30px',
+      borderRadius: '6px',
+      fontSize: '16px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      flex: 1,
+      justifyContent: 'center',
+      minWidth: isMobile ? '100%' : '180px'
+    },
+    actionBtn: {
+      backgroundColor: 'white',
+      color: '#6c757d',
+      border: '2px solid #e9ecef',
+      padding: '15px',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: '50px'
+    },
+    wishlistBtnActive: {
+      backgroundColor: '#dc3545',
+      color: 'white',
+      borderColor: '#dc3545'
+    },
+    productTabs: {
+      marginBottom: '40px'
+    },
+    tabHeaders: {
+      display: 'flex',
+      borderBottom: '2px solid #e9ecef',
+      marginBottom: '30px',
+      flexWrap: isMobile ? 'wrap' as const : 'nowrap' as const
+    },
+    tabHeader: {
+      background: 'none',
+      border: 'none',
+      padding: '15px 25px',
+      cursor: 'pointer',
+      fontSize: '16px',
+      fontWeight: 600,
+      color: '#6c757d',
+      transition: 'all 0.3s ease',
+      borderBottom: '3px solid transparent',
+      flex: isMobile ? 1 : 'none',
+      minWidth: isMobile ? '120px' : 'auto',
+      textAlign: isMobile ? 'center' as const : 'left' as const
+    },
+    tabHeaderActive: {
+      color: '#fed700',
+      borderBottomColor: '#fed700'
+    },
+    tabContent: {
+      padding: '20px 0'
+    },
+    tabContentH3: {
+      fontSize: '24px',
+      fontWeight: 700,
+      color: '#333',
+      marginBottom: '20px'
+    },
+    descriptionP: {
+      color: '#6c757d',
+      lineHeight: 1.8,
+      marginBottom: '15px'
+    },
+    specsTable: {
+      width: '100%',
+      borderCollapse: 'collapse' as const,
+      backgroundColor: 'white',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    },
+    specsTableRowEven: {
+      backgroundColor: '#f8f9fa'
+    },
+    specLabel: {
+      padding: '15px 20px',
+      fontWeight: 600,
+      color: '#333',
+      width: '30%',
+      borderRight: '1px solid #e9ecef'
+    },
+    specValue: {
+      padding: '15px 20px',
+      color: '#6c757d'
+    },
+    reviewsSummary: {
+      backgroundColor: '#f8f9fa',
+      padding: '30px',
+      borderRadius: '8px',
+      marginBottom: '30px',
+      textAlign: 'center' as const
+    },
+    averageRating: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center'
+    },
+    ratingNumber: {
+      fontSize: '48px',
+      fontWeight: 700,
+      color: '#333',
+      marginBottom: '10px'
+    },
+    totalReviews: {
+      color: '#6c757d',
+      fontSize: '16px'
+    },
+    reviewsList: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '25px'
+    },
+    reviewItem: {
+      backgroundColor: 'white',
+      padding: '25px',
+      borderRadius: '8px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    },
+    reviewHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '15px',
+      marginBottom: '15px',
+      flexWrap: 'wrap' as const
+    },
+    reviewerName: {
+      fontWeight: 600,
+      color: '#333'
+    },
+    reviewDate: {
+      color: '#6c757d',
+      fontSize: '14px',
+      marginLeft: 'auto'
+    },
+    reviewComment: {
+      color: '#6c757d',
+      lineHeight: 1.6
+    },
+    relatedProducts: {
+      marginTop: '60px'
+    },
+    relatedProductsH2: {
+      fontSize: '32px',
+      fontWeight: 700,
+      color: '#333',
+      textAlign: 'center' as const,
+      marginBottom: '40px'
+    },
+    relatedProductsGrid: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? 'repeat(auto-fit, minmax(200px, 1fr))' : 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: isMobile ? '20px' : '30px'
+    }
+  };
   
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -163,7 +576,7 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
   }, [id, navigate, productDetails.colors]);
 
   if (!product) {
-    return <div className="product-details-loading">Loading...</div>;
+    return <div style={styles.productDetailsLoading}>Loading...</div>;
   }
 
   const handleAddToCart = () => {
@@ -179,21 +592,21 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
   };
 
   const renderStars = (rating: number) => {
-    const stars = [];
+    const stars: JSX.Element[] = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
 
     for (let i = 0; i < fullStars; i++) {
-      stars.push(<FontAwesomeIcon key={i} icon={faStar} className="star-filled" />);
+      stars.push(<FontAwesomeIcon key={i} icon={faStar} style={styles.starFilled} />);
     }
 
     if (hasHalfStar) {
-      stars.push(<FontAwesomeIcon key="half" icon={faStarHalfAlt} className="star-filled" />);
+      stars.push(<FontAwesomeIcon key="half" icon={faStarHalfAlt} style={styles.starFilled} />);
     }
 
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
-      stars.push(<FontAwesomeIcon key={`empty-${i}`} icon={faStar} className="star-empty" />);
+      stars.push(<FontAwesomeIcon key={`empty-${i}`} icon={faStar} style={styles.starEmpty} />);
     }
 
     return stars;
@@ -202,12 +615,12 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
   const averageRating = productDetails.reviews.reduce((acc, review) => acc + review.rating, 0) / productDetails.reviews.length;
 
   return (
-    <div className="product-details">
+    <div style={styles.productDetails}>
       {/* Breadcrumb */}
-      <div className="breadcrumb">
-        <Link to="/">Home</Link>
+      <div style={styles.breadcrumb}>
+        <Link to="/" style={styles.breadcrumbLink}>Home</Link>
         <span> / </span>
-        <Link to="/products">Products</Link>
+        <Link to="/products" style={styles.breadcrumbLink}>Products</Link>
         <span> / </span>
         <span>{product.category}</span>
         <span> / </span>
@@ -215,23 +628,26 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
       </div>
 
       {/* Main Product Section */}
-      <div className="product-main">
+      <div style={styles.productMain}>
         {/* Product Images */}
-        <div className="product-images">
-          <div className="main-image">
+        <div style={styles.productImages}>
+          <div style={styles.mainImage}>
             <img 
               src={productDetails.images[selectedImage]} 
               alt={product.name}
-              className="main-product-image"
+              style={styles.mainProductImage}
             />
           </div>
-          <div className="image-thumbnails">
+          <div style={styles.imageThumbnails}>
             {productDetails.images.map((image, index) => (
               <img
                 key={index}
                 src={image}
                 alt={`${product.name} ${index + 1}`}
-                className={`thumbnail ${selectedImage === index ? 'active' : ''}`}
+                style={{
+                  ...styles.thumbnail,
+                  ...(selectedImage === index ? styles.thumbnailActive : {})
+                }}
                 onClick={() => setSelectedImage(index)}
               />
             ))}
@@ -239,62 +655,65 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
         </div>
 
         {/* Product Info */}
-        <div className="product-info">
-          <div className="product-category">{product.category}</div>
-          <h1 className="product-title">{product.name}</h1>
+        <div style={styles.productInfo}>
+          <div style={styles.productCategory}>{product.category}</div>
+          <h1 style={styles.productTitle}>{product.name}</h1>
           
           {/* Rating */}
-          <div className="product-rating">
-            <div className="stars">
+          <div style={styles.productRating}>
+            <div style={styles.stars}>
               {renderStars(averageRating)}
             </div>
-            <span className="rating-text">
+            <span style={styles.ratingText}>
               ({productDetails.reviews.length} customer reviews)
             </span>
           </div>
 
           {/* Availability */}
-          <div className="product-availability">
-            <FontAwesomeIcon icon={faCheck} className="check-icon" />
+          <div style={styles.productAvailability}>
+            <FontAwesomeIcon icon={faCheck} style={styles.checkIcon} />
             <span>Availability: {productDetails.stock} in stock</span>
           </div>
 
           {/* Features */}
-          <div className="product-features">
+          <div style={styles.productFeatures}>
             {productDetails.features.map((feature, index) => (
-              <div key={index} className="feature-item">
+              <div key={index} style={styles.featureItem}>
                 • {feature}
               </div>
             ))}
           </div>
 
           {/* Description */}
-          <div className="product-short-description">
+          <div style={styles.productShortDescription}>
             {productDetails.description.split('\n')[0]}
           </div>
 
           {/* SKU */}
-          <div className="product-sku">
+          <div style={styles.productSku}>
             <strong>SKU:</strong> {productDetails.sku}
           </div>
 
           {/* Price */}
-          <div className="product-price">
-            <span className="current-price">${product.price}</span>
+          <div style={styles.productPrice}>
+            <span style={styles.currentPrice}>${product.price}</span>
             {product.originalPrice && (
-              <span className="original-price">${product.originalPrice}</span>
+              <span style={styles.originalPrice}>${product.originalPrice}</span>
             )}
           </div>
 
           {/* Color Selection */}
-          <div className="product-options">
-            <div className="color-selection">
-              <label>Color:</label>
-              <div className="color-options">
+          <div style={styles.productOptions}>
+            <div style={styles.colorSelection}>
+              <label style={styles.optionLabel}>Color:</label>
+              <div style={styles.colorOptions}>
                 {productDetails.colors.map((color) => (
                   <button
                     key={color}
-                    className={`color-option ${selectedColor === color ? 'selected' : ''}`}
+                    style={{
+                      ...styles.colorOption,
+                      ...(selectedColor === color ? styles.colorOptionSelected : {})
+                    }}
                     onClick={() => setSelectedColor(color)}
                     title={color}
                   >
@@ -305,19 +724,25 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
             </div>
 
             {/* Quantity Selection */}
-            <div className="quantity-selection">
-              <label>Quantity:</label>
-              <div className="quantity-controls">
+            <div style={styles.quantitySelection}>
+              <label style={styles.optionLabel}>Quantity:</label>
+              <div style={styles.quantityControls}>
                 <button 
-                  className="quantity-btn"
+                  style={{
+                    ...styles.quantityBtn,
+                    ...(quantity <= 1 ? styles.quantityBtnDisabled : {})
+                  }}
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   disabled={quantity <= 1}
                 >
                   <FontAwesomeIcon icon={faMinus} />
                 </button>
-                <span className="quantity-display">{quantity}</span>
+                <span style={styles.quantityDisplay}>{quantity}</span>
                 <button 
-                  className="quantity-btn"
+                  style={{
+                    ...styles.quantityBtn,
+                    ...(quantity >= productDetails.stock ? styles.quantityBtnDisabled : {})
+                  }}
                   onClick={() => setQuantity(Math.min(productDetails.stock, quantity + 1))}
                   disabled={quantity >= productDetails.stock}
                 >
@@ -328,23 +753,26 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
           </div>
 
           {/* Action Buttons */}
-          <div className="product-actions">
-            <button className="add-to-cart-btn" onClick={handleAddToCart}>
+          <div style={styles.productActions}>
+            <button style={styles.addToCartBtn} onClick={handleAddToCart}>
               <FontAwesomeIcon icon={faShoppingCart} />
               Add to Cart
             </button>
             <button 
-              className={`wishlist-btn ${isInWishlist(product.id) ? 'active' : ''}`}
+              style={{
+                ...styles.actionBtn,
+                ...(isInWishlist(product.id) ? styles.wishlistBtnActive : {})
+              }}
               onClick={handleAddToWishlist}
             >
               <FontAwesomeIcon icon={faHeart} />
               Wishlist
             </button>
-            <button className="compare-btn">
+            <button style={styles.actionBtn}>
               <FontAwesomeIcon icon={faCompressArrowsAlt} />
               Compare
             </button>
-            <button className="share-btn">
+            <button style={styles.actionBtn}>
               <FontAwesomeIcon icon={faShareAlt} />
               Share
             </button>
@@ -353,47 +781,56 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
       </div>
 
       {/* Product Details Tabs */}
-      <div className="product-tabs">
-        <div className="tab-headers">
+      <div style={styles.productTabs}>
+        <div style={styles.tabHeaders}>
           <button 
-            className={`tab-header ${activeTab === 'description' ? 'active' : ''}`}
+            style={{
+              ...styles.tabHeader,
+              ...(activeTab === 'description' ? styles.tabHeaderActive : {})
+            }}
             onClick={() => setActiveTab('description')}
           >
             Description
           </button>
           <button 
-            className={`tab-header ${activeTab === 'specifications' ? 'active' : ''}`}
+            style={{
+              ...styles.tabHeader,
+              ...(activeTab === 'specifications' ? styles.tabHeaderActive : {})
+            }}
             onClick={() => setActiveTab('specifications')}
           >
             Specifications
           </button>
           <button 
-            className={`tab-header ${activeTab === 'reviews' ? 'active' : ''}`}
+            style={{
+              ...styles.tabHeader,
+              ...(activeTab === 'reviews' ? styles.tabHeaderActive : {})
+            }}
             onClick={() => setActiveTab('reviews')}
           >
             Reviews ({productDetails.reviews.length})
           </button>
         </div>
 
-        <div className="tab-content">
+        <div style={styles.tabContent}>
           {activeTab === 'description' && (
-            <div className="description-content">
-              <h3>Product Description</h3>
+            <div>
+              <h3 style={styles.tabContentH3}>Product Description</h3>
               {productDetails.description.split('\n').map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
+                <p key={index} style={styles.descriptionP}>{paragraph}</p>
               ))}
             </div>
           )}
 
           {activeTab === 'specifications' && (
-            <div className="specifications-content">
-              <h3>Product Specifications</h3>
-              <table className="specs-table">
+            <div>
+              <h3 style={styles.tabContentH3}>Product Specifications</h3>
+              <table style={styles.specsTable}>
                 <tbody>
-                  {Object.entries(productDetails.specifications).map(([key, value]) => (
-                    <tr key={key}>
-                      <td className="spec-label">{key}</td>
-                      <td className="spec-value">{value}</td>
+                  {Object.entries(productDetails.specifications).map(([key, value], index) => (
+                    <tr key={key} style={index % 2 === 1 ? styles.specsTableRowEven : {}}>
+                      <td style={styles.specLabel}>{key}</td>
+                      <td style={styles.specValue}>{value}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -402,29 +839,29 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
           )}
 
           {activeTab === 'reviews' && (
-            <div className="reviews-content">
-              <h3>Customer Reviews</h3>
-              <div className="reviews-summary">
-                <div className="average-rating">
-                  <div className="rating-number">{averageRating.toFixed(1)}</div>
-                  <div className="stars">
+            <div>
+              <h3 style={styles.tabContentH3}>Customer Reviews</h3>
+              <div style={styles.reviewsSummary}>
+                <div style={styles.averageRating}>
+                  <div style={styles.ratingNumber}>{averageRating.toFixed(1)}</div>
+                  <div style={styles.stars}>
                     {renderStars(averageRating)}
                   </div>
-                  <div className="total-reviews">Based on {productDetails.reviews.length} reviews</div>
+                  <div style={styles.totalReviews}>Based on {productDetails.reviews.length} reviews</div>
                 </div>
               </div>
               
-              <div className="reviews-list">
+              <div style={styles.reviewsList}>
                 {productDetails.reviews.map((review) => (
-                  <div key={review.id} className="review-item">
-                    <div className="review-header">
-                      <div className="reviewer-name">{review.name}</div>
-                      <div className="review-rating">
+                  <div key={review.id} style={styles.reviewItem}>
+                    <div style={styles.reviewHeader}>
+                      <div style={styles.reviewerName}>{review.name}</div>
+                      <div style={styles.stars}>
                         {renderStars(review.rating)}
                       </div>
-                      <div className="review-date">{new Date(review.date).toLocaleDateString()}</div>
+                      <div style={styles.reviewDate}>{new Date(review.date).toLocaleDateString()}</div>
                     </div>
-                    <div className="review-comment">{review.comment}</div>
+                    <div style={styles.reviewComment}>{review.comment}</div>
                   </div>
                 ))}
               </div>
@@ -435,9 +872,9 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (
-        <div className="related-products">
-          <h2>Related Products</h2>
-          <div className="related-products-grid">
+        <div style={styles.relatedProducts}>
+          <h2 style={styles.relatedProductsH2}>Related Products</h2>
+          <div style={styles.relatedProductsGrid}>
             {relatedProducts.map((relatedProduct) => (
               <SimpleProductCard
                 key={relatedProduct.id}

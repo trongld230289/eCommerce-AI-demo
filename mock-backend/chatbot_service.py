@@ -57,13 +57,31 @@ def search_products(
     if max_price is not None:
         filtered_products = [p for p in filtered_products if p.price <= max_price]
     
-    # Filter by keywords in name or description
+    # Filter by keywords in name, description, and tags (but not brand to avoid confusion)
     if keywords:
-        for keyword in keywords:
-            filtered_products = [
-                p for p in filtered_products 
-                if keyword.lower() in p.name.lower() or keyword.lower() in p.description.lower()
-            ]
+        import re
+        keyword_filtered = []
+        for product in filtered_products:
+            # Check if any keyword matches product name, description, or tags
+            for keyword in keywords:
+                keyword_lower = keyword.lower()
+                
+                # Use word boundaries to match whole words only
+                # This prevents "phone" from matching "headphone"
+                word_pattern = r'\b' + re.escape(keyword_lower) + r'\b'
+                
+                # Check in product name
+                name_match = re.search(word_pattern, product.name.lower())
+                # Check in description
+                desc_match = re.search(word_pattern, product.description.lower())
+                # Check in tags
+                tag_match = any(re.search(word_pattern, tag.lower()) for tag in product.tags)
+                
+                if name_match or desc_match or tag_match:
+                    if product not in keyword_filtered:
+                        keyword_filtered.append(product)
+                    break  # Found a match, no need to check other keywords for this product
+        filtered_products = keyword_filtered
     
     return filtered_products[:10]  # Limit to 10 results
 
@@ -79,24 +97,24 @@ tools = [
                 "properties": {
                     "category": {
                         "type": "string",
-                        "description": "Product category (e.g., 'Điện thoại', 'Laptop', 'Tai nghe', 'Máy ảnh', 'TV', 'Máy chơi game')"
+                        "description": "Product category (e.g., 'Electronics')"
                     },
                     "brand": {
                         "type": "string", 
-                        "description": "Product brand (e.g., 'Apple', 'Samsung', 'Sony', 'Dell', 'LG', 'Nintendo')"
+                        "description": "Product brand (e.g., 'AudioTech', 'TechWatch', 'GameMaster', 'PhoneTech', 'SoundWave', 'GamerGear', 'KeyMaster', 'TabletPro')"
                     },
                     "min_price": {
                         "type": "number",
-                        "description": "Minimum price in VND"
+                        "description": "Minimum price in USD"
                     },
                     "max_price": {
                         "type": "number",
-                        "description": "Maximum price in VND"
+                        "description": "Maximum price in USD"
                     },
                     "keywords": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "description": "Keywords to search in product name and description"
+                        "description": "Keywords to search in product name, description, and tags. Extract main product types like 'phone', 'laptop', 'headphones', etc., not brand names."
                     }
                 },
                 "required": []
@@ -105,8 +123,8 @@ tools = [
     }
 ]
 
-def convert_price_to_vnd(price_str: str) -> Optional[float]:
-    """Convert price string with various formats to VND"""
+def convert_price_to_usd(price_str: str) -> Optional[float]:
+    """Convert price string with various formats to USD"""
     if not price_str:
         return None
     
@@ -115,9 +133,7 @@ def convert_price_to_vnd(price_str: str) -> Optional[float]:
     
     try:
         price = float(price_str)
-        # If it looks like USD (typically under 10000), convert to VND
-        if price < 10000:
-            return price * 25000  # Approximate USD to VND conversion
+        # Assume it's already in USD
         return price
     except ValueError:
         return None
@@ -134,14 +150,14 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
         # Create system prompt
         system_prompt = """You are a helpful e-commerce assistant. When users ask about products, use the search_products function to find relevant items. 
         
-        Available categories: Điện thoại (phones), Laptop, Tai nghe (headphones), Máy ảnh (cameras), TV, Máy chơi game (gaming consoles)
-        Available brands: Apple, Samsung, Sony, Dell, LG, Nintendo, Canon
+        Available categories: Electronics
+        Available brands: AudioTech, TechWatch, GameMaster, PhoneTech, SoundWave, GamerGear, KeyMaster, TabletPro
         
-        Convert USD prices to VND (multiply by 25,000). Extract category, brand, price range, and relevant keywords from user queries."""
+        Extract category, brand, price range, and relevant keywords from user queries. Prices are in USD."""
         
         # Call OpenAI with function calling
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
@@ -169,7 +185,7 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
             # Generate response message
             if products:
                 product_list = "\n".join([
-                    f"• {product.name} - {product.brand} - {product.price:,.0f} VND"
+                    f"• {product.name} - {product.brand} - ${product.price:.2f}"
                     for product in products[:5]
                 ])
                 response_text = f"I found {len(products)} products matching your criteria:\n\n{product_list}"
@@ -180,7 +196,7 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
             
             return {
                 "response": response_text,
-                "products": [product.dict() for product in products],
+                "products": [product.model_dump() for product in products],
                 "search_params": function_args
             }
         else:
@@ -210,22 +226,19 @@ async def fallback_product_search(user_message: str) -> Dict[str, Any]:
     
     # Category mapping
     category_keywords = {
-        "điện thoại": ["phone", "điện thoại", "iphone", "smartphone"],
-        "laptop": ["laptop", "máy tính", "computer"],
-        "tai nghe": ["headphone", "tai nghe", "earphone"],
-        "máy ảnh": ["camera", "máy ảnh"],
-        "tv": ["tv", "television", "tivi"],
-        "máy chơi game": ["gaming", "console", "nintendo", "switch"]
+        "electronics": ["electronics", "electronic", "tech", "technology", "gadget", "device"]
     }
     
     # Brand mapping
     brand_keywords = {
-        "apple": ["apple", "iphone", "macbook"],
-        "samsung": ["samsung", "galaxy"],
-        "sony": ["sony"],
-        "dell": ["dell"],
-        "lg": ["lg"],
-        "nintendo": ["nintendo", "switch"]
+        "audiotech": ["audiotech", "audio tech", "headphone"],
+        "techwatch": ["techwatch", "tech watch", "smartwatch", "watch"],
+        "gamemaster": ["gamemaster", "game master", "gaming", "laptop"],
+        "phonetech": ["phonetech", "phone tech", "smartphone", "phone"],
+        "soundwave": ["soundwave", "sound wave", "speaker"],
+        "gamergear": ["gamergear", "gamer gear", "mouse", "gaming mouse"],
+        "keymaster": ["keymaster", "key master", "keyboard"],
+        "tabletpro": ["tabletpro", "tablet pro", "tablet", "ipad"]
     }
     
     # Extract category
@@ -254,7 +267,7 @@ async def fallback_product_search(user_message: str) -> Dict[str, Any]:
         match = re.search(pattern, message_lower)
         if match:
             price_str = match.group(1).replace(',', '')
-            max_price = convert_price_to_vnd(price_str)
+            max_price = convert_price_to_usd(price_str)
             break
     
     # Search products
@@ -269,7 +282,7 @@ async def fallback_product_search(user_message: str) -> Dict[str, Any]:
     # Generate response
     if products:
         product_list = "\n".join([
-            f"• {product.name} - {product.brand} - {product.price:,.0f} VND"
+            f"• {product.name} - {product.brand} - ${product.price:.2f}"
             for product in products[:5]
         ])
         response_text = f"I found {len(products)} products matching your search:\n\n{product_list}"
@@ -280,7 +293,7 @@ async def fallback_product_search(user_message: str) -> Dict[str, Any]:
     
     return {
         "response": response_text,
-        "products": [product.dict() for product in products],
+        "products": [product.model_dump() for product in products],
         "search_params": {
             "category": category,
             "brand": brand,

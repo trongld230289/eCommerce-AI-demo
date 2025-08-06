@@ -151,19 +151,19 @@ const LoginDialog: React.FC<LoginDialogProps> = ({ isVisible, onClose }) => {
           {/* Social Login Buttons */}
           <div className="login-dialog-social">
             <button
-              onClick={() => handleSocialLogin('facebook')}
-              className="login-dialog-social-button facebook"
-            >
-              <FontAwesomeIcon icon={faFacebookF} />
-              Facebook
-            </button>
-
-            <button
               onClick={() => handleSocialLogin('google')}
               className="login-dialog-social-button google"
             >
               <FontAwesomeIcon icon={faGoogle} />
               Google
+            </button>
+
+             <button
+              onClick={() => handleSocialLogin('facebook')}
+              className="login-dialog-social-button facebook"
+            >
+              <FontAwesomeIcon icon={faFacebookF} />
+              Facebook
             </button>
           </div>
         </div>

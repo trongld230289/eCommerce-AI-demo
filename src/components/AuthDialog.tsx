@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../utils/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebookF, faGoogle } from '@fortawesome/free-brands-svg-icons';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
@@ -14,6 +15,7 @@ interface AuthDialogProps {
 
 const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const { loginWithGoogle } = useAuth();
 
   // Sync internal mode state with initialMode prop
   useEffect(() => {
@@ -75,8 +77,41 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
         case 'auth/too-many-requests':
           setError('Too many failed attempts. Please try again later');
           break;
+        case 'auth/configuration-not-found':
+          setError('Authentication not configured. Please enable Email/Password authentication in Firebase Console');
+          break;
         default:
           setError(mode === 'login' ? 'Failed to sign in' : 'Failed to create account');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      await loginWithGoogle();
+      onClose();
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+          setError('Sign-in cancelled');
+          break;
+        case 'auth/popup-blocked':
+          setError('Popup blocked. Please allow popups and try again');
+          break;
+        case 'auth/configuration-not-found':
+          setError('Google authentication not configured. Please enable Google sign-in in Firebase Console');
+          break;
+        case 'auth/network-request-failed':
+          setError('Network error. Please check your connection');
+          break;
+        default:
+          setError('Failed to sign in with Google');
       }
     } finally {
       setLoading(false);
@@ -129,6 +164,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
                 required
                 className="auth-dialog-input"
                 placeholder="Email"
+                autoComplete="email"
               />
             </div>
           </div>
@@ -143,6 +179,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
                 required
                 className="auth-dialog-input"
                 placeholder="Password"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
             </div>
           </div>
@@ -158,6 +195,7 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
                   required
                   className="auth-dialog-input"
                   placeholder="Confirm Password"
+                  autoComplete="new-password"
                 />
               </div>
             </div>
@@ -208,13 +246,18 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
         </div>
 
         <div className="auth-dialog-social">
+          <button 
+            className="auth-dialog-social-button auth-dialog-google"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            type="button"
+          >
+            <FontAwesomeIcon icon={faGoogle} className="auth-dialog-social-icon" />
+            {loading ? 'Signing in...' : 'Google'}
+          </button>
           <button className="auth-dialog-social-button auth-dialog-facebook">
             <FontAwesomeIcon icon={faFacebookF} className="auth-dialog-social-icon" />
             Facebook
-          </button>
-          <button className="auth-dialog-social-button auth-dialog-google">
-            <FontAwesomeIcon icon={faGoogle} className="auth-dialog-social-icon" />
-            Google
           </button>
         </div>
       </div>

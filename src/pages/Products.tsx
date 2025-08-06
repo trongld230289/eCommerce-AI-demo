@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
+import { useToast } from '../contexts/ToastContext';
 import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
 import Recommendations from '../components/Recommendations';
 import { searchService } from '../services/searchService';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import './Products.css';
 
 const Products: React.FC = () => {
-  const { addToCart, addToWishlist, isInWishlist } = useShop();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { addToCart, addToWishlist, isInWishlist } = useShop();
+  const { showSuccess, showWishlist, showWarning } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -25,6 +26,11 @@ const Products: React.FC = () => {
   const [backendResults, setBackendResults] = useState<any[]>([]);
   const [isLoadingBackend, setIsLoadingBackend] = useState(false);
   const [backendError, setBackendError] = useState<string | null>(null);
+
+  // Add state for regular backend search
+  const [useBackendSearch, setUseBackendSearch] = useState(false);
+  const [allBackendProducts, setAllBackendProducts] = useState<any[]>([]);
+  const [backendCategories, setBackendCategories] = useState<string[]>(['All']);
 
   // Initialize from URL parameters
   useEffect(() => {
@@ -40,6 +46,7 @@ const Products: React.FC = () => {
 
     // If this is a chatbot-initiated search
     if (chatbotQuery) {
+      console.log('Setting chatbot search:', chatbotQuery); // Debug log
       setChatbotSearch({
         query: chatbotQuery,
         category: category !== 'All' ? category : undefined,
@@ -47,6 +54,9 @@ const Products: React.FC = () => {
         minPrice: minPrice ? parseFloat(minPrice) : undefined,
         maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
       });
+    } else {
+      // Clear chatbot search if no chatbot parameter
+      setChatbotSearch(null);
     }
   }, [searchParams]);
 
@@ -57,9 +67,31 @@ const Products: React.FC = () => {
     }
   }, [chatbotSearch]);
 
+  // Fetch all products from backend on component mount
+  useEffect(() => {
+    fetchAllProductsFromBackend();
+  }, []);
+
+  // Auto-search when query or category changes (with debounce)
+  useEffect(() => {
+    if (!chatbotSearch && useBackendSearch) {
+      const timer = setTimeout(() => {
+        if (searchQuery.trim() || selectedCategory !== 'All') {
+          performBackendSearch(searchQuery, selectedCategory);
+        } else {
+          // Clear results when no search/filter to show all products
+          setBackendResults([]);
+        }
+      }, 500); // 500ms debounce
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchQuery, selectedCategory, useBackendSearch, chatbotSearch]);
+
   const fetchBackendResults = async () => {
     if (!chatbotSearch) return;
 
+    console.log('Fetching backend results for chatbot search:', chatbotSearch); // Debug log
     setIsLoadingBackend(true);
     setBackendError(null);
 
@@ -69,9 +101,10 @@ const Products: React.FC = () => {
         brand: chatbotSearch.brand,
         min_price: chatbotSearch.minPrice,
         max_price: chatbotSearch.maxPrice,
-        keywords: chatbotSearch.query
+        keywords: chatbotSearch.query // This should be a string, backend will split by comma
       });
 
+      console.log('Backend search results:', results); // Debug log
       setBackendResults(results);
     } catch (error) {
       console.error('Error fetching backend results:', error);
@@ -81,22 +114,225 @@ const Products: React.FC = () => {
     }
   };
 
-  // Convert backend Product to frontend Product format
-  const convertBackendProduct = (backendProduct: any): Product => {
-    return {
-      id: parseInt(backendProduct.id),
-      name: backendProduct.name,
-      price: backendProduct.price / 100, // Convert from VND cents to dollars equivalent
-      originalPrice: undefined,
-      image: backendProduct.image,
-      category: backendProduct.category,
-      description: backendProduct.description,
-      brand: backendProduct.brand,
-      tags: [],
-      rating: backendProduct.rating,
-      isNew: false,
-      discount: 0
-    };
+  const fetchAllProductsFromBackend = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/products');
+      if (response.ok) {
+        const products = await response.json();
+        setAllBackendProducts(products);
+        
+        // Extract unique categories from backend products
+        const categorySet = new Set<string>();
+        products.forEach((p: any) => {
+          if (p.category && typeof p.category === 'string') {
+            categorySet.add(p.category);
+          }
+        });
+        const categories: string[] = ['All', ...Array.from(categorySet)];
+        setBackendCategories(categories);
+        
+        setUseBackendSearch(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products from backend:', error);
+      setUseBackendSearch(false);
+      // Fall back to local categories
+      setBackendCategories(['All', 'Electronics']);
+    }
+  };
+
+  const performBackendSearch = async (query: string, category: string) => {
+    if (!useBackendSearch) return [];
+
+    setIsLoadingBackend(true);
+    setBackendError(null);
+
+    try {
+      const searchParams: any = {};
+      
+      if (query) searchParams.keywords = query;
+      if (category && category !== 'All') searchParams.category = category;
+
+      const results = await searchService.searchProducts(searchParams);
+      setBackendResults(results);
+      return results;
+    } catch (error) {
+      console.error('Error performing backend search:', error);
+      setBackendError('Failed to search products from server');
+      return [];
+    } finally {
+      setIsLoadingBackend(false);
+    }
+  };
+
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+  const [isTablet, setIsTablet] = useState(window.innerWidth <= 768);
+
+  // Inline styles object
+  const styles = {
+    productsContainer: {
+      padding: isMobile ? '15px' : '20px',
+      maxWidth: '1200px',
+      margin: '0 auto'
+    },
+    productsTitle: {
+      fontSize: isMobile ? '2rem' : '2.5rem',
+      fontWeight: 'bold',
+      marginBottom: '30px',
+      textAlign: 'center' as const
+    },
+    searchFilterSection: {
+      backgroundColor: '#f8f9fa',
+      padding: isMobile ? '20px' : '25px',
+      borderRadius: '12px',
+      marginBottom: '30px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    },
+    searchFilterWrapper: {
+      display: 'flex',
+      gap: '15px',
+      flexWrap: 'wrap' as const,
+      alignItems: 'stretch',
+      flexDirection: isTablet ? 'column' as const : 'row' as const
+    },
+    searchInputContainer: {
+      flex: 1,
+      minWidth: isTablet ? 'auto' : '300px',
+      position: 'relative' as const
+    },
+    searchInputWrapper: {
+      position: 'relative' as const
+    },
+    searchInput: {
+      width: '100%',
+      padding: isMobile ? '12px 45px 12px 15px' : '15px 50px 15px 20px',
+      border: '2px solid #e9ecef',
+      borderRadius: '25px',
+      fontSize: isMobile ? '14px' : '16px',
+      outline: 'none',
+      transition: 'all 0.3s ease',
+      boxSizing: 'border-box' as const
+    },
+    searchIcon: {
+      position: 'absolute' as const,
+      right: '20px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      color: '#6c757d',
+      pointerEvents: 'none' as const
+    },
+    searchSuggestions: {
+      position: 'absolute' as const,
+      top: '100%',
+      left: 0,
+      right: 0,
+      background: 'white',
+      border: '1px solid #e9ecef',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      zIndex: 1000,
+      maxHeight: '200px',
+      overflowY: 'auto' as const
+    },
+    searchSuggestionItem: {
+      padding: '12px 20px',
+      cursor: 'pointer',
+      transition: 'background-color 0.2s',
+      borderBottom: '1px solid #f8f9fa'
+    },
+    categoryDropdownContainer: {
+      position: 'relative' as const,
+      minWidth: isTablet ? 'auto' : '200px'
+    },
+    categoryDropdown: {
+      width: '100%',
+      padding: isMobile ? '12px 35px 12px 15px' : '15px 40px 15px 20px',
+      border: '2px solid #e9ecef',
+      borderRadius: '25px',
+      fontSize: isMobile ? '14px' : '16px',
+      backgroundColor: 'white',
+      outline: 'none',
+      appearance: 'none' as const,
+      cursor: 'pointer',
+      transition: 'all 0.3s ease'
+    },
+    dropdownArrow: {
+      position: 'absolute' as const,
+      right: '15px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      color: '#6c757d',
+      fontSize: '14px',
+      pointerEvents: 'none' as const
+    },
+    resultsSection: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: isTablet ? 'flex-start' : 'center',
+      marginBottom: '25px',
+      flexWrap: 'wrap' as const,
+      gap: '15px',
+      flexDirection: isTablet ? 'column' as const : 'row' as const
+    },
+    resultsInfo: {
+      fontSize: '16px',
+      color: '#6c757d'
+    },
+    resultsCount: {
+      color: '#fed700',
+      fontWeight: 'bold'
+    },
+    sortDropdown: {
+      padding: '10px 15px',
+      border: '2px solid #e9ecef',
+      borderRadius: '20px',
+      fontSize: '14px',
+      backgroundColor: 'white',
+      outline: 'none',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease'
+    },
+    productsGrid: {
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(auto-fill, minmax(250px, 1fr))' : 'repeat(auto-fill, minmax(280px, 1fr))',
+      gap: isMobile ? '1rem' : isTablet ? '1.5rem' : '2rem',
+      marginBottom: '2rem'
+    },
+    noProducts: {
+      textAlign: 'center' as const,
+      padding: '4rem 2rem',
+      backgroundColor: 'white',
+      borderRadius: '12px',
+      border: '2px dashed #e9ecef'
+    },
+    noProductsIcon: {
+      fontSize: '4rem',
+      marginBottom: '1rem',
+      color: '#6c757d'
+    },
+    noProductsTitle: {
+      fontSize: '1.5rem',
+      color: '#495057',
+      marginBottom: '1rem',
+      fontWeight: 600
+    },
+    noProductsText: {
+      color: '#6c757d',
+      marginBottom: '2rem',
+      fontSize: '1.1rem'
+    },
+    clearSearchButton: {
+      backgroundColor: '#fed700',
+      color: '#212529',
+      border: 'none',
+      padding: '12px 24px',
+      borderRadius: '25px',
+      fontSize: '16px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      transition: 'all 0.3s ease'
+    }
   };
 
   // Popular search suggestions
@@ -229,16 +465,72 @@ const Products: React.FC = () => {
     }
   ];
 
-  const categories = ['All', 'Electronics'];
+  // Use dynamic categories from backend or fallback to static
+  const categories = useBackendSearch ? backendCategories : ['All', 'Electronics'];
+
+  // Toast handlers for cart and wishlist actions
+  const handleAddToCart = (product: Product) => {
+    addToCart(product);
+    showSuccess(`${product.name} added to cart!`, 'Check your cart to proceed to checkout.');
+  };
+
+  const handleAddToWishlist = (product: Product) => {
+    if (isInWishlist(product.id)) {
+      showWarning(`Already in wishlist!`, `${product.name} is already in your wishlist.`);
+    } else {
+      addToWishlist(product);
+      showWishlist(`${product.name} added to wishlist!`, 'View your wishlist to see all saved items.');
+    }
+  };
+
+  // Search handler with toast feedback and backend integration
+  const handleSearch = async () => {
+    // Clear any previous chatbot search when doing manual search
+    setChatbotSearch(null);
+    
+    // If backend is available, perform backend search
+    if (useBackendSearch) {
+      await performBackendSearch(searchQuery, selectedCategory);
+    }
+    
+    // Update URL parameters
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set('q', searchQuery);
+    if (selectedCategory !== 'All') params.set('category', selectedCategory);
+    setSearchParams(params);
+    
+    // Count results (will be updated after backend search completes)
+    const resultCount = filteredProducts.length;
+    if (searchQuery.trim()) {
+      if (resultCount > 0) {
+        showSuccess(`Found ${resultCount} product${resultCount !== 1 ? 's' : ''}!`, `Search results for "${searchQuery}"`);
+      } else {
+        showWarning('No products found', `Try different keywords for "${searchQuery}"`);
+      }
+    }
+  };
 
   // Enhanced filter products based on search and category
   const filteredProducts = (() => {
     // If we have backend results from chatbot search, use those
     if (chatbotSearch && backendResults.length > 0) {
-      return backendResults.map(convertBackendProduct);
+      return backendResults;
     }
 
-    // Otherwise, use local filtering
+    // If backend is available and we have a search query or category filter, use backend search
+    if (useBackendSearch && (searchQuery.trim() || selectedCategory !== 'All')) {
+      // Use backend results if available, otherwise fall back to local
+      if (backendResults.length > 0) {
+        return backendResults;
+      }
+    }
+
+    // For backend products without search (show all), use backend products directly
+    if (useBackendSearch && !searchQuery.trim() && selectedCategory === 'All') {
+      return allBackendProducts;
+    }
+
+    // Fallback to local filtering when backend is not available
     return allProducts.filter(product => {
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = searchQuery === '' || (
@@ -255,17 +547,17 @@ const Products: React.FC = () => {
   })();
 
   return (
-    <div className="products-container">
-      <h1 className="products-title">
+    <div style={styles.productsContainer}>
+      <h1 style={styles.productsTitle}>
         Our Products
       </h1>
 
       {/* Enhanced Search and Filter Section */}
-      <div className="search-filter-section">
-        <div className="search-filter-wrapper">
+      <div style={styles.searchFilterSection}>
+        <div style={styles.searchFilterWrapper}>
           {/* Search Input with Icon and Suggestions */}
-          <div className="search-input-container">
-            <div className="search-input-wrapper">
+          <div style={styles.searchInputContainer}>
+            <div style={styles.searchInputWrapper}>
               <input
                 type="text"
                 placeholder="Search for Products"
@@ -273,21 +565,21 @@ const Products: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                className="search-input"
+                style={styles.searchInput}
               />
 
               <FontAwesomeIcon 
                 icon={faSearch} 
-                className="search-icon"
+                style={styles.searchIcon}
               />
 
               {/* Search Suggestions Dropdown */}
               {showSuggestions && filteredSuggestions.length > 0 && (
-                <div className="search-suggestions">
+                <div style={styles.searchSuggestions}>
                   {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
                     <div
                       key={index}
-                      className="search-suggestion-item"
+                      style={styles.searchSuggestionItem}
                       onMouseDown={() => {
                         setSearchQuery(suggestion);
                         setShowSuggestions(false);
@@ -305,22 +597,11 @@ const Products: React.FC = () => {
           </div>
 
           {/* Category Dropdown */}
-          <div style={{ position: 'relative', minWidth: '200px' }}>
+          <div style={styles.categoryDropdownContainer}>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '15px 40px 15px 20px',
-                border: '2px solid #e9ecef',
-                borderRadius: '25px',
-                fontSize: '16px',
-                backgroundColor: 'white',
-                outline: 'none',
-                appearance: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
+              style={styles.categoryDropdown}
               onFocus={(e) => {
                 e.target.style.borderColor = '#fed700';
                 e.target.style.boxShadow = '0 0 0 3px rgba(254, 215, 0, 0.1)';
@@ -336,21 +617,14 @@ const Products: React.FC = () => {
                 </option>
               ))}
             </select>
-            <div style={{
-              position: 'absolute',
-              right: '15px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#6c757d',
-              fontSize: '14px',
-              pointerEvents: 'none'
-            }}>
+            <div style={styles.dropdownArrow}>
               ▼
             </div>
           </div>
 
           {/* Search Button */}
           <button
+            onClick={handleSearch}
             style={{
               backgroundColor: '#fed700',
               color: '#2c3e50',
@@ -452,8 +726,8 @@ const Products: React.FC = () => {
               Filters: 
               {chatbotSearch.category && ` Category: ${chatbotSearch.category}`}
               {chatbotSearch.brand && ` | Brand: ${chatbotSearch.brand}`}
-              {chatbotSearch.minPrice && ` | Min Price: ${chatbotSearch.minPrice.toLocaleString()} VND`}
-              {chatbotSearch.maxPrice && ` | Max Price: ${chatbotSearch.maxPrice.toLocaleString()} VND`}
+              {chatbotSearch.minPrice && ` | Min Price: $${chatbotSearch.minPrice.toFixed(2)}`}
+              {chatbotSearch.maxPrice && ` | Max Price: $${chatbotSearch.maxPrice.toFixed(2)}`}
             </div>
           )}
           {isLoadingBackend && (
@@ -502,8 +776,8 @@ const Products: React.FC = () => {
             <SimpleProductCard
               key={product.id}
               product={product as any}
-              onAddToCart={(product) => addToCart(product as any)}
-              onAddToWishlist={(product) => addToWishlist(product as any)}
+              onAddToCart={handleAddToCart}
+              onAddToWishlist={handleAddToWishlist}
               isInWishlist={isInWishlist}
             />
           ))
