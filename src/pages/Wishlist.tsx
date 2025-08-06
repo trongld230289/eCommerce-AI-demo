@@ -326,12 +326,12 @@ const Wishlist: React.FC = () => {
                       disabled={Math.random() > 0.8}
                       onMouseOver={(e) => {
                         if (!e.currentTarget.disabled) {
-                          e.currentTarget.style.backgroundColor = '#2563eb';
+                          e.currentTarget.style.backgroundColor = 'rgb(44, 62, 80)';
                         }
                       }}
                       onMouseOut={(e) => {
                         if (!e.currentTarget.disabled) {
-                          e.currentTarget.style.backgroundColor = '#3b82f6';
+                          e.currentTarget.style.backgroundColor = 'rgb(44, 62, 80)';
                         }
                       }}
                     >

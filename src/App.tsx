@@ -22,7 +22,7 @@ import AuthDialog from './components/AuthDialog';
 // Navigation Component
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
-  const { getCartItemsCount, getCartTotal } = useShop();
+  const { state, getCartItemsCount, getCartTotal } = useShop();
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
   const authDialog = useAuthDialog();
   
@@ -181,9 +181,28 @@ const Navbar = () => {
 
           {/* Right Actions */}
           <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-            <Link to="/wishlist" style={{ textAlign: 'center', textDecoration: 'none', color: '#2c3e50' }}>
-              <div style={{ fontSize: '1.2rem' }}>
+            <Link to="/wishlist" style={{ textAlign: 'center', textDecoration: 'none', color: '#2c3e50', position: 'relative' }}>
+              <div style={{ fontSize: '1.2rem', position: 'relative' }}>
                 <FontAwesomeIcon icon={faHeart} />
+                {state.wishlist.length > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-5px',
+                    right: '-0px',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '18px',
+                    height: '18px',
+                    fontSize: '0.7rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: 'Open Sans, Arial, sans-serif'
+                  }}>
+                    {state.wishlist.length}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: '0.8rem', color: '#6c757d', fontFamily: 'Open Sans, Arial, sans-serif' }}>Wishlist</div>
             </Link>
@@ -202,8 +221,8 @@ const Navbar = () => {
                 {getCartItemsCount() > 0 && (
                   <span style={{
                     position: 'absolute',
-                    top: '-8px',
-                    right: '-8px',
+                    top: '-5px',
+                    right: '7px',
                     backgroundColor: '#dc3545',
                     color: 'white',
                     borderRadius: '50%',
