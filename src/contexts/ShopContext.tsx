@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 
 export interface Product {
@@ -135,6 +135,7 @@ interface ShopProviderProps {
 
 export const ShopProvider = ({ children }: ShopProviderProps) => {
   const [state, dispatch] = useReducer(shopReducer, initialState);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { currentUser } = useAuth();
 
   // Load user data from localStorage when user changes
@@ -142,27 +143,33 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
     if (currentUser) {
       const userDataKey = `shop_data_${currentUser.uid}`;
       const savedData = localStorage.getItem(userDataKey);
+      console.log('Loading user data for:', currentUser.uid, 'Data:', savedData);
       if (savedData) {
         try {
           const parsedData = JSON.parse(savedData);
+          console.log('Parsed data:', parsedData);
           dispatch({ type: 'LOAD_USER_DATA', payload: parsedData });
         } catch (error) {
           console.error('Error loading user shop data:', error);
         }
       }
+      setIsInitialized(true);
     } else {
       // Clear state when user logs out
+      console.log('User logged out, clearing state');
       dispatch({ type: 'LOAD_USER_DATA', payload: initialState });
+      setIsInitialized(false);
     }
   }, [currentUser]);
 
-  // Save user data to localStorage whenever state changes
+  // Save user data to localStorage whenever state changes (but not during initial load)
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && isInitialized) {
       const userDataKey = `shop_data_${currentUser.uid}`;
+      console.log('Saving user data for:', currentUser.uid, 'State:', state);
       localStorage.setItem(userDataKey, JSON.stringify(state));
     }
-  }, [state, currentUser]);
+  }, [state, currentUser, isInitialized]);
 
   const addToCart = (product: Product) => {
     dispatch({ type: 'ADD_TO_CART', payload: product });
