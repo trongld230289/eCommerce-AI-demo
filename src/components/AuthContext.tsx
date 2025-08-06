@@ -42,17 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('currentUser');
     }
 
-    console.log("🔹 currentUser in localStorage:", localStorage.getItem('currentUser'));
-  }, [currentUser]);
-
-	useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('currentUser');
-    }
-
-    console.log("🔹 currentUser in localStorage:", localStorage.getItem('currentUser'));
+    console.log("CurrentUser in localStorage:", localStorage.getItem('currentUser'));
   }, [currentUser]);
 
   useEffect(() => {
