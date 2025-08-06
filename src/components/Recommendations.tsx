@@ -3,8 +3,7 @@ import { useRecommendations } from '../hooks/useRecommendations';
 import SimpleProductCard from './SimpleProductCard';
 import { useShop } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Product as ApiProduct } from '../types';
-import { Product as ShopProduct } from '../contexts/ShopContext';
+import { Product } from '../contexts/ShopContext';
 
 interface RecommendationsProps {
   limit?: number;
@@ -20,20 +19,6 @@ const Recommendations: React.FC<RecommendationsProps> = ({
   const { recommendations, loading, error, isPersonalized } = useRecommendations(limit);
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { currentUser } = useAuth();
-
-  // Convert API Product to Shop Product format
-  const convertToShopProduct = (apiProduct: ApiProduct): ShopProduct => {
-    return {
-      id: parseInt(apiProduct.id), // Convert string to number
-      name: apiProduct.name,
-      price: apiProduct.price / 100, // Convert from cents to dollars if needed, or keep as is
-      image: apiProduct.image,
-      category: apiProduct.category,
-      description: apiProduct.description,
-      brand: apiProduct.brand,
-      rating: apiProduct.rating
-    };
-  };
 
   if (loading) {
     return (
@@ -78,11 +63,10 @@ const Recommendations: React.FC<RecommendationsProps> = ({
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '2rem'
           }}>
-        {recommendations.map((apiProduct) => {
-          const product = convertToShopProduct(apiProduct);
+        {recommendations.map((product: Product) => {
           return (
               <SimpleProductCard
-                key={apiProduct.id}
+                key={product.id}
                 product={product}
                 onAddToCart={() => addToCart(product)}
                 onAddToWishlist={() => addToWishlist(product)}

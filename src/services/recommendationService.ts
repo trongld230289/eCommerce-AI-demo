@@ -1,23 +1,9 @@
-import { Product } from '../types';
+import { Product } from '../contexts/ShopContext';
 
 export interface RecommendationResponse {
-  products: ApiProduct[];
+  products: Product[];
   is_personalized: boolean;
   user_id: string | null;
-}
-
-interface ApiProduct {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-  brand: string;
-  inStock: boolean;
-  stock: number;
-  rating: number;
-  reviews: number;
 }
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -44,7 +30,7 @@ export const recommendationService = {
     }
   },
 
-  async getAllProducts(): Promise<ApiProduct[]> {
+  async getAllProducts(): Promise<Product[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/products`);
       if (!response.ok) {
@@ -59,7 +45,7 @@ export const recommendationService = {
     }
   },
 
-  async getProduct(productId: string): Promise<ApiProduct> {
+  async getProduct(productId: number): Promise<Product> {
     try {
       const response = await fetch(`${API_BASE_URL}/products/${productId}`);
       if (!response.ok) {
@@ -73,21 +59,4 @@ export const recommendationService = {
       throw error;
     }
   }
-};
-
-// Utility function to convert API product to frontend Product type
-export const convertApiProductToProduct = (apiProduct: ApiProduct): Product => {
-  return {
-    id: apiProduct.id, // Keep as string
-    name: apiProduct.name,
-    description: apiProduct.description,
-    price: apiProduct.price,
-    image: apiProduct.image,
-    category: apiProduct.category,
-    brand: apiProduct.brand,
-    inStock: apiProduct.inStock,
-    stock: apiProduct.stock,
-    rating: apiProduct.rating,
-    reviews: apiProduct.reviews
-  };
 };
