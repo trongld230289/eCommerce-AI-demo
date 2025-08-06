@@ -9,6 +9,7 @@ import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
+import Settings from './pages/Settings';
 import Home from './pages/Home';
 import SearchBar from './components/SearchBar';
 import CartDropdown from './components/CartDropdown';
@@ -67,6 +68,17 @@ const Navbar = () => {
             {currentUser ? (
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <span>Welcome, {currentUser.displayName || currentUser.email}</span>
+                <Link 
+                  to="/settings"
+                  style={{
+                    color: '#0066cc',
+                    textDecoration: 'none',
+                    fontSize: '0.85rem',
+                    fontFamily: 'Open Sans, Arial, sans-serif'
+                  }}
+                >
+                  Settings
+                </Link>
                 <button
                   onClick={handleLogout}
                   style={{
@@ -327,6 +339,7 @@ function App() {
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/products" element={<Products />} />
                 <Route path="/product/:id" element={<ProductDetails />} />
+                <Route path="/settings" element={<Settings />} />
               </Routes>
               
               {/* Chatbot Components */}
