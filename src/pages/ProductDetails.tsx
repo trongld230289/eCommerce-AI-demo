@@ -99,7 +99,7 @@ const ProductDetails: React.FC = () => {
   // Inline styles object
   const styles = {
     productDetails: {
-      maxWidth: '1200px',
+      maxWidth: '1430px',
       margin: '0 auto',
       padding: isMobile ? '15px' : '20px',
       fontFamily: "'Open Sans', Arial, sans-serif"

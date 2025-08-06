@@ -120,7 +120,7 @@ const Products: React.FC = () => {
       if (response.ok) {
         const products = await response.json();
         setAllBackendProducts(products);
-        
+
         // Extract unique categories from backend products
         const categorySet = new Set<string>();
         products.forEach((p: any) => {
@@ -130,7 +130,7 @@ const Products: React.FC = () => {
         });
         const categories: string[] = ['All', ...Array.from(categorySet)];
         setBackendCategories(categories);
-        
+
         setUseBackendSearch(true);
       }
     } catch (error) {
@@ -149,7 +149,7 @@ const Products: React.FC = () => {
 
     try {
       const searchParams: any = {};
-      
+
       if (query) searchParams.keywords = query;
       if (category && category !== 'All') searchParams.category = category;
 
@@ -171,9 +171,21 @@ const Products: React.FC = () => {
 
   // Inline styles object
   const styles = {
+    productsSection: {
+      padding: '3rem 0',
+      backgroundColor: 'white'
+    },
+    sectionTitle: {
+      fontSize: '1.5rem',
+      fontWeight: 600,
+      color: '#2c3e50',
+      textAlign: 'center' as const,
+      marginBottom: '2rem',
+      fontFamily: "'Open Sans', Arial, sans-serif"
+    },
     productsContainer: {
       padding: isMobile ? '15px' : '20px',
-      maxWidth: '1200px',
+      maxWidth: '1430px',
       margin: '0 auto'
     },
     productsTitle: {
@@ -487,18 +499,18 @@ const Products: React.FC = () => {
   const handleSearch = async () => {
     // Clear any previous chatbot search when doing manual search
     setChatbotSearch(null);
-    
+
     // If backend is available, perform backend search
     if (useBackendSearch) {
       await performBackendSearch(searchQuery, selectedCategory);
     }
-    
+
     // Update URL parameters
     const params = new URLSearchParams();
     if (searchQuery.trim()) params.set('q', searchQuery);
     if (selectedCategory !== 'All') params.set('category', selectedCategory);
     setSearchParams(params);
-    
+
     // Count results (will be updated after backend search completes)
     const resultCount = filteredProducts.length;
     if (searchQuery.trim()) {
@@ -568,8 +580,8 @@ const Products: React.FC = () => {
                 style={styles.searchInput}
               />
 
-              <FontAwesomeIcon 
-                icon={faSearch} 
+              <FontAwesomeIcon
+                icon={faSearch}
                 style={styles.searchIcon}
               />
 
@@ -723,7 +735,7 @@ const Products: React.FC = () => {
           </p>
           {(chatbotSearch.category || chatbotSearch.brand || chatbotSearch.minPrice || chatbotSearch.maxPrice) && (
             <div style={{ fontSize: '12px', color: '#6c757d' }}>
-              Filters: 
+              Filters:
               {chatbotSearch.category && ` Category: ${chatbotSearch.category}`}
               {chatbotSearch.brand && ` | Brand: ${chatbotSearch.brand}`}
               {chatbotSearch.minPrice && ` | Min Price: $${chatbotSearch.minPrice.toFixed(2)}`}
@@ -762,49 +774,52 @@ const Products: React.FC = () => {
       )}
 
       {/* Products Grid */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-4">All Products</h2>
-      </div>
-      
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '2rem'
-      }}>
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((product: Product) => (
-            <SimpleProductCard
-              key={product.id}
-              product={product as any}
-              onAddToCart={handleAddToCart}
-              onAddToWishlist={handleAddToWishlist}
-              isInWishlist={isInWishlist}
-            />
-          ))
-        ) : (
+      <section style={styles.productsSection}>
+        <div style={styles.productsContainer}>
+          <h2 style={styles.sectionTitle}>
+            All Products
+          </h2>
           <div style={{
-            gridColumn: '1 / -1',
-            textAlign: 'center',
-            padding: '60px 20px',
-            color: '#666'
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '2rem'
           }}>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>No products found</h3>
-            <p>Try adjusting your search or filter criteria</p>
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product: Product) => (
+                <SimpleProductCard
+                  key={product.id}
+                  product={product as any}
+                  onAddToCart={handleAddToCart}
+                  onAddToWishlist={handleAddToWishlist}
+                  isInWishlist={isInWishlist}
+                />
+              ))
+            ) : (
+              <div style={{
+                gridColumn: '1 / -1',
+                textAlign: 'center',
+                padding: '60px 20px',
+                color: '#666'
+              }}>
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>No products found</h3>
+                <p>Try adjusting your search or filter criteria</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      </section>
 
       {/* Recommendations Section */}
       <div style={{ marginTop: '50px' }}></div>
-      <Recommendations 
-        limit={3} 
-        title="Recommended for You" 
+      <Recommendations
+        limit={3}
+        title="Recommended for You"
         className="mb-8"
       />
 
     </div>
-    
   );
 };
 
 export default Products;
+

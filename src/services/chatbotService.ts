@@ -11,8 +11,8 @@ export interface ChatbotResponse {
   response: string;
   products: Product[];
   search_params: Record<string, any>;
-  should_redirect?: boolean;
   redirect_url?: string;
+  page_code?: string;
 }
 
 export const chatbotService = {
@@ -72,12 +72,15 @@ export const chatbotService = {
 
         return {
           ...data,
-          should_redirect: true,
-          redirect_url: `/products?${searchParams.toString()}`
+          redirect_url: `/${data.page_code}?${searchParams.toString()}`
         };
       }
 
-      return data;
+     return {
+          ...data,
+          redirect_url: data.page_code !== 'others' ? `/${data.page_code}` : ''
+        };
+
     } catch (error) {
       console.error('Chatbot service error:', error);
       // Fallback response
