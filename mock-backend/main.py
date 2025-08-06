@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import random
 from models import Product, RecommendationResponse
 from data import products_data, user_preferences, user_recommendations, default_recommendations, category_recommendations
-from chatbot_service import process_chatbot_query
+from chatbot_service import process_chatbot_query, detect_page_code
 
 app = FastAPI(
     title="eCommerce Recommendation API",
@@ -172,6 +172,7 @@ class ChatbotResponse(BaseModel):
     response: str
     products: List[Product]
     search_params: dict
+    page_code: str
 
 @app.post("/chatbot", response_model=ChatbotResponse)
 async def chatbot_query(request: ChatbotRequest):
@@ -180,10 +181,14 @@ async def chatbot_query(request: ChatbotRequest):
     """
     try:
         result = await process_chatbot_query(request.message)
+        # Detect the page code to determine if it's a product or settings page
+        page_code = detect_page_code(request.message)
+        
         return ChatbotResponse(
             response=result["response"],
             products=result["products"],
-            search_params=result["search_params"]
+            search_params=result["search_params"],
+            page_code=page_code
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

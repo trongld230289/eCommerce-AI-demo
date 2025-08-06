@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 from openai import AzureOpenAI
 from data import products_data
 from models import Product
+from transformers import pipeline
 
 # Initialize OpenAI client (you'll need to set OPENAI_API_KEY environment variable)
 try:
@@ -16,6 +17,8 @@ except ImportError:
 # Step 1: Set your Azure OpenAI API key with error handling
 azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "")
 api_key = os.getenv("AZURE_OPENAI_API_KEY", "")
+deployment_name = os.getenv("AZURE_DEPLOYMENT_NAME", "gpt-4")  # Default to gpt-4
+
 if not azure_endpoint or not api_key:
     raise ValueError(
         "Please set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY environment variables"
@@ -23,12 +26,23 @@ if not azure_endpoint or not api_key:
 client = None
 try:
     client = AzureOpenAI(
-    api_version="2024-07-01-preview",
+    api_version= os.getenv("API_VERSION"),
     azure_endpoint=azure_endpoint,
     api_key=api_key,
     )
 except Exception as e:
     print(f"Warning: OpenAI client not initialized. Set AZURE_OPENAI_API_KEY environment variable. Error: {e}")
+
+
+
+
+classifier = pipeline("zero-shot-classification",
+                      model="facebook/bart-large-mnli")
+
+def detect_page_code(text):
+    labels = ["products", "settings", "others"]
+    result = classifier(text, candidate_labels=labels)
+    return result['labels'][0] 
 
 def search_products(
     category: Optional[str] = None,
@@ -157,7 +171,7 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
         
         # Call OpenAI with function calling
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=deployment_name,  # Use the deployment name from environment variable
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
@@ -208,7 +222,12 @@ async def process_chatbot_query(user_message: str) -> Dict[str, Any]:
             }
             
     except Exception as e:
-        print(f"OpenAI API error: {e}")
+        error_msg = str(e)
+        if "DeploymentNotFound" in error_msg:
+            print(f"OpenAI API error: Deployment '{deployment_name}' not found. Please check your AZURE_OPENAI_DEPLOYMENT_NAME environment variable.")
+            print("Available deployment names are usually: gpt-4, gpt-35-turbo, gpt-4-turbo")
+        else:
+            print(f"OpenAI API error: {e}")
         return await fallback_product_search(user_message)
 
 async def fallback_product_search(user_message: str) -> Dict[str, Any]:
