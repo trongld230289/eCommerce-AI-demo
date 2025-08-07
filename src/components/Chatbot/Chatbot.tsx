@@ -190,7 +190,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
       console.log('Products in response:', response.products);
 
       // Check if we should redirect to search page
-      if (response.should_redirect && response.redirect_url) {
+      if (response.redirect_url && response.redirect_url !== '') {
         // Add a message about redirecting
         const redirectMessage: Message = {
           id: Date.now() + 1,
@@ -204,9 +204,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         
         // Close chatbot and redirect after a short delay
         setTimeout(() => {
-          onClose();
+          // onClose();
           navigate(response.redirect_url!);
-        }, 2000);
+        });
       } else {
         // Normal chatbot response
         const botResponse: Message = {
