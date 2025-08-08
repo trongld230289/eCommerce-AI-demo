@@ -123,6 +123,48 @@ async def search_products(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
 
+# Featured and top products endpoints
+@app.get("/products/featured")
+async def get_featured_products(limit: int = Query(6, description="Number of featured products to return")):
+    """Get featured products"""
+    try:
+        all_products = product_service.get_all_products()
+        featured_products = [p for p in all_products if p.get('featured', False)]
+        # Sort by rating for best featured products first
+        featured_products.sort(key=lambda x: x.get('rating', 0), reverse=True)
+        return featured_products[:limit]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving featured products: {str(e)}")
+
+@app.get("/products/top-this-week")
+async def get_top_products_this_week(limit: int = Query(6, description="Number of top products to return")):
+    """Get top products this week based on views and sales"""
+    try:
+        all_products = product_service.get_all_products()
+        
+        # Calculate popularity score based on views and sales
+        products_with_score = []
+        max_sales = max(p.get('weeklySales', 0) for p in all_products) or 1
+        max_views = max(p.get('weeklyViews', 0) for p in all_products) or 1
+        
+        for product in all_products:
+            weekly_sales = product.get('weeklySales', 0)
+            weekly_views = product.get('weeklyViews', 0)
+            
+            # Weight: 70% weekly sales, 30% weekly views (normalized)
+            sales_score = (weekly_sales / max_sales) * 0.7
+            views_score = (weekly_views / max_views) * 0.3
+            popularity_score = sales_score + views_score
+            
+            product['popularity_score'] = popularity_score
+            products_with_score.append(product)
+        
+        # Sort by popularity score and return top products
+        products_with_score.sort(key=lambda x: x['popularity_score'], reverse=True)
+        return products_with_score[:limit]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving top products: {str(e)}")
+
 # Category and brand endpoints
 @app.get("/categories")
 async def get_categories():
