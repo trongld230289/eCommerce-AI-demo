@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
+import { eventTrackingService } from '../services/eventTrackingService';
 
 export interface Product {
   id: number;
@@ -173,10 +174,37 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
 
   const addToCart = (product: Product) => {
     dispatch({ type: 'ADD_TO_CART', payload: product });
+    
+    // Track add to cart event
+    if (currentUser) {
+      eventTrackingService.trackAddToCart(currentUser.uid, product.id.toString(), {
+        product_name: product.name,
+        product_category: product.category,
+        product_brand: product.brand,
+        product_price: product.price,
+      }).catch(error => {
+        console.error('Failed to track add to cart event:', error);
+      });
+    }
   };
 
   const removeFromCart = (productId: number) => {
+    // Find the product before removing for event tracking
+    const product = state.cart.find(item => item.id === productId);
+    
     dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
+    
+    // Track remove from cart event
+    if (currentUser && product) {
+      eventTrackingService.trackRemoveFromCart(currentUser.uid, productId.toString(), {
+        product_name: product.name,
+        product_category: product.category,
+        product_brand: product.brand,
+        product_price: product.price,
+      }).catch(error => {
+        console.error('Failed to track remove from cart event:', error);
+      });
+    }
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
@@ -193,10 +221,37 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
 
   const addToWishlist = (product: Product) => {
     dispatch({ type: 'ADD_TO_WISHLIST', payload: product });
+    
+    // Track add to wishlist event
+    if (currentUser) {
+      eventTrackingService.trackAddToWishlist(currentUser.uid, product.id.toString(), {
+        product_name: product.name,
+        product_category: product.category,
+        product_brand: product.brand,
+        product_price: product.price,
+      }).catch(error => {
+        console.error('Failed to track add to wishlist event:', error);
+      });
+    }
   };
 
   const removeFromWishlist = (productId: number) => {
+    // Find the product before removing for event tracking
+    const product = state.wishlist.find(item => item.id === productId);
+    
     dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: productId });
+    
+    // Track remove from wishlist event
+    if (currentUser && product) {
+      eventTrackingService.trackRemoveFromWishlist(currentUser.uid, productId.toString(), {
+        product_name: product.name,
+        product_category: product.category,
+        product_brand: product.brand,
+        product_price: product.price,
+      }).catch(error => {
+        console.error('Failed to track remove from wishlist event:', error);
+      });
+    }
   };
 
   const getCartTotal = () => {

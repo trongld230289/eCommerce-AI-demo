@@ -14,16 +14,19 @@ import {
   faSpinner
 } from '@fortawesome/free-solid-svg-icons';
 import { useShop } from '../contexts/ShopContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import SimpleProductCard from '../components/SimpleProductCard';
 import Recommendations from '../components/Recommendations';
 import { apiService } from '../services/apiService';
+import { eventTrackingService } from '../services/eventTrackingService';
 import type { Product } from '../contexts/ShopContext';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart, addToWishlist, isInWishlist } = useShop();
+  const { currentUser } = useAuth();
   const { showSuccess, showWishlist } = useToast();
   
   // Product state
@@ -60,6 +63,18 @@ const ProductDetails: React.FC = () => {
       try {
         const productData = await apiService.getProductById(parseInt(id));
         setProduct(productData);
+        
+        // Track product view event
+        if (currentUser && productData) {
+          eventTrackingService.trackProductView(currentUser.uid, productData.id.toString(), {
+            product_name: productData.name,
+            product_category: productData.category,
+            product_brand: productData.brand,
+            product_price: productData.price,
+          }).catch(error => {
+            console.error('Failed to track product view event:', error);
+          });
+        }
       } catch (err) {
         console.error('Error loading product:', err);
         setError('Product not found');
@@ -69,7 +84,7 @@ const ProductDetails: React.FC = () => {
     };
 
     loadProduct();
-  }, [id]);
+  }, [id, currentUser]);
 
   // Inline styles object
   const styles = {

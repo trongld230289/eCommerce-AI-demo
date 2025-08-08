@@ -1,6 +1,14 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
 from datetime import datetime
+from enum import Enum
+
+class EventType(str, Enum):
+    VIEW = "view"
+    ADD_TO_CART = "add_to_cart"
+    REMOVE_FROM_CART = "remove_from_cart"
+    ADD_TO_WISHLIST = "add_to_wishlist"
+    REMOVE_FROM_WISHLIST = "remove_from_wishlist"
 
 class Product(BaseModel):
     id: Optional[int] = None
@@ -11,7 +19,7 @@ class Product(BaseModel):
     category: str
     description: Optional[str] = None
     brand: Optional[str] = None
-    tags: Optional[List[str]] = []
+    tags: Optional[List[str]] = Field(default_factory=list)
     color: Optional[str] = None
     size: Optional[str] = None
     rating: Optional[float] = None
@@ -28,7 +36,7 @@ class ProductCreate(BaseModel):
     category: str
     description: Optional[str] = None
     brand: Optional[str] = None
-    tags: Optional[List[str]] = []
+    tags: Optional[List[str]] = Field(default_factory=list)
     color: Optional[str] = None
     size: Optional[str] = None
     rating: Optional[float] = None
@@ -62,3 +70,21 @@ class ApiResponse(BaseModel):
     success: bool
     message: str
     data: Optional[dict] = None
+
+class UserEvent(BaseModel):
+    event_type: EventType
+    user_id: str
+    product_id: str
+    timestamp: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+class UserEventCreate(BaseModel):
+    event_type: EventType
+    user_id: str
+    product_id: str
+    metadata: Optional[Dict[str, Any]] = None
+
+class UserEventResponse(BaseModel):
+    success: bool
+    message: str
+    event_id: Optional[str] = None
