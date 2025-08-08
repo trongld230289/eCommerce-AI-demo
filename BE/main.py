@@ -1,9 +1,12 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
-from models import Product, ProductCreate, ProductUpdate, SearchFilters, ApiResponse
+from models import Product, ProductCreate, ProductUpdate, SearchFilters, ApiResponse, ChatbotRequest, ChatbotResponse, SmartSearchRequest, SmartSearchResponse
 from product_service import product_service
 import uvicorn
+import httpx
+import json
+from datetime import datetime
 
 app = FastAPI(
     title="eCommerce Backend API",
@@ -138,6 +141,108 @@ async def get_brands():
         return {"brands": ["All"] + brands}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving brands: {str(e)}")
+
+# Chatbot endpoint
+@app.post("/chatbot", response_model=ChatbotResponse)
+async def chatbot_endpoint(request: ChatbotRequest):
+    """Process chatbot messages and return responses with product recommendations"""
+    try:
+        message = request.message.lower()
+        
+        # Simple chatbot logic for demonstration
+        # In a real implementation, this would use NLP/AI services
+        response_text = "Hello! I'm here to help you find products. What are you looking for?"
+        products = []
+        search_params = {}
+        page_code = "others"
+        
+        # Basic product search logic
+        if any(keyword in message for keyword in ["laptop", "computer", "pc"]):
+            products = product_service.search_products(SearchFilters(category="Electronics"))
+            search_params = {"category": "Electronics", "keywords": "laptop"}
+            response_text = "I found some laptops for you!"
+            page_code = "products"
+        elif any(keyword in message for keyword in ["phone", "smartphone", "mobile"]):
+            products = product_service.search_products(SearchFilters(category="Electronics"))
+            search_params = {"category": "Electronics", "keywords": "phone"}
+            response_text = "Here are some smartphones I found!"
+            page_code = "products"
+        elif any(keyword in message for keyword in ["headphones", "headset", "earphones"]):
+            products = product_service.search_products(SearchFilters(category="Electronics"))
+            search_params = {"category": "Electronics", "keywords": "headphones"}
+            response_text = "Check out these headphones!"
+            page_code = "products"
+        elif any(keyword in message for keyword in ["help", "hello", "hi"]):
+            response_text = "Hello! I can help you find laptops, phones, headphones, and other electronics. What are you looking for?"
+        
+        return ChatbotResponse(
+            response=response_text,
+            products=products[:5],  # Limit to 5 products
+            search_params=search_params,
+            page_code=page_code
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing chatbot request: {str(e)}")
+
+# Smart search endpoint
+@app.post("/search/smart", response_model=SmartSearchResponse)
+async def smart_search_endpoint(request: SmartSearchRequest):
+    """Perform intelligent search using the recommendation service"""
+    try:
+        # Forward the request to the recommendation service
+        recommendation_url = "http://localhost:8001/search/smart"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                recommendation_url,
+                json=request.dict(),
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return SmartSearchResponse(
+                query=result.get("query", request.query),
+                results=result.get("results", []),
+                parsed_filters=result.get("parsed_filters", {}),
+                total_found=result.get("total_found", 0),
+                search_type=result.get("search_type", "smart"),
+                timestamp=datetime.now().isoformat()
+            )
+        else:
+            # Fallback to regular search if recommendation service is unavailable
+            # Simple keyword extraction
+            keywords = request.query.lower()
+            filters = SearchFilters(keywords=keywords)
+            products = product_service.search_products(filters)
+            
+            return SmartSearchResponse(
+                query=request.query,
+                results=products[:request.limit],
+                parsed_filters={"keywords": keywords},
+                total_found=len(products),
+                search_type="fallback",
+                timestamp=datetime.now().isoformat()
+            )
+            
+    except httpx.RequestError:
+        # Fallback to regular search if recommendation service is unavailable
+        keywords = request.query.lower()
+        filters = SearchFilters(keywords=keywords)
+        products = product_service.search_products(filters)
+        
+        return SmartSearchResponse(
+            query=request.query,
+            results=products[:request.limit],
+            parsed_filters={"keywords": keywords},
+            total_found=len(products),
+            search_type="fallback",
+            timestamp=datetime.now().isoformat()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error performing smart search: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -963,18 +963,14 @@ const Home = () => {
         </div>
       </section>
        {/* Recommendations Section */}
-
-
       <section style={styles.productsSection}>
         <div style={styles.productsContainer}>
           <Recommendations 
-            limit={4} 
+            limit={8}
             title="Recommended for You"
-            className=""
+            className="mb-12"
           />
         </div>
-
-
       </section>
       {/* Top Products Section */}
       <TopProductsThisWeek 

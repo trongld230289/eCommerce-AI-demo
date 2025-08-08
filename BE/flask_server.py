@@ -2,11 +2,15 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import json
 import random
+import requests
 from datetime import datetime, timedelta
 from firebase_config import get_firestore_db
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+
+# Recommendation System Configuration
+RECOMMENDATION_API_URL = "http://localhost:8001"  # Recommendation System API
 
 # Temporary setting to bypass Firebase for faster response
 USE_FIREBASE = True  # Set to True to use Firebase data
@@ -187,6 +191,95 @@ def get_product_by_id_from_firestore(product_id):
                 return product
         return None
 
+# Recommendation System Integration Functions
+def send_user_event_to_recommendation_system(user_id, event_type, product_data):
+    """Send user event to the Recommendation System for tracking"""
+    try:
+        if not user_id or not event_type or not product_data:
+            return False
+            
+        event_data = {
+            "user_id": str(user_id),
+            "event_type": event_type,  # view, click, add_to_cart, purchase
+            "product_id": str(product_data.get('id', '')),
+            "product_data": {
+                "name": product_data.get('name', ''),
+                "category": product_data.get('category', ''),
+                "brand": product_data.get('brand', ''),
+                "price": product_data.get('price', 0)
+            },
+            "metadata": {
+                "timestamp": datetime.now().isoformat(),
+                "source": "backend_api"
+            }
+        }
+        
+        response = requests.post(
+            f"{RECOMMENDATION_API_URL}/user-events",
+            json=event_data,
+            timeout=2.0  # Short timeout to not block main API
+        )
+        
+        if response.status_code == 201:
+            print(f"✅ Event {event_type} sent to recommendation system for user {user_id}")
+            return True
+        else:
+            print(f"❌ Failed to send event to recommendation system: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error sending event to recommendation system: {e}")
+        return False
+
+def get_user_recommendations_from_system(user_id, limit=5):
+    """Get personalized recommendations from the Recommendation System"""
+    try:
+        response = requests.get(
+            f"{RECOMMENDATION_API_URL}/recommendations/{user_id}",
+            params={"limit": limit},
+            timeout=3.0
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            return data.get('recommendations', [])
+        else:
+            print(f"❌ Failed to get recommendations: {response.status_code}")
+            return []
+            
+    except Exception as e:
+        print(f"❌ Error getting recommendations: {e}")
+        return []
+
+def smart_search_from_recommendation_system(query, limit=10):
+    """Use the smart search feature from Recommendation System"""
+    try:
+        search_data = {
+            "query": query,
+            "limit": limit
+        }
+        
+        response = requests.post(
+            f"{RECOMMENDATION_API_URL}/search",
+            json=search_data,
+            timeout=3.0
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                "results": data.get('results', []),
+                "parsed_filters": data.get('parsed_filters', {}),
+                "total_found": data.get('total_found', 0)
+            }
+        else:
+            print(f"❌ Failed to perform smart search: {response.status_code}")
+            return {"results": [], "parsed_filters": {}, "total_found": 0}
+            
+    except Exception as e:
+        print(f"❌ Error performing smart search: {e}")
+        return {"results": [], "parsed_filters": {}, "total_found": 0}
+
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy", "message": "Backend is running"})
@@ -254,10 +347,31 @@ def get_product(product_id):
 
 @app.route('/search', methods=['GET'])
 def search_products():
-    """Search products - enhanced search can be implemented later"""
+    """Search products with smart search capabilities"""
     try:
-        products = get_all_products_from_firestore()
-        return jsonify(products)
+        query = request.args.get('q', '').strip()
+        limit = request.args.get('limit', 20, type=int)
+        
+        if query:
+            # Use smart search from recommendation system
+            search_result = smart_search_from_recommendation_system(query, limit)
+            
+            return jsonify({
+                "query": query,
+                "results": search_result["results"],
+                "parsed_filters": search_result["parsed_filters"],
+                "total_found": search_result["total_found"],
+                "search_type": "smart_search"
+            })
+        else:
+            # Return all products if no query
+            products = get_all_products_from_firestore()
+            return jsonify({
+                "query": "",
+                "results": products[:limit],
+                "total_found": len(products),
+                "search_type": "all_products"
+            })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -281,12 +395,27 @@ def get_brands():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/recommendations', methods=['GET'])
+
 def get_recommendations():
-    """Get personalized product recommendations from Firestore"""
+    """Get personalized product recommendations using the Recommendation System"""
     try:
         limit = request.args.get('limit', 4, type=int)
+        user_id = request.args.get('user_id')
         
+        if user_id:
+            # Get personalized recommendations from recommendation system
+            recommendations = get_user_recommendations_from_system(user_id, limit)
+            
+            if recommendations:
+                # Add recommendation metadata
+                for product in recommendations:
+                    product['recommendationReason'] = "Based on your preferences"
+                    product['recommendationScore'] = round(random.uniform(0.8, 0.95), 2)
+                    product['source'] = "recommendation_system"
+                
+                return jsonify(recommendations)
+        
+        # Fallback: Use traditional recommendation logic if no user_id or recommendation system unavailable
         products = get_all_products_from_firestore()
         
         # Simple recommendation algorithm: 
@@ -319,6 +448,14 @@ def get_recommendations():
                 recommendations.extend(random.sample(available_products, min(remaining_slots, len(available_products))))
         
         # Add recommendation metadata
+        for product in recommendations:
+            product['recommendationReason'] = "Popular products"
+            product['recommendationScore'] = round(random.uniform(0.7, 0.85), 2)
+            product['source'] = "fallback_algorithm"
+        
+        return jsonify(recommendations[:limit])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
         for product in recommendations:
             product['recommendationReason'] = "Based on your preferences"
             product['recommendationScore'] = round(random.uniform(0.7, 0.95), 2)
@@ -366,8 +503,8 @@ def track_user_event():
             return jsonify({"error": f"Invalid event_type. Must be one of: {valid_event_types}"}), 400
         
         # Get product information for metadata if not provided
+        product = get_product_by_id_from_firestore(data['product_id'])
         if 'metadata' not in data or not data['metadata']:
-            product = get_product_by_id_from_firestore(data['product_id'])
             if product:
                 data['metadata'] = {
                     'product_name': product.get('name'),
@@ -383,11 +520,20 @@ def track_user_event():
         # Save event to Firestore
         event_id = save_user_event_to_firestore(data)
         
+        # Send to Recommendation System
+        recommendation_success = False
+        if product:
+            recommendation_success = send_user_event_to_recommendation_system(
+                data['user_id'], data['event_type'], product
+            )
+        
         if event_id:
             return jsonify({
                 "success": True,
                 "message": "Event tracked successfully",
-                "event_id": event_id
+                "event_id": event_id,
+                "firebase_saved": True,
+                "recommendation_system_sent": recommendation_success
             })
         else:
             return jsonify({"error": "Failed to save event"}), 500
@@ -487,6 +633,295 @@ def get_user_analytics(user_id):
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# New Recommendation System Integration Endpoints
+
+@app.route('/track-event', methods=['POST'])
+def track_user_event_to_recommendation():
+    """Track user event and send to both Firebase and Recommendation System"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('user_id') or not data.get('event_type'):
+            return jsonify({"error": "Missing user_id or event_type"}), 400
+        
+        user_id = data['user_id']
+        event_type = data['event_type']
+        product_id = data.get('product_id')
+        
+        # Get product data if product_id provided
+        product_data = {}
+        if product_id:
+            product = get_product_by_id_from_firestore(product_id)
+            if product:
+                product_data = product
+        
+        # Save to Firebase (existing logic)
+        event_data = {
+            'user_id': user_id,
+            'event_type': event_type,
+            'product_id': product_id,
+            'product_name': product_data.get('name', ''),
+            'product_category': product_data.get('category', ''),
+            'product_price': product_data.get('price', 0),
+            'session_id': data.get('session_id', ''),
+            'metadata': data.get('metadata', {})
+        }
+        
+        firebase_success = save_user_event_to_firestore(event_data)
+        
+        # Send to Recommendation System
+        recommendation_success = False
+        if product_data:
+            recommendation_success = send_user_event_to_recommendation_system(
+                user_id, event_type, product_data
+            )
+        
+        return jsonify({
+            "success": True,
+            "firebase_saved": firebase_success is not None,
+            "recommendation_system_sent": recommendation_success,
+            "message": "Event tracked successfully"
+        })
+        
+    except Exception as e:
+        print(f"Error tracking user event: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/recommendations', methods=['GET'])
+def get_smart_recommendations():
+    """Get smart recommendations from the Recommendation System"""
+    try:
+        limit = request.args.get('limit', 4, type=int)
+        user_id = request.args.get('user_id')
+        
+        recommendations = get_user_recommendations_from_system(user_id, limit)
+        
+        if recommendations:
+            return jsonify({
+                "user_id": user_id,
+                "recommendations": recommendations,
+                "count": len(recommendations),
+                "source": "recommendation_system",
+                "timestamp": datetime.now().isoformat()
+            })
+        else:
+            # Fallback to traditional recommendations
+            return get_recommendations()
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/search/smart', methods=['POST'])
+def smart_search():
+    """Smart search using natural language processing"""
+    try:
+        data = request.get_json()
+        
+        if not data.get('query'):
+            return jsonify({"error": "Missing 'query' field"}), 400
+        
+        query = data['query']
+        limit = data.get('limit', 10)
+        
+        # Use recommendation system's smart search
+        search_result = smart_search_from_recommendation_system(query, limit)
+        
+        return jsonify({
+            "query": query,
+            "results": search_result["results"],
+            "parsed_filters": search_result["parsed_filters"],
+            "total_found": search_result["total_found"],
+            "search_type": "smart_nlp_search",
+            "timestamp": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/search/semantic', methods=['POST'])
+def semantic_search():
+    """Semantic search using embeddings and cosine similarity"""
+    try:
+        data = request.get_json()
+        
+        if not data.get('query'):
+            return jsonify({"error": "Missing 'query' field"}), 400
+        
+        query = data['query']
+        limit = data.get('limit', 10)
+        min_similarity = data.get('min_similarity', 0.3)
+        
+        # Call recommendation system's semantic search API
+        rec_response = requests.post(
+            f"{RECOMMENDATION_API_URL}/search/semantic",
+            json={
+                "query": query,
+                "limit": limit,
+                "min_similarity": min_similarity
+            },
+            timeout=10
+        )
+        
+        if rec_response.status_code == 200:
+            result = rec_response.json()
+            # Transform results to match FE expectations
+            products = []
+            for item in result.get('results', []):
+                product_data = item.get('product_data', {})
+                # Add similarity score as metadata
+                product_data['similarity_score'] = item.get('similarity_score', 0)
+                products.append(product_data)
+            
+            return jsonify({
+                "query": query,
+                "results": products,
+                "search_type": "semantic_embedding",
+                "total_found": len(products),
+                "min_similarity": min_similarity,
+                "timestamp": datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                "error": "Recommendation system error",
+                "details": rec_response.text
+            }), 500
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/search/hybrid', methods=['POST'])
+def hybrid_search():
+    """Hybrid search combining semantic and keyword matching"""
+    try:
+        data = request.get_json()
+        
+        if not data.get('query'):
+            return jsonify({"error": "Missing 'query' field"}), 400
+        
+        query = data['query']
+        limit = data.get('limit', 10)
+        semantic_weight = data.get('semantic_weight', 0.7)
+        
+        # Call recommendation system's hybrid search API
+        rec_response = requests.post(
+            f"{RECOMMENDATION_API_URL}/search/hybrid",
+            json={
+                "query": query,
+                "limit": limit,
+                "semantic_weight": semantic_weight
+            },
+            timeout=10
+        )
+        
+        if rec_response.status_code == 200:
+            result = rec_response.json()
+            # Transform results to match FE expectations
+            products = []
+            for item in result.get('results', []):
+                product_data = item.get('product_data', {})
+                # Add hybrid scores as metadata
+                product_data['hybrid_score'] = item.get('hybrid_score', 0)
+                product_data['semantic_score'] = item.get('semantic_score', 0)
+                product_data['keyword_score'] = item.get('keyword_score', 0)
+                products.append(product_data)
+            
+            return jsonify({
+                "query": query,
+                "results": products,
+                "search_type": "hybrid_semantic_keyword",
+                "total_found": len(products),
+                "semantic_weight": semantic_weight,
+                "timestamp": datetime.now().isoformat()
+            })
+        else:
+            return jsonify({
+                "error": "Recommendation system error",
+                "details": rec_response.text
+            }), 500
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/recommendation-health', methods=['GET'])
+def check_recommendation_system_health():
+    """Check if the Recommendation System is available"""
+    try:
+        response = requests.get(f"{RECOMMENDATION_API_URL}/health", timeout=2.0)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return jsonify({
+                "recommendation_system_available": True,
+                "recommendation_system_status": data,
+                "connection_url": RECOMMENDATION_API_URL
+            })
+        else:
+            return jsonify({
+                "recommendation_system_available": False,
+                "error": f"HTTP {response.status_code}",
+                "connection_url": RECOMMENDATION_API_URL
+            })
+            
+    except Exception as e:
+        return jsonify({
+            "recommendation_system_available": False,
+            "error": str(e),
+            "connection_url": RECOMMENDATION_API_URL
+        })
+
+@app.route('/chatbot', methods=['POST'])
+def chatbot_endpoint():
+    """Process chatbot messages and return responses with product recommendations"""
+    try:
+        data = request.get_json()
+        message = data.get('message', '').lower()
+        
+        # Simple chatbot logic for demonstration
+        # In a real implementation, this would use NLP/AI services
+        response_text = "Hello! I'm here to help you find products. What are you looking for?"
+        products = []
+        search_params = {}
+        page_code = "others"
+        
+        # Basic product search logic
+        if any(keyword in message for keyword in ["laptop", "computer", "pc"]):
+            all_products = get_all_products_from_firestore()
+            products = [p for p in all_products if 'laptop' in p.get('name', '').lower() or 'computer' in p.get('name', '').lower()]
+            search_params = {"category": "Electronics", "keywords": "laptop"}
+            response_text = "I found some laptops for you!"
+            page_code = "products"
+        elif any(keyword in message for keyword in ["phone", "smartphone", "mobile"]):
+            all_products = get_all_products_from_firestore()
+            products = [p for p in all_products if 'phone' in p.get('name', '').lower() or 'smartphone' in p.get('name', '').lower()]
+            search_params = {"category": "Electronics", "keywords": "phone"}
+            response_text = "Here are some smartphones I found!"
+            page_code = "products"
+        elif any(keyword in message for keyword in ["headphones", "headset", "earphones"]):
+            all_products = get_all_products_from_firestore()
+            products = [p for p in all_products if any(word in p.get('name', '').lower() for word in ['headphone', 'headset', 'earphone'])]
+            search_params = {"category": "Electronics", "keywords": "headphones"}
+            response_text = "Check out these headphones!"
+            page_code = "products"
+        elif any(keyword in message for keyword in ["help", "hello", "hi"]):
+            response_text = "Hello! I can help you find laptops, phones, headphones, and other electronics. What are you looking for?"
+        
+        return jsonify({
+            "response": response_text,
+            "products": products[:5],  # Limit to 5 products
+            "search_params": search_params,
+            "page_code": page_code
+        })
+        
+    except Exception as e:
+        print(f"Error processing chatbot request: {str(e)}")
+        return jsonify({
+            "response": "I'm sorry, I'm having trouble processing your request right now. Please try again later.",
+            "products": [],
+            "search_params": {},
+            "page_code": "others"
+        }), 500
 
 if __name__ == '__main__':
     print("🚀 Starting eCommerce Backend API Server (Flask)...")
