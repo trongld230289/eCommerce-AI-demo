@@ -240,7 +240,7 @@ const ProductDetails: React.FC = () => {
       fontWeight: 700,
       color: '#dc3545'
     },
-    originalPrice: {
+    original_price: {
       fontSize: isSmallMobile ? '18px' : isMobile ? '20px' : '24px',
       color: '#6c757d',
       textDecoration: 'line-through',
@@ -775,8 +775,8 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
           {/* Price */}
           <div style={styles.productPrice}>
             <span style={styles.currentPrice}>${product.price}</span>
-            {product.originalPrice && (
-              <span style={styles.originalPrice}>${product.originalPrice}</span>
+            {product.original_price && (
+              <span style={styles.original_price}>${product.original_price}</span>
             )}
           </div>
 
