@@ -18,43 +18,27 @@ class FirebaseConfig:
         try:
             # Check if Firebase app is already initialized
             if not firebase_admin._apps:
-                # Try to get service account path from environment
-                service_account_path = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH')
+                # First try: Look for serviceAccountKey.json in the same directory
+                service_account_path = os.path.join(os.path.dirname(__file__), 'serviceAccountKey.json')
                 
-                if service_account_path and os.path.exists(service_account_path):
+                if os.path.exists(service_account_path):
                     # Use service account file
                     cred = credentials.Certificate(service_account_path)
                     firebase_admin.initialize_app(cred)
-                    print("✅ Firebase initialized with service account file")
+                    print("✅ Firebase initialized with serviceAccountKey.json")
                 else:
-                    # Use Firebase project configuration (for same project as frontend)
-                    firebase_config = {
-                        "type": "service_account",
-                        "project_id": "ecommerce-ai-cfafd",
-                        "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
-                        "private_key": os.getenv("FIREBASE_PRIVATE_KEY", "").replace('\\n', '\n'),
-                        "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
-                        "client_id": os.getenv("FIREBASE_CLIENT_ID"),
-                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                        "token_uri": "https://oauth2.googleapis.com/token",
-                        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                        "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_CERT_URL")
-                    }
+                    # Try to get service account path from environment
+                    env_service_account_path = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH')
                     
-                    # Check if we have the required environment variables
-                    if firebase_config["private_key"] and firebase_config["client_email"]:
-                        cred = credentials.Certificate(firebase_config)
+                    if env_service_account_path and os.path.exists(env_service_account_path):
+                        # Use service account file from environment
+                        cred = credentials.Certificate(env_service_account_path)
                         firebase_admin.initialize_app(cred)
-                        print("✅ Firebase initialized with environment variables")
+                        print("✅ Firebase initialized with service account file from environment")
                     else:
-                        # For development: Use a mock configuration
-                        print("⚠️  No Firebase credentials found. Using mock configuration for development.")
-                        print("   To connect to real Firebase, add credentials to .env file")
-                        # Initialize with minimal config for development
-                        cred = credentials.ApplicationDefault()
-                        firebase_admin.initialize_app(cred, {
-                            'projectId': 'ecommerce-ai-cfafd'
-                        })
+                        print(f"❌ Service account key not found at: {service_account_path}")
+                        print("Please make sure 'serviceAccountKey.json' is in the BE folder")
+                        raise FileNotFoundError("Firebase service account key not found")
             
             # Get Firestore client
             self.db = firestore.client()

@@ -8,55 +8,9 @@ class ProductService:
     def __init__(self):
         self.db = get_firestore_db()
         self.collection_name = 'products'
-        # Mock data for development when Firebase is not available
-        self.mock_products = [
-            {
-                "id": 1,
-                "name": "Wireless Bluetooth Headphones",
-                "description": "High-quality wireless headphones with noise cancellation",
-                "price": 99.99,
-                "category": "Electronics",
-                "brand": "AudioTech",
-                "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
-                "stock": 50,
-                "rating": 4.5,
-                "featured": True,
-                "created_at": time.time(),
-                "updated_at": time.time()
-            },
-            {
-                "id": 2,
-                "name": "Smart Fitness Watch",
-                "description": "Track your fitness goals with this advanced smartwatch",
-                "price": 299.99,
-                "category": "Electronics",
-                "brand": "FitTech",
-                "imageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500",
-                "stock": 30,
-                "rating": 4.7,
-                "featured": True,
-                "created_at": time.time(),
-                "updated_at": time.time()
-            },
-            {
-                "id": 3,
-                "name": "Portable Laptop Stand",
-                "description": "Ergonomic adjustable laptop stand for better posture",
-                "price": 49.99,
-                "category": "Accessories",
-                "brand": "ErgoDesk",
-                "imageUrl": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500",
-                "stock": 75,
-                "rating": 4.3,
-                "featured": False,
-                "created_at": time.time(),
-                "updated_at": time.time()
-            }
-        ]
-    
-    def _use_mock_data(self):
-        """Check if we should use mock data (when Firebase is not available)"""
-        return self.db is None
+        
+        if self.db is None:
+            raise Exception("Firebase connection failed. Please check your configuration.")
     
     def create_product(self, product_data: ProductCreate) -> Dict[str, Any]:
         """Create a new product"""
@@ -81,13 +35,6 @@ class ProductService:
     def get_product_by_id(self, product_id: int) -> Optional[Dict[str, Any]]:
         """Get product by ID"""
         try:
-            if self._use_mock_data():
-                # Find product in mock data
-                for product in self.mock_products:
-                    if product['id'] == product_id:
-                        return product.copy()
-                return None
-            
             doc_ref = self.db.collection(self.collection_name).document(str(product_id))
             doc = doc_ref.get()
             
@@ -96,19 +43,11 @@ class ProductService:
             return None
         except Exception as e:
             print(f"Error getting product {product_id}: {e}")
-            # Fallback to mock data
-            for product in self.mock_products:
-                if product['id'] == product_id:
-                    return product.copy()
             return None
     
     def get_all_products(self) -> List[Dict[str, Any]]:
         """Get all products"""
         try:
-            if self._use_mock_data():
-                print("📝 Using mock data (Firebase not available)")
-                return self.mock_products.copy()
-            
             docs = self.db.collection(self.collection_name).stream()
             products = []
             
@@ -121,8 +60,7 @@ class ProductService:
             return products
         except Exception as e:
             print(f"Error getting all products: {e}")
-            print("📝 Falling back to mock data")
-            return self.mock_products.copy()
+            return []
     
     def update_product(self, product_id: int, product_data: ProductUpdate) -> Dict[str, Any]:
         """Update product"""

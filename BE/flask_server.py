@@ -3,125 +3,52 @@ from flask_cors import CORS
 import json
 import random
 from datetime import datetime, timedelta
+from firebase_config import get_firestore_db
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-# Mock data
-MOCK_PRODUCTS = [
-    {
-        "id": 1,
-        "name": "Wireless Bluetooth Headphones",
-        "description": "High-quality wireless headphones with noise cancellation",
-        "price": 99.99,
-        "category": "Electronics",
-        "brand": "AudioTech",
-        "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
-        "stock": 50,
-        "rating": 4.5,
-        "featured": True,
-        "weeklyViews": 1250,
-        "weeklySales": 45
-    },
-    {
-        "id": 2,
-        "name": "Smart Fitness Watch",
-        "description": "Track your fitness goals with this advanced smartwatch",
-        "price": 299.99,
-        "category": "Electronics",
-        "brand": "FitTech",
-        "imageUrl": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500",
-        "stock": 30,
-        "rating": 4.7,
-        "featured": True,
-        "weeklyViews": 980,
-        "weeklySales": 32
-    },
-    {
-        "id": 3,
-        "name": "Portable Laptop Stand",
-        "description": "Ergonomic adjustable laptop stand for better posture",
-        "price": 49.99,
-        "category": "Accessories",
-        "brand": "ErgoDesk",
-        "imageUrl": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500",
-        "stock": 75,
-        "rating": 4.3,
-        "featured": False,
-        "weeklyViews": 650,
-        "weeklySales": 28
-    },
-    {
-        "id": 4,
-        "name": "USB-C Hub",
-        "description": "Multi-port USB-C hub with HDMI, USB-A, and SD card slots",
-        "price": 79.99,
-        "category": "Accessories",
-        "brand": "TechConnect",
-        "imageUrl": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=500",
-        "stock": 40,
-        "rating": 4.4,
-        "featured": True,
-        "weeklyViews": 820,
-        "weeklySales": 38
-    },
-    {
-        "id": 5,
-        "name": "Wireless Charging Pad",
-        "description": "Fast wireless charging pad compatible with all Qi devices",
-        "price": 34.99,
-        "category": "Accessories",
-        "brand": "PowerWave",
-        "imageUrl": "https://images.unsplash.com/photo-1609592067784-e4a9d8f1b3d1?w=500",
-        "stock": 60,
-        "rating": 4.2,
-        "featured": False,
-        "weeklyViews": 450,
-        "weeklySales": 22
-    },
-    {
-        "id": 6,
-        "name": "Gaming Mechanical Keyboard",
-        "description": "RGB backlit mechanical keyboard for gaming enthusiasts",
-        "price": 149.99,
-        "category": "Gaming",
-        "brand": "GameForce",
-        "imageUrl": "https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=500",
-        "stock": 25,
-        "rating": 4.8,
-        "featured": True,
-        "weeklyViews": 1100,
-        "weeklySales": 42
-    },
-    {
-        "id": 7,
-        "name": "Noise-Cancelling Earbuds",
-        "description": "Premium wireless earbuds with active noise cancellation",
-        "price": 199.99,
-        "category": "Electronics",
-        "brand": "AudioTech",
-        "imageUrl": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500",
-        "stock": 35,
-        "rating": 4.6,
-        "featured": True,
-        "weeklyViews": 1350,
-        "weeklySales": 48
-    },
-    {
-        "id": 8,
-        "name": "Smart Home Security Camera",
-        "description": "1080p HD security camera with night vision and mobile alerts",
-        "price": 129.99,
-        "category": "Smart Home",
-        "brand": "SecureVision",
-        "imageUrl": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
-        "stock": 42,
-        "rating": 4.4,
-        "featured": False,
-        "weeklyViews": 890,
-        "weeklySales": 35
-    }
-]
+# Firebase Firestore helper functions
+def get_all_products_from_firestore():
+    """Get all products from Firebase Firestore"""
+    try:
+        db = get_firestore_db()
+        if db is None:
+            return []
+        
+        products_ref = db.collection('products')
+        docs = products_ref.get()
+        
+        products = []
+        for doc in docs:
+            product = doc.to_dict()
+            # Ensure ID is set properly
+            product['id'] = int(doc.id)
+            products.append(product)
+        
+        return products
+    except Exception as e:
+        print(f"Error fetching products from Firestore: {e}")
+        return []
+
+def get_product_by_id_from_firestore(product_id):
+    """Get a specific product by ID from Firebase Firestore"""
+    try:
+        db = get_firestore_db()
+        if db is None:
+            return None
+        
+        doc_ref = db.collection('products').document(str(product_id))
+        doc = doc_ref.get()
+        
+        if doc.exists:
+            product = doc.to_dict()
+            product['id'] = int(doc.id)
+            return product
+        return None
+    except Exception as e:
+        print(f"Error fetching product {product_id} from Firestore: {e}")
+        return None
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -129,44 +56,60 @@ def health_check():
 
 @app.route('/products', methods=['GET'])
 def get_products():
-    return jsonify(MOCK_PRODUCTS)
+    """Get all products from Firestore"""
+    try:
+        products = get_all_products_from_firestore()
+        return jsonify(products)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
-    product = next((p for p in MOCK_PRODUCTS if p['id'] == product_id), None)
-    if product:
-        return jsonify(product)
-    return jsonify({"error": "Product not found"}), 404
+    """Get a specific product by ID from Firestore"""
+    try:
+        product = get_product_by_id_from_firestore(product_id)
+        if product:
+            return jsonify(product)
+        return jsonify({"error": "Product not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/search', methods=['GET'])
 def search_products():
-    # Simple search implementation
-    return jsonify(MOCK_PRODUCTS)
+    """Search products - enhanced search can be implemented later"""
+    try:
+        products = get_all_products_from_firestore()
+        return jsonify(products)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/categories', methods=['GET'])
 def get_categories():
-    categories = list(set(p['category'] for p in MOCK_PRODUCTS))
-    return jsonify(categories)
+    """Get all unique categories from Firestore products"""
+    try:
+        products = get_all_products_from_firestore()
+        categories = list({p['category'] for p in products})
+        return jsonify(categories)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/brands', methods=['GET'])
 def get_brands():
-    brands = list(set(p['brand'] for p in MOCK_PRODUCTS))
-    return jsonify(brands)
-
-@app.route('/products', methods=['GET'])
-def get_all_products():
-    """Get all products"""
+    """Get all unique brands from Firestore products"""
     try:
-        return jsonify(MOCK_PRODUCTS)
+        products = get_all_products_from_firestore()
+        brands = list({p['brand'] for p in products})
+        return jsonify(brands)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @app.route('/products/featured', methods=['GET'])
 def get_featured_products():
-    """Get featured products"""
+    """Get featured products from Firestore"""
     try:
         limit = request.args.get('limit', 6, type=int)
-        featured_products = [p for p in MOCK_PRODUCTS if p.get('featured', False)]
+        products = get_all_products_from_firestore()
+        featured_products = [p for p in products if p.get('featured', False)]
         # Sort by rating for best featured products first
         featured_products.sort(key=lambda x: x['rating'], reverse=True)
         return jsonify(featured_products[:limit])
@@ -175,16 +118,17 @@ def get_featured_products():
 
 @app.route('/products/top-this-week', methods=['GET'])
 def get_top_products_this_week():
-    """Get Top Products This Week based on views and sales"""
+    """Get Top Products This Week based on views and sales from Firestore"""
     try:
         limit = request.args.get('limit', 6, type=int)
+        products = get_all_products_from_firestore()
         
         # Calculate popularity score based on views and sales
         products_with_score = []
-        for product in MOCK_PRODUCTS:
+        for product in products:
             # Weight: 70% weekly sales, 30% weekly views (normalized)
-            max_sales = max(p.get('weeklySales', 0) for p in MOCK_PRODUCTS)
-            max_views = max(p.get('weeklyViews', 0) for p in MOCK_PRODUCTS)
+            max_sales = max(p.get('weeklySales', 0) for p in products)
+            max_views = max(p.get('weeklyViews', 0) for p in products)
             
             sales_score = (product.get('weeklySales', 0) / max_sales) * 0.7 if max_sales > 0 else 0
             views_score = (product.get('weeklyViews', 0) / max_views) * 0.3 if max_views > 0 else 0
@@ -205,18 +149,20 @@ def get_top_products_this_week():
 
 @app.route('/recommendations', methods=['GET'])
 def get_recommendations():
-    """Get personalized product recommendations"""
+    """Get personalized product recommendations from Firestore"""
     try:
         user_id = request.args.get('user_id')
         limit = request.args.get('limit', 4, type=int)
+        
+        products = get_all_products_from_firestore()
         
         # Simple recommendation algorithm: 
         # 1. Include some featured products
         # 2. Include some high-rated products
         # 3. Add some random variety
         
-        featured_products = [p for p in MOCK_PRODUCTS if p.get('featured', False)]
-        high_rated_products = [p for p in MOCK_PRODUCTS if p['rating'] >= 4.5]
+        featured_products = [p for p in products if p.get('featured', False)]
+        high_rated_products = [p for p in products if p['rating'] >= 4.5]
         
         recommendations = []
         
@@ -235,7 +181,7 @@ def get_recommendations():
         # If still need more, add random products
         remaining_slots = limit - len(recommendations)
         if remaining_slots > 0:
-            available_products = [p for p in MOCK_PRODUCTS if p not in recommendations]
+            available_products = [p for p in products if p not in recommendations]
             if available_products:
                 recommendations.extend(random.sample(available_products, min(remaining_slots, len(available_products))))
         
