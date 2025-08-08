@@ -247,9 +247,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                             <p className="chatbot-product-brand">{product.brand}</p>
                             <p className="chatbot-product-price">
                               ${product.price}
-                              {product.originalPrice && (
+                              {product.original_price && (
                                 <span className="chatbot-product-original-price" style={{ marginLeft: '8px', textDecoration: 'line-through', color: '#999' }}>
-                                  ${product.originalPrice}
+                                  ${product.original_price}
                                 </span>
                               )}
                             </p>

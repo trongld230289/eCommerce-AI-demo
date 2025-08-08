@@ -9,7 +9,7 @@ interface Product {
   description: string;
   rating: number;
   isNew?: boolean;
-  originalPrice?: number;
+  original_price?: number;
   discount?: number;
 }
 
