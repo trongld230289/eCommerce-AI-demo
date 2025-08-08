@@ -5,7 +5,7 @@ class Product(BaseModel):
     id: int
     name: str
     price: float
-    originalPrice: Optional[float] = None
+    original_price: Optional[float] = None
     image: str
     category: str
     description: str

@@ -112,7 +112,7 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
       display: 'flex',
       flexDirection: 'column' as const
     },
-    originalPrice: {
+    original_price: {
       fontSize: '0.8rem',
       color: '#999',
       textDecoration: 'line-through',
@@ -186,12 +186,7 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
           </span>
         )}
         
-        {product.discount && (
-          <span style={{...styles.productBadge, ...styles.productBadgeDiscount}}>
-            -${product.discount}
-          </span>
-        )}
-
+   
         {/* Hover Overlay with Action Buttons */}
         <div style={styles.productOverlay}>
           <Link 
@@ -232,9 +227,9 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
         {/* Price and Cart Icon */}
         <div style={styles.priceAndActions}>
           <div style={styles.priceContainer}>
-            {product.originalPrice && (
-              <span style={styles.originalPrice}>
-                ${product.originalPrice}
+            {product.original_price && (
+              <span style={styles.original_price}>
+                ${product.original_price}
               </span>
             )}
             <span style={styles.currentPrice}>

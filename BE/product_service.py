@@ -48,7 +48,7 @@ class ProductService:
     def get_all_products(self) -> List[Dict[str, Any]]:
         """Get all products"""
         try:
-            docs = self.db.collection(self.collection_name).stream()
+            docs = self.db.collection(self.collection_name).get()
             products = []
             
             for doc in docs:
@@ -116,7 +116,7 @@ class ProductService:
                 query = query.where(filter=FieldFilter("price", "<=", filters.max_price))
             
             # Get results
-            docs = query.stream()
+            docs = query.get()
             products = []
             
             for doc in docs:
@@ -153,7 +153,7 @@ class ProductService:
     def get_categories(self) -> List[str]:
         """Get all unique categories"""
         try:
-            docs = self.db.collection(self.collection_name).stream()
+            docs = self.db.collection(self.collection_name).get()
             categories = set()
             
             for doc in docs:
@@ -170,7 +170,7 @@ class ProductService:
     def get_brands(self) -> List[str]:
         """Get all unique brands"""
         try:
-            docs = self.db.collection(self.collection_name).stream()
+            docs = self.db.collection(self.collection_name).get()
             brands = set()
             
             for doc in docs:
@@ -187,7 +187,7 @@ class ProductService:
     def _get_next_product_id(self) -> int:
         """Get next available product ID"""
         try:
-            docs = self.db.collection(self.collection_name).stream()
+            docs = self.db.collection(self.collection_name).get()
             max_id = 0
             
             for doc in docs:
