@@ -1,33 +1,66 @@
-# E-Commerce AI Demo
+# eCommerce AI - Full Stack Application
 
-A modern e-commerce web application built with React, TypeScript, Firebase, and Tailwind CSS. This project demonstrates a complete shopping experience with authentication, product browsing, cart management, and wishlist functionality.
+A modern full-stack eCommerce application with React frontend, Python backend, and Firebase integration. Features AI-powered recommendations, product search, and comprehensive product management.
+
+## 🏗️ Architecture
+
+```
+eCommerce-AI/
+├── FE/              # React Frontend (TypeScript)
+├── BE/              # Python Backend (FastAPI + Firebase)
+├── AI_Service/      # AI Recommendation Service
+└── docs/            # Documentation
+```
 
 ## 🚀 Features
 
-- **User Authentication**: Login and registration with Firebase Auth
-- **Product Catalog**: Browse and search products
-- **Shopping Cart**: Add/remove items with quantity management
-- **Wishlist**: Save favorite products for later
-- **Responsive Design**: Mobile-friendly interface with Tailwind CSS
-- **Real-time Updates**: Firebase Firestore integration
-- **TypeScript**: Type-safe development experience
+### Frontend (React + TypeScript)
+- **Modern UI**: Responsive design with Tailwind CSS
+- **User Authentication**: Firebase Auth integration
+- **Product Catalog**: Dynamic product browsing and search
+- **Shopping Cart**: Full cart management with persistence
+- **Wishlist**: Save favorite products
+- **Real-time Updates**: Live inventory and price updates
+
+### Backend (Python + FastAPI)
+- **REST API**: Comprehensive product management APIs
+- **Firebase Integration**: Firestore database for products
+- **Search & Filtering**: Advanced product search with multiple filters
+- **CORS Support**: Configured for frontend integration
+- **API Documentation**: Automatic OpenAPI documentation
+
+### AI Service
+- **Recommendation Engine**: Personalized product recommendations
+- **Chatbot Integration**: Natural language product search
+- **User Preferences**: Learning from user behavior
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18, TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: FontAwesome, Heroicons
-- **Routing**: React Router DOM
-- **Backend**: Firebase (Authentication & Firestore)
-- **Build Tool**: Create React App
+### Frontend
+- **React 18** with TypeScript
+- **Tailwind CSS** for styling
+- **React Router** for navigation
+- **Firebase SDK** for authentication
+- **FontAwesome** for icons
+
+### Backend
+- **FastAPI** for API framework
+- **Firebase Admin SDK** for database operations
+- **Pydantic** for data validation
+- **Uvicorn** for ASGI server
+
+### Database
+- **Firebase Firestore** for product data
+- **Firebase Auth** for user management
 
 ## 📋 Prerequisites
 
-Before running this project, make sure you have the following installed:
+Before running this project, make sure you have:
 
 - **Node.js** (version 16.0 or higher)
+- **Python** (version 3.8 or higher)
 - **npm** or **yarn** package manager
-- **Firebase account** for backend services
+- **Firebase account** with a project set up
 
 ## 🔧 Installation & Setup
 
@@ -38,221 +71,239 @@ git clone https://github.com/trongld230289/eCommerce-AI-demo.git
 cd eCommerce-AI-demo
 ```
 
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-or if you prefer yarn:
-
-```bash
-yarn install
-```
-
-### 3. Firebase Configuration
+### 2. Firebase Setup
 
 1. Go to the [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project or use an existing one
+2. Create a new project or use existing project `ecommerce-ai-cfafd`
 3. Enable **Authentication** and **Firestore Database**
-4. Get your Firebase configuration from Project Settings
-5. Update the Firebase configuration in `src/utils/firebase.ts`:
+4. Create a service account key:
+   - Go to Project Settings > Service Accounts
+   - Generate new private key
+   - Download the JSON file
 
-```typescript
-const firebaseConfig = {
-  apiKey: "your-actual-api-key",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id"
-};
-```
-
-### 4. Environment Variables (Optional)
-
-For better security, you can use environment variables. Create a `.env` file in the root directory:
-
-```env
-REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-REACT_APP_FIREBASE_APP_ID=your-app-id
-```
-
-Then update `firebase.ts` to use these variables.
-
-## 🚀 Running the Project
-
-### Development Mode
-
-To start the development server:
+### 3. Backend Setup
 
 ```bash
+cd BE
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Configure Firebase
+# Option 1: Place your Firebase service account JSON file in BE folder as 'firebase-service-account.json'
+# Option 2: Set environment variables (see .env.example)
+
+# Create .env file
+cp .env.example .env
+# Edit .env with your Firebase configuration
+
+# Migrate data to Firebase
+python migrate_data.py
+
+# Start the backend server
+python start.py
+```
+
+The backend will be available at:
+- **API**: http://localhost:8000
+- **Documentation**: http://localhost:8000/docs
+
+### 4. Frontend Setup
+
+```bash
+cd FE
+
+# Install dependencies
+npm install
+
+# Configure environment (optional)
+cp .env.example .env
+# Edit .env if needed (API URL is pre-configured)
+
+# Start the frontend development server
 npm start
 ```
 
-or
+The frontend will be available at: http://localhost:3000
+
+### 5. AI Service (Optional)
 
 ```bash
-yarn start
+cd AI_Service
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure OpenAI/Azure OpenAI (if using AI features)
+# Edit environment variables for AI service
+
+# Start AI service
+python main.py
 ```
 
-The application will open in your browser at `http://localhost:3000`
+## 🚀 Running the Application
 
-### Production Build
+### Quick Start (All Services)
 
-To create a production build:
+1. **Start Backend:**
+   ```bash
+   cd BE && python start.py
+   ```
 
-```bash
-npm run build
-```
+2. **Start Frontend:**
+   ```bash
+   cd FE && npm start
+   ```
 
-or
+3. **Start AI Service (Optional):**
+   ```bash
+   cd AI_Service && python main.py
+   ```
 
-```bash
-yarn build
-```
+### Development Mode
 
-The build files will be generated in the `build/` directory.
+For development, you can run each service separately:
 
-### Testing
-
-To run tests:
-
-```bash
-npm test
-```
-
-or
-
-```bash
-yarn test
-```
+- **Backend**: `cd BE && uvicorn main:app --reload`
+- **Frontend**: `cd FE && npm start`
+- **AI Service**: `cd AI_Service && python main.py`
 
 ## 📁 Project Structure
 
 ```
-eCommerce-AI-demo/
-├── public/
-│   └── index.html
-├── src/
-│   ├── components/          # Reusable UI components
-│   │   ├── AuthContext.tsx
-│   │   ├── Cart.tsx
-│   │   ├── CartDropdown.tsx
-│   │   ├── Login.tsx
-│   │   ├── LoginDialog.tsx
-│   │   ├── Products.tsx
-│   │   ├── Register.tsx
-│   │   ├── SearchBar.tsx
-│   │   ├── ShopContext.tsx
-│   │   ├── SimpleProductCard.tsx
-│   │   └── Wishlist.tsx
-│   ├── contexts/            # React Context providers
-│   │   ├── AuthContext.tsx
-│   │   └── ShopContext.tsx
-│   ├── pages/               # Page components
-│   │   ├── Cart.tsx
-│   │   ├── Home.tsx
-│   │   ├── Login.tsx
-│   │   ├── Products.tsx
-│   │   ├── Register.tsx
-│   │   └── Wishlist.tsx
-│   ├── types/               # TypeScript type definitions
-│   │   └── index.ts
-│   ├── utils/               # Utility functions
-│   │   ├── firebase.ts
-│   │   ├── mockData.ts
-│   │   └── searchParser.ts
-│   ├── App.tsx              # Main application component
-│   ├── index.tsx            # Application entry point
-│   └── index.css            # Global styles
-├── package.json
-├── tailwind.config.js
-├── tsconfig.json
-└── README.md
+eCommerce-AI/
+├── FE/                          # React Frontend
+│   ├── public/
+│   ├── src/
+│   │   ├── components/          # Reusable UI components
+│   │   ├── contexts/            # React contexts (Auth, Shop, Toast)
+│   │   ├── hooks/               # Custom React hooks
+│   │   ├── pages/               # Page components
+│   │   ├── services/            # API services
+│   │   ├── types/               # TypeScript type definitions
+│   │   └── utils/               # Utility functions
+│   ├── package.json
+│   └── tailwind.config.js
+│
+├── BE/                          # Python Backend
+│   ├── main.py                  # FastAPI application
+│   ├── models.py                # Pydantic models
+│   ├── firebase_config.py       # Firebase configuration
+│   ├── product_service.py       # Product business logic
+│   ├── migrate_data.py          # Data migration script
+│   ├── start.py                 # Startup script
+│   ├── requirements.txt
+│   └── README.md
+│
+├── AI_Service/                  # AI Recommendation Service
+│   ├── main.py                  # FastAPI application
+│   ├── chatbot_service.py       # Chatbot logic
+│   ├── models.py                # Data models
+│   ├── data.py                  # Sample data
+│   └── requirements.txt
+│
+└── README.md                    # This file
 ```
 
-## 🎯 Available Scripts
+## 🔗 API Endpoints
 
-| Command | Description |
-|---------|-------------|
-| `npm start` | Runs the app in development mode |
-| `npm run build` | Builds the app for production |
-| `npm test` | Launches the test runner |
-| `npm run eject` | Ejects from Create React App (one-way operation) |
+### Backend API (http://localhost:8000)
 
-## 🔥 Firebase Setup Guide
+- `GET /products` - Get all products
+- `GET /products/{id}` - Get product by ID
+- `POST /products` - Create new product
+- `PUT /products/{id}` - Update product
+- `DELETE /products/{id}` - Delete product
+- `GET /search` - Search products with filters
+- `GET /categories` - Get all categories
+- `GET /brands` - Get all brands
+- `GET /health` - Health check
 
-### Authentication Setup
-1. In Firebase Console, go to Authentication > Sign-in method
-2. Enable Email/Password authentication
-3. Configure authorized domains if needed
+### AI Service API (http://localhost:8000)
 
-### Firestore Database Setup
-1. Go to Firestore Database in Firebase Console
-2. Create database in test mode (or production mode with proper rules)
-3. Create collections for:
-   - `products` - Store product information
-   - `users` - Store user profiles
-   - `carts` - Store shopping cart data
-   - `wishlists` - Store wishlist data
+- `GET /recommendations` - Get personalized recommendations
+- `POST /chatbot` - Process chatbot queries
+- `GET /search` - AI-powered search
 
-## 🎨 Customization
+## 🔥 Firebase Configuration
 
-### Styling
-- Modify `tailwind.config.js` to customize the design system
-- Update `src/index.css` for global styles
-- Components use Tailwind utility classes for styling
+### Firestore Collections
 
-### Adding New Features
-1. Create new components in `src/components/`
-2. Add new pages in `src/pages/`
-3. Update routing in `src/App.tsx`
-4. Add TypeScript types in `src/types/`
+The application uses the following Firestore collections:
+
+- **products**: Product catalog data
+- **users**: User profiles (managed by Firebase Auth)
+- **carts**: Shopping cart data (optional)
+- **wishlists**: Wishlist data (optional)
+
+### Security Rules
+
+Make sure to configure appropriate Firestore security rules for production.
+
+## 🎯 Key Features Implemented
+
+### ✅ Completed
+- [x] Python FastAPI backend with Firebase integration
+- [x] Product CRUD operations via REST API
+- [x] Data migration from hardcoded frontend data to Firebase
+- [x] Frontend API integration with error handling and loading states
+- [x] Search and filtering functionality
+- [x] Responsive design and user authentication
+- [x] Shopping cart and wishlist functionality
+
+### 🔄 In Progress
+- [ ] Enhanced AI recommendations
+- [ ] Advanced search with machine learning
+- [ ] Order management system
+- [ ] Payment integration
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
 1. **Firebase Configuration Error**
-   - Ensure all Firebase config values are correct
-   - Check if Firebase services are enabled
+   - Ensure Firebase service account key is properly configured
+   - Check if Firestore database is enabled
+   - Verify project ID matches in configuration
 
-2. **Build Fails**
+2. **Backend Connection Issues**
+   - Ensure backend is running on port 8000
+   - Check CORS configuration if frontend can't connect
+   - Verify environment variables are set correctly
+
+3. **Frontend Build Fails**
    - Clear node_modules and reinstall: `rm -rf node_modules && npm install`
    - Check for TypeScript errors
+   - Ensure all dependencies are compatible
 
-3. **Authentication Issues**
-   - Verify Firebase Auth is properly configured
-   - Check browser console for detailed error messages
+4. **Data Migration Issues**
+   - Verify Firebase credentials
+   - Check internet connection
+   - Review Firebase console for error logs
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/new-feature`
-3. Commit your changes: `git commit -m 'Add new feature'`
-4. Push to the branch: `git push origin feature/new-feature`
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
-
-## 🔗 Links
-
-- [Demo](#) - Live demo (if available)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [React Documentation](https://reactjs.org/docs)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 Author
 
-Created by [trongld230289](https://github.com/trongld230289)
+**Trong Le** - [trongld230289](https://github.com/trongld230289)
+
+## 🔗 Links
+
+- **Repository**: https://github.com/trongld230289/eCommerce-AI-demo
+- **Frontend Demo**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
 
 ---
 
-**Happy Coding! 🚀**
+⭐ If you find this project helpful, please give it a star!

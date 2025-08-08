@@ -1,0 +1,132 @@
+import { Product } from '../contexts/ShopContext';
+
+export const mockProducts: Product[] = [
+  {
+    id: 1,
+    name: 'iPhone 15 Pro',
+    price: 999.99,
+    originalPrice: 1099.99,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400',
+    category: 'Electronics',
+    description: 'Latest iPhone with A17 Pro chip',
+    brand: 'Apple',
+    tags: ['smartphone', 'apple', 'ios'],
+    rating: 4.8,
+    isNew: true,
+    discount: 100
+  },
+  {
+    id: 2,
+    name: 'Samsung Galaxy S24 Ultra',
+    price: 899.99,
+    originalPrice: 999.99,
+    description: 'Smartphone Android flagship với S Pen',
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400',
+    category: 'Điện thoại',
+    brand: 'Samsung',
+    rating: 4.7,
+  },
+  {
+    id: 3,
+    name: 'Dell XPS 13',
+    description: 'Laptop siêu mỏng với màn hình 13.3 inch',
+    price: 18000000,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1496181133206-80ce9b88a853?w=400',
+    category: 'Laptop',
+    brand: 'Dell',
+    rating: 4.6,
+  },
+  {
+    id: 4,
+    name: 'MacBook Air M3',
+    description: 'Laptop Apple với chip M3 hiệu năng cao',
+    price: 24000000,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1541807084-5c52b6b3adef?w=400',
+    category: 'Laptop',
+    brand: 'Apple',
+    rating: 4.9,
+  },
+  {
+    id: 5,
+    name: 'Sony WH-1000XM5',
+    description: 'Tai nghe chống ồn cao cấp',
+    price: 8500000,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1583394838336-acd977736f90?w=400',
+    category: 'Tai nghe',
+    brand: 'Sony',
+    rating: 4.8,
+  },
+  {
+    id: 6,
+    name: 'iPad Pro 12.9"',
+    description: 'Máy tính bảng chuyên nghiệp với chip M2',
+    price: 20000000,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400',
+    category: 'Máy tính bảng',
+    brand: 'Apple',
+    rating: 4.7,
+  },
+  {
+    id: 7,
+    name: 'Samsung Galaxy Watch 6',
+    description: 'Đồng hồ thông minh với tính năng sức khỏe',
+    price: 6500000,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1434494878577-86c23bcb06b9?w=400',
+    category: 'Đồng hồ thông minh',
+    brand: 'Samsung',
+    rating: 4.5,
+  },
+  {
+    id: 8,
+    name: 'Canon EOS R6 Mark II',
+    description: 'Máy ảnh mirrorless chuyên nghiệp',
+    price: 45000000,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1502920917128-1aa500764cbd?w=400',
+    category: 'Máy ảnh',
+    brand: 'Canon',
+    rating: 4.9,
+  },
+  {
+    id: 9,
+    name: 'Nintendo Switch OLED',
+    description: 'Máy chơi game cầm tay với màn hình OLED',
+    price: 8000000,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400',
+    category: 'Máy chơi game',
+    brand: 'Nintendo',
+    rating: 4.6
+  },
+  {
+    id: 10,
+    name: 'LG OLED C3 55"',
+    description: 'Smart TV OLED 4K với AI ThinQ',
+    price: 35000000,
+    imageUrl: 'https://imageUrls.unsplash.com/photo-1593359677879-a4bb92f829d1?w=400',
+    category: 'TV',
+    brand: 'LG',
+    rating: 4.8,
+  }
+];
+
+export const categories = [
+  'Tất cả',
+  'Điện thoại',
+  'Laptop',
+  'Tai nghe',
+  'Máy tính bảng',
+  'Đồng hồ thông minh',
+  'Máy ảnh',
+  'Máy chơi game',
+  'TV'
+];
+
+export const brands = [
+  'Tất cả',
+  'Apple',
+  'Samsung',
+  'Dell',
+  'Sony',
+  'Canon',
+  'Nintendo',
+  'LG'
+];
