@@ -155,11 +155,6 @@ python main.py
    cd FE && npm start
    ```
 
-3. **Start AI Service (Optional):**
-   ```bash
-   cd AI_Service && python main.py
-   ```
-
 ### Development Mode
 
 For development, you can run each service separately:
