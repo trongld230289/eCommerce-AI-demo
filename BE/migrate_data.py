@@ -11,6 +11,7 @@ This script will:
 
 import asyncio
 import time
+import random
 from firebase_config import get_firestore_db
 from models import ProductCreate
 
@@ -28,7 +29,9 @@ PRODUCTS_DATA = [
         "tags": ["smartphone", "apple", "ios"],
         "rating": 4.8,
         "is_new": True,
-        "discount": 100
+        "discount": 100,
+        "quantity": 0,
+        "stock": 0
     },
     {
         "name": "Samsung Galaxy S24 Ultra",
@@ -38,7 +41,9 @@ PRODUCTS_DATA = [
         "category": "Điện thoại",
         "description": "Smartphone Android flagship với S Pen",
         "brand": "Samsung",
-        "rating": 4.7
+        "rating": 4.7,
+        "quantity": 25,
+        "stock": 25
     },
     {
         "name": "Dell XPS 13",
@@ -47,7 +52,9 @@ PRODUCTS_DATA = [
         "category": "Laptop",
         "description": "Laptop siêu mỏng với màn hình 13.3 inch",
         "brand": "Dell",
-        "rating": 4.6
+        "rating": 4.6,
+        "quantity": 15,
+        "stock": 15
     },
     {
         "name": "MacBook Air M3",
@@ -56,7 +63,9 @@ PRODUCTS_DATA = [
         "category": "Laptop",
         "description": "Laptop Apple với chip M3 hiệu năng cao",
         "brand": "Apple",
-        "rating": 4.9
+        "rating": 4.9,
+        "quantity": 12,
+        "stock": 12
     },
     {
         "name": "Sony WH-1000XM5",
@@ -65,7 +74,9 @@ PRODUCTS_DATA = [
         "category": "Tai nghe",
         "description": "Tai nghe chống ồn cao cấp",
         "brand": "Sony",
-        "rating": 4.8
+        "rating": 4.8,
+        "quantity": 30,
+        "stock": 30
     },
     {
         "name": "iPad Pro 12.9\"",
@@ -74,7 +85,9 @@ PRODUCTS_DATA = [
         "category": "Máy tính bảng",
         "description": "Máy tính bảng chuyên nghiệp với chip M2",
         "brand": "Apple",
-        "rating": 4.7
+        "rating": 4.7,
+        "quantity": 18,
+        "stock": 18
     },
     {
         "name": "Samsung Galaxy Watch 6",
@@ -83,7 +96,9 @@ PRODUCTS_DATA = [
         "category": "Đồng hồ thông minh",
         "description": "Đồng hồ thông minh với tính năng sức khỏe",
         "brand": "Samsung",
-        "rating": 4.5
+        "rating": 4.5,
+        "quantity": 22,
+        "stock": 22
     },
     {
         "name": "Canon EOS R6 Mark II",
@@ -92,7 +107,9 @@ PRODUCTS_DATA = [
         "category": "Máy ảnh",
         "description": "Máy ảnh mirrorless chuyên nghiệp",
         "brand": "Canon",
-        "rating": 4.9
+        "rating": 4.9,
+        "quantity": 8,
+        "stock": 8
     },
     {
         "name": "Nintendo Switch OLED",
@@ -101,7 +118,9 @@ PRODUCTS_DATA = [
         "category": "Máy chơi game",
         "description": "Máy chơi game cầm tay với màn hình OLED",
         "brand": "Nintendo",
-        "rating": 4.6
+        "rating": 4.6,
+        "quantity": 35,
+        "stock": 35
     },
     {
         "name": "LG OLED C3 55\"",
@@ -110,7 +129,9 @@ PRODUCTS_DATA = [
         "category": "TV",
         "description": "Smart TV OLED 4K với AI ThinQ",
         "brand": "LG",
-        "rating": 4.8
+        "rating": 4.8,
+        "quantity": 10,
+        "stock": 10
     },
     # Additional products from Products.tsx
     {
@@ -125,7 +146,9 @@ PRODUCTS_DATA = [
         "color": "Black",
         "rating": 4.5,
         "is_new": True,
-        "discount": 30
+        "discount": 30,
+        "quantity": 45,
+        "stock": 45
     },
     {
         "name": "Smart Watch",
@@ -138,7 +161,9 @@ PRODUCTS_DATA = [
         "tags": ["smartwatch", "fitness", "health", "gps", "waterproof"],
         "color": "Silver",
         "rating": 4.7,
-        "discount": 50
+        "discount": 50,
+        "quantity": 28,
+        "stock": 28
     },
     {
         "name": "Gaming Laptop",
@@ -151,7 +176,9 @@ PRODUCTS_DATA = [
         "tags": ["laptop", "gaming", "rtx", "high-performance", "work"],
         "color": "Black",
         "rating": 4.8,
-        "discount": 200
+        "discount": 200,
+        "quantity": 20,
+        "stock": 20
     },
     {
         "name": "Smartphone Pro",
@@ -164,7 +191,9 @@ PRODUCTS_DATA = [
         "tags": ["smartphone", "camera", "5g", "photography", "mobile"],
         "color": "Blue",
         "rating": 4.6,
-        "discount": 100
+        "discount": 100,
+        "quantity": 33,
+        "stock": 33
     },
     {
         "name": "Portable Bluetooth Speaker",
@@ -177,7 +206,9 @@ PRODUCTS_DATA = [
         "tags": ["speaker", "bluetooth", "portable", "bass", "waterproof"],
         "color": "Red",
         "rating": 4.3,
-        "discount": 20
+        "discount": 20,
+        "quantity": 50,
+        "stock": 50
     },
     {
         "name": "RGB Gaming Mouse",
@@ -190,7 +221,9 @@ PRODUCTS_DATA = [
         "tags": ["mouse", "gaming", "rgb", "precision", "esports"],
         "color": "Black",
         "rating": 4.4,
-        "discount": 20
+        "discount": 20,
+        "quantity": 75,
+        "stock": 75
     },
     {
         "name": "Mechanical Gaming Keyboard",
@@ -203,7 +236,9 @@ PRODUCTS_DATA = [
         "tags": ["keyboard", "mechanical", "gaming", "rgb", "typing"],
         "color": "Black",
         "rating": 4.7,
-        "discount": 30
+        "discount": 30,
+        "quantity": 40,
+        "stock": 40
     },
     {
         "name": "iPad Tablet",
@@ -216,7 +251,9 @@ PRODUCTS_DATA = [
         "tags": ["tablet", "stylus", "drawing", "work", "entertainment"],
         "color": "White",
         "rating": 4.5,
-        "discount": 50
+        "discount": 50,
+        "quantity": 25,
+        "stock": 25
     }
 ]
 
@@ -252,12 +289,16 @@ def migrate_products():
                     product_dict['is_new'] = False
                 if 'discount' not in product_dict:
                     product_dict['discount'] = 0
+                if 'quantity' not in product_dict:
+                    product_dict['quantity'] = 10
+                if 'stock' not in product_dict:
+                    product_dict['stock'] = product_dict['quantity']
                 
                 # Add to Firestore
                 doc_ref = db.collection(collection_name).document(str(i))
                 doc_ref.set(product_dict)
                 
-                print(f"✓ Migrated product {i}: {product_dict['name']}")
+                print(f"✓ Migrated product {i}: {product_dict['name']} (Stock: {product_dict['stock']})")
                 
             except Exception as e:
                 print(f"✗ Error migrating product {i}: {e}")
