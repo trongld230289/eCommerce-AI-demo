@@ -52,10 +52,6 @@ class FirebaseConfig:
     
     def get_db(self):
         """Get Firestore database instance"""
-        return self.db
-    
-    def get_db(self):
-        """Get Firestore database instance"""
         if self.db is None:
             self.init_firebase()
         return self.db
