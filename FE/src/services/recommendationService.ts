@@ -1,73 +1,166 @@
 import { Product } from '../contexts/ShopContext';
-import { apiService } from './apiService';
 
 export interface RecommendationResponse {
-  products: Product[];
-  is_personalized: boolean;
+  recommendations?: Product[];
+  products?: Product[];
   user_id: string | null;
+  source?: string;
+  count?: number;
+  timestamp?: string;
 }
 
-const LEGACY_API_BASE_URL = 'http://localhost:8000';
+export interface UserEvent {
+  user_id: string;
+  event_type: 'view' | 'add_to_cart' | 'remove_from_cart' | 'add_to_wishlist' | 'remove_from_wishlist' | 'purchase';
+  product_id: string | number;
+  session_id?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface SmartSearchRequest {
+  query: string;
+  limit?: number;
+}
+
+export interface SmartSearchResponse {
+  query: string;
+  results: Product[];
+  parsed_filters: Record<string, any>;
+  total_found: number;
+  search_type: string;
+  timestamp: string;
+}
+
+const API_BASE_URL = 'http://localhost:8000';
 
 export const recommendationService = {
+  // Get personalized recommendations from the new integrated system
   async getRecommendations(userId?: string, limit: number = 10): Promise<RecommendationResponse> {
     try {
-      // Try to use the AI_Service recommendations endpoint first
       const params = new URLSearchParams();
       if (userId) {
         params.append('user_id', userId);
       }
       params.append('limit', limit.toString());
 
-      const response = await fetch(`${LEGACY_API_BASE_URL}/recommendations?${params}`);
+      const response = await fetch(`${API_BASE_URL}/recommendations?${params}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
       
-      // Check if data is an array (direct product list) or object with products
-      if (Array.isArray(data)) {
+      // Handle different response formats
+      if (data.recommendations) {
+        // New format with recommendations array
+        return {
+          recommendations: data.recommendations,
+          products: data.recommendations, // For compatibility
+          user_id: data.user_id || userId || null,
+          source: data.source || 'backend_api',
+          count: data.count,
+          timestamp: data.timestamp
+        };
+      } else if (Array.isArray(data)) {
+        // Legacy format - direct product array
         return {
           products: data,
-          is_personalized: Boolean(userId),
-          user_id: userId || null
+          recommendations: data,
+          user_id: userId || null,
+          source: 'legacy_api'
         };
-      } else if (data && data.products) {
-        return data;
       } else {
         throw new Error('Invalid response format');
       }
     } catch (error) {
-      console.error('Error fetching recommendations, falling back to all products:', error);
-      
-      // Fallback: return some products from the new API
-      try {
-        const products = await apiService.getAllProducts();
-        return {
-          products: products.slice(0, limit),
-          is_personalized: false,
-          user_id: userId || null
-        };
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-        throw error;
-      }
+      console.error('Error fetching recommendations:', error);
+      throw error;
     }
   },
 
+  // Track user events for better recommendations
+  async trackUserEvent(eventData: UserEvent): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/track-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(eventData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.success || false;
+    } catch (error) {
+      console.error('Error tracking user event:', error);
+      return false;
+    }
+  },
+
+  // Smart search with natural language processing
+  async smartSearch(searchRequest: SmartSearchRequest): Promise<SmartSearchResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/search/smart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(searchRequest)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error performing smart search:', error);
+      throw error;
+    }
+  },
+
+  // Check recommendation system health
+  async checkSystemHealth(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/recommendation-health`);
+      if (!response.ok) {
+        return false;
+      }
+      
+      const data = await response.json();
+      return data.recommendation_system_available || false;
+    } catch (error) {
+      console.error('Error checking recommendation system health:', error);
+      return false;
+    }
+  },
+
+  // Get all products (fallback)
   async getAllProducts(): Promise<Product[]> {
     try {
-      return await apiService.getAllProducts();
+      const response = await fetch(`${API_BASE_URL}/products`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
     } catch (error) {
       console.error('Error fetching products:', error);
       throw error;
     }
   },
 
+  // Get single product
   async getProduct(productId: number): Promise<Product> {
     try {
-      return await apiService.getProductById(productId);
+      const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
     } catch (error) {
       console.error('Error fetching product:', error);
       throw error;

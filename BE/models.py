@@ -88,3 +88,28 @@ class UserEventResponse(BaseModel):
     success: bool
     message: str
     event_id: Optional[str] = None
+
+class ChatbotRequest(BaseModel):
+    message: str
+    user_id: Optional[str] = None
+
+class ChatbotResponse(BaseModel):
+    response: str
+    products: List[Product] = Field(default_factory=list)
+    search_params: Dict[str, Any] = Field(default_factory=dict)
+    redirect_url: Optional[str] = None
+    page_code: Optional[str] = None
+    smart_search_used: Optional[bool] = False
+    parsed_filters: Dict[str, Any] = Field(default_factory=dict)
+
+class SmartSearchRequest(BaseModel):
+    query: str
+    limit: Optional[int] = 10
+
+class SmartSearchResponse(BaseModel):
+    query: str
+    results: List[Product] = Field(default_factory=list)
+    parsed_filters: Dict[str, Any] = Field(default_factory=dict)
+    total_found: int
+    search_type: str
+    timestamp: str
