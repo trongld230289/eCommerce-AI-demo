@@ -17,24 +17,36 @@ const Recommendations: React.FC<RecommendationsProps> = ({
   title = "Recommended for You",
   className = ""
 }) => {
-  const { recommendations, loading, error, isPersonalized } = useRecommendations(limit);
+  const { recommendations, loading, error, isPersonalized, source, trackEvent } = useRecommendations(limit);
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { showSuccess, showWishlist, showWarning } = useToast();
   const { currentUser } = useAuth();
 
-  // Toast handlers for cart and wishlist actions
-  const handleAddToCart = (product: Product) => {
+  // Enhanced cart handler with event tracking
+  const handleAddToCart = async (product: Product) => {
     addToCart(product);
     showSuccess(`${product.name} added to cart!`, 'Check your cart to proceed to checkout.');
+    
+    // Track the add_to_cart event
+    await trackEvent('add_to_cart', product.id);
   };
 
-  const handleAddToWishlist = (product: Product) => {
+  // Enhanced wishlist handler with event tracking
+  const handleAddToWishlist = async (product: Product) => {
     if (isInWishlist(product.id)) {
       showWarning(`Already in wishlist!`, `${product.name} is already in your wishlist.`);
     } else {
       addToWishlist(product);
       showWishlist(`${product.name} added to wishlist!`, 'View your wishlist to see all saved items.');
+      
+      // Track the add_to_wishlist event
+      await trackEvent('add_to_wishlist', product.id);
     }
+  };
+
+  // Track product view when user interacts with product card
+  const handleProductView = async (product: Product) => {
+    await trackEvent('view', product.id);
   };
 
   // Error state
@@ -68,9 +80,16 @@ const Recommendations: React.FC<RecommendationsProps> = ({
     );
   }
 
-  const displayTitle = isPersonalized && currentUser
-    ? `${title} (Personalized)`
-    : title;
+  const displayTitle = (() => {
+    if (isPersonalized && currentUser) {
+      return `${title} (AI Personalized)`;
+    } else if (source === 'recommendation_system') {
+      return `${title} (Smart Recommendations)`;
+    } else if (source === 'fallback') {
+      return `${title} (Popular Products)`;
+    }
+    return title;
+  })();
 
   // Safety check for recommendations
   const safeRecommendations = Array.isArray(recommendations) ? recommendations : [];
@@ -98,13 +117,17 @@ const Recommendations: React.FC<RecommendationsProps> = ({
           }}>
         {safeRecommendations.length > 0 ? safeRecommendations.map((product: Product) => {
           return (
+            <div 
+              key={product.id}
+              onClick={() => handleProductView(product)}
+            >
               <SimpleProductCard
-                key={product.id}
                 product={product}
                 onAddToCart={handleAddToCart}
                 onAddToWishlist={handleAddToWishlist}
                 isInWishlist={isInWishlist}
               />
+            </div>
           );
         }) : (
           <div style={{

@@ -41,6 +41,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
+  const [lastSearchResults, setLastSearchResults] = useState<Product[]>([]);
+  const [lastSearchQuery, setLastSearchQuery] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize speech recognition
@@ -107,6 +109,35 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     setIsTyping(true);
 
     try {
+      // Check if user is asking to see all results from previous search
+      const isShowAllRequest = (inputValue.toLowerCase().includes('show all') || 
+                               inputValue.toLowerCase().includes('see all') ||
+                               inputValue.toLowerCase().includes('view all') ||
+                               (inputValue.toLowerCase().includes('yes') && lastSearchResults.length > 0));
+      
+      if (isShowAllRequest && lastSearchResults.length > 0) {
+        // Create search URL with the last query
+        const searchParams = new URLSearchParams();
+        searchParams.append('q', lastSearchQuery);
+        searchParams.append('chatbot', 'true');
+        
+        const showAllMessage: Message = {
+          id: Date.now() + 1,
+          text: `Perfect! I'll show you all ${lastSearchResults.length} results on the products page.`,
+          isUser: false,
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, showAllMessage]);
+        
+        setTimeout(() => {
+          onClose();
+          navigate(`/products?${searchParams.toString()}`);
+        }, 1500);
+        
+        return;
+      }
+
       // Call the backend chatbot API
       const response = await chatbotService.sendMessage({
         message: messageText,
@@ -115,9 +146,40 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
 
       console.log('Chatbot response received:', response);
       console.log('Products in response:', response.products);
+      console.log('Smart search used:', response.smart_search_used);
 
-      // Check if we should redirect to search page
-      if (response.redirect_url && response.redirect_url !== '') {
+      // Handle smart search responses differently
+      if (response.smart_search_used && response.products && response.products.length > 0) {
+        // Store search results for potential "show all" request
+        setLastSearchResults(response.products);
+        setLastSearchQuery(messageText);
+        
+        // Smart search found products - show them in chatbot first
+        const smartSearchMessage: Message = {
+          id: Date.now() + 1,
+          text: response.response + `\n\nFilters detected: ${JSON.stringify(response.parsed_filters || {})}`,
+          isUser: false,
+          timestamp: new Date(),
+          products: response.products.slice(0, 3) // Show top 3 products in chat
+        };
+        
+        setMessages(prev => [...prev, smartSearchMessage]);
+
+        // If there are many results, offer to show all
+        if (response.products.length > 3) {
+          setTimeout(() => {
+            const moreResultsMessage: Message = {
+              id: Date.now() + 2,
+              text: `I found ${response.products?.length} total results. Would you like me to show you all of them on the products page?`,
+              isUser: false,
+              timestamp: new Date()
+            };
+            setMessages(prev => [...prev, moreResultsMessage]);
+          }, 1000);
+        }
+      }
+      // Check if we should redirect to search page (traditional behavior)
+      else if (response.redirect_url && response.redirect_url !== '') {
         // Add a message about redirecting
         const redirectMessage: Message = {
           id: Date.now() + 1,
@@ -133,7 +195,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         setTimeout(() => {
           // onClose();
           navigate(response.redirect_url!);
-        });
+        }, 2000);
       } else {
         // Normal chatbot response
         const botResponse: Message = {
