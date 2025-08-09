@@ -592,7 +592,12 @@ const Products: React.FC = () => {
       </section>
 
       {/* Recommendations Section */}
-     
+      <div style={{ marginTop: '50px' }}></div>
+      <Recommendations
+        limit={3}
+        title="Recommended for You"
+        className="mb-8"
+      />
 
     </div>
   );
