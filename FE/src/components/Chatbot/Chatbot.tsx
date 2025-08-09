@@ -131,7 +131,6 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         setMessages(prev => [...prev, showAllMessage]);
         
         setTimeout(() => {
-          onClose();
           navigate(`/products?${searchParams.toString()}`);
         }, 1500);
         

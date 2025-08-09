@@ -751,7 +751,7 @@ def semantic_search():
         
         query = data['query']
         limit = data.get('limit', 10)
-        min_similarity = data.get('min_similarity', 0.3)
+        min_similarity = data.get('min_similarity', 0.03)
         
         # Call recommendation system's semantic search API
         rec_response = requests.post(

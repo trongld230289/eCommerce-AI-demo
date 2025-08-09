@@ -79,7 +79,7 @@ export const chatbotService = {
         if (searchResult.results.length < 3) {
           const hybridResult = await chatbotService.performHybridSearch({
             query: request.message,
-            limit: 10,
+            limit: 2,
             semantic_weight: 0.6 // Balanced approach
           });
           
@@ -89,23 +89,23 @@ export const chatbotService = {
         }
 
         // If still no good results, fallback to smart search
-        if (searchResult.results.length === 0) {
-          const smartResult = await chatbotService.performSmartSearch({
-            query: request.message,
-            limit: 10
-          });
+        // if (searchResult.results.length === 0) {
+        //   const smartResult = await chatbotService.performSmartSearch({
+        //     query: request.message,
+        //     limit: 10
+        //   });
           
-          if (smartResult.results.length > 0) {
-            return {
-              response: `I found ${smartResult.total_found} products using smart search for "${request.message}". Here are the results:`,
-              products: smartResult.results,
-              search_params: smartResult.parsed_filters,
-              smart_search_used: true,
-              parsed_filters: smartResult.parsed_filters,
-              page_code: 'products'
-            };
-          }
-        }
+        //   if (smartResult.results.length > 0) {
+        //     return {
+        //       response: `I found ${smartResult.total_found} products using smart search for "${request.message}". Here are the results:`,
+        //       products: smartResult.results,
+        //       search_params: smartResult.parsed_filters,
+        //       smart_search_used: true,
+        //       parsed_filters: smartResult.parsed_filters,
+        //       page_code: 'products'
+        //     };
+        //   }
+        // }
 
         if (searchResult.results.length > 0) {
           const searchType = searchResult.search_type.includes('semantic') ? 'semantic' : 
