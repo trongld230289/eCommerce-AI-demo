@@ -57,6 +57,212 @@ class ChromaEventStore:
                 self.collection = None
         else:
             logger.warning("⚠️ Chroma DB not available, using fallback storage")
+    
+    def store_event(self, event: Dict[str, Any]) -> bool:
+        """Store user event in Chroma DB or fallback storage"""
+        try:
+            if self.collection:
+                # Store in Chroma DB
+                event_text = self._create_event_embedding_text(event)
+                logger.info(f"💾 Storing event in Chroma DB: {event['id']} for user {event['user_id']}")
+                logger.info(f"📝 Event text: {event_text}")
+                logger.info(f"📋 Event metadata: {event}")
+                
+                # Flatten metadata for Chroma DB (only primitive types allowed)
+                flattened_metadata = {
+                    'id': event['id'],
+                    'user_id': event['user_id'],
+                    'event_type': event['event_type'],
+                    'product_id': event['product_id'],
+                    'timestamp': event['timestamp']
+                }
+                
+                # Flatten product_data if it exists
+                if 'product_data' in event and isinstance(event['product_data'], dict):
+                    for key, value in event['product_data'].items():
+                        if isinstance(value, (str, int, float, bool)):
+                            flattened_metadata[f'product_{key}'] = value
+                        else:
+                            flattened_metadata[f'product_{key}'] = str(value)
+                
+                # Add other metadata fields if they exist
+                if 'metadata' in event and isinstance(event['metadata'], dict):
+                    for key, value in event['metadata'].items():
+                        if isinstance(value, (str, int, float, bool)):
+                            flattened_metadata[f'meta_{key}'] = value
+                        else:
+                            flattened_metadata[f'meta_{key}'] = str(value)
+                
+                logger.info(f"🔄 Flattened metadata: {flattened_metadata}")
+                
+                self.collection.add(
+                    documents=[event_text],
+                    metadatas=[flattened_metadata],
+                    ids=[event["id"]]
+                )
+                logger.info(f"✅ Event stored successfully in Chroma DB")
+                return True
+            else:
+                # Store in fallback storage
+                logger.info(f"📂 Storing event in fallback storage for user {event['user_id']}")
+                user_id = event["user_id"]
+                if user_id not in self.fallback_storage:
+                    self.fallback_storage[user_id] = []
+                self.fallback_storage[user_id].append(event)
+                return True
+                
+        except Exception as e:
+            logger.error(f"❌ Error storing event: {e}")
+            # Try fallback storage
+            user_id = event["user_id"]
+            if user_id not in self.fallback_storage:
+                self.fallback_storage[user_id] = []
+            self.fallback_storage[user_id].append(event)
+            return True
+    
+    def get_user_events(self, user_id: str, limit: int = 100, event_type: str = None) -> List[Dict]:
+        """Get user events from Chroma DB or fallback storage"""
+        try:
+            if self.collection:
+                # Query Chroma DB for user events
+                where_clause = {"user_id": user_id}
+                if event_type:
+                    where_clause["event_type"] = event_type
+                
+                logger.info(f"🔍 Querying Chroma DB with where clause: {where_clause}")
+                
+                results = self.collection.get(
+                    where=where_clause,
+                    limit=limit if limit > 0 else None
+                )
+                
+                logger.info(f"📊 Chroma DB query results: {len(results['ids'])} events found")
+                
+                # Convert results back to event format
+                events = []
+                for i, doc_id in enumerate(results["ids"]):
+                    metadata = results["metadatas"][i]
+                    logger.info(f"📄 Event {i}: {metadata}")
+                    
+                    # Reconstruct original event structure from flattened metadata
+                    event = {
+                        'id': metadata.get('id'),
+                        'user_id': metadata.get('user_id'),
+                        'event_type': metadata.get('event_type'),
+                        'product_id': metadata.get('product_id'),
+                        'timestamp': metadata.get('timestamp'),
+                        'product_data': {},
+                        'metadata': {}
+                    }
+                    
+                    # Reconstruct product_data and metadata from flattened fields
+                    for key, value in metadata.items():
+                        if key.startswith('product_'):
+                            event['product_data'][key[8:]] = value  # Remove 'product_' prefix
+                        elif key.startswith('meta_'):
+                            event['metadata'][key[5:]] = value  # Remove 'meta_' prefix
+                    
+                    events.append(event)
+                
+                return events
+            else:
+                # Get from fallback storage
+                logger.info(f"📂 Using fallback storage for user {user_id}")
+                user_events = self.fallback_storage.get(user_id, [])
+                if event_type:
+                    user_events = [e for e in user_events if e.get("event_type") == event_type]
+                return user_events[-limit:] if limit > 0 else user_events
+                
+        except Exception as e:
+            logger.error(f"❌ Error getting user events: {e}")
+            # Fallback to in-memory storage
+            user_events = self.fallback_storage.get(user_id, [])
+            if event_type:
+                user_events = [e for e in user_events if e.get("event_type") == event_type]
+            return user_events[-limit:] if limit > 0 else user_events
+    
+    def delete_user_event(self, user_id: str, event_id: str) -> bool:
+        """Delete a specific user event"""
+        try:
+            if self.collection:
+                # Delete from Chroma DB
+                self.collection.delete(ids=[event_id])
+                return True
+            else:
+                # Delete from fallback storage
+                if user_id in self.fallback_storage:
+                    self.fallback_storage[user_id] = [
+                        e for e in self.fallback_storage[user_id] 
+                        if e.get("id") != event_id
+                    ]
+                return True
+                
+        except Exception as e:
+            logger.error(f"❌ Error deleting event: {e}")
+            return False
+    
+    def delete_all_user_events(self, user_id: str) -> int:
+        """Delete all events for a user"""
+        try:
+            if self.collection:
+                # Get all event IDs for the user
+                results = self.collection.get(where={"user_id": user_id})
+                event_ids = results["ids"]
+                
+                if event_ids:
+                    self.collection.delete(ids=event_ids)
+                    return len(event_ids)
+                return 0
+            else:
+                # Fallback storage
+                if user_id in self.fallback_storage:
+                    count = len(self.fallback_storage[user_id])
+                    del self.fallback_storage[user_id]
+                    return count
+                return 0
+                
+        except Exception as e:
+            logger.error(f"❌ Error deleting user events: {e}")
+            return 0
+    
+    def find_similar_events(self, user_id: str, query_text: str, limit: int = 10) -> List[Dict]:
+        """Find similar events using vector similarity search"""
+        try:
+            if self.collection:
+                results = self.collection.query(
+                    query_texts=[query_text],
+                    where={"user_id": user_id},
+                    n_results=limit
+                )
+                
+                # Convert results to event format
+                events = []
+                for i, doc_id in enumerate(results["ids"][0]):
+                    metadata = results["metadatas"][0][i]
+                    events.append(metadata)
+                
+                return events
+            else:
+                # Simple text matching for fallback
+                user_events = self.fallback_storage.get(user_id, [])
+                query_lower = query_text.lower()
+                matched_events = []
+                
+                for event in user_events:
+                    event_text = self._create_event_embedding_text(event).lower()
+                    if query_lower in event_text:
+                        matched_events.append(event)
+                
+                return matched_events[:limit]
+                
+        except Exception as e:
+            logger.error(f"❌ Error finding similar events: {e}")
+            return []
+    
+    def _create_event_embedding_text(self, event: Dict[str, Any]) -> str:
+        """Create text representation of event for embedding"""
+        product_data = event.get("product_data", {})
+        return f"User {event['event_type']} action on {product_data.get('name', '')} {product_data.get('category', '')} {product_data.get('brand', '')} price {product_data.get('price', 0)}"
 
 class SemanticProductSearch:
     """Semantic product search using embeddings and cosine similarity"""
@@ -673,7 +879,7 @@ class RecommendationEngine:
         
         return filtered
     
-    def get_user_recommendations(self, user_id: str, limit: int = 5) -> List[Dict]:
+    def get_user_recommendations(self, user_id: str, limit: int = 8) -> List[Dict]:
         """Get personalized recommendations for a user based on their events"""
         products = self.get_cached_products()
         if not products:
@@ -901,9 +1107,9 @@ def delete_all_user_events(user_id: str):
 
 @app.route('/recommendations/<user_id>', methods=['GET'])
 def get_user_recommendations(user_id: str):
-    """Get top 5 product recommendations for a user"""
+    """Get top 8 product recommendations for a user"""
     try:
-        limit = request.args.get('limit', 5, type=int)
+        limit = request.args.get('limit', 8, type=int)
         
         recommendations = recommendation_engine.get_user_recommendations(user_id, limit)
         
