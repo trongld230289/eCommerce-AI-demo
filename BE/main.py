@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
 from models import Product, ProductCreate, ProductUpdate, SearchFilters, ApiResponse, ChatbotRequest, ChatbotResponse, SmartSearchRequest, SmartSearchResponse
 from product_service import product_service
+from product_service_v2 import product_service_v2
 import uvicorn
 import httpx
 import json
@@ -47,6 +48,15 @@ async def get_products():
         return products
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving products: {str(e)}")
+
+# Featured and top products endpoints
+@app.get("/products/featured")
+async def get_featured_products(limit: Optional[int] = Query(6, ge=1)):
+    try:
+        products = product_service_v2.get_featured_products(limit)
+        return products
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/products/{product_id}")
 async def get_product(product_id: int):
@@ -123,18 +133,7 @@ async def search_products(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
 
-# Featured and top products endpoints
-@app.get("/products/featured")
-async def get_featured_products(limit: int = Query(6, description="Number of featured products to return")):
-    """Get featured products"""
-    try:
-        all_products = product_service.get_all_products()
-        featured_products = [p for p in all_products if p.get('featured', False)]
-        # Sort by rating for best featured products first
-        featured_products.sort(key=lambda x: x.get('rating', 0), reverse=True)
-        return featured_products[:limit]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving featured products: {str(e)}")
+
 
 @app.get("/products/top-this-week")
 async def get_top_products_this_week(limit: int = Query(6, description="Number of top products to return")):
