@@ -13,7 +13,7 @@ interface RecommendationsProps {
 }
 
 const Recommendations: React.FC<RecommendationsProps> = ({ 
-  limit = 8, 
+  limit = 3, 
   title = "Recommended for You",
   className = ""
 }) => {
