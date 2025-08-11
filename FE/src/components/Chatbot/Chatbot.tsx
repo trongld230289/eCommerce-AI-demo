@@ -58,6 +58,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         const transcript = event.results[0][0].transcript;
         setInputValue(transcript);
         setIsListening(false);
+        // Automatically send the message after finishing talking
+        if (transcript && transcript.trim()) {
+          sendMessage(transcript);
+        }
       };
 
       recognitionInstance.onerror = () => {
@@ -92,19 +96,25 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     };
   }, [isVisible]);
 
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
+  // sendMessage can accept a string (for voice) or event (for form)
+  const sendMessage = async (eOrMessage: React.FormEvent | string) => {
+    let messageText = '';
+    if (typeof eOrMessage === 'string') {
+      messageText = eOrMessage;
+    } else {
+      eOrMessage.preventDefault();
+      messageText = inputValue;
+    }
+    if (!messageText.trim()) return;
 
     const userMessage: Message = {
       id: Date.now(),
-      text: inputValue,
+      text: messageText,
       isUser: true,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const messageText = inputValue;
     setInputValue('');
     setIsTyping(true);
 
