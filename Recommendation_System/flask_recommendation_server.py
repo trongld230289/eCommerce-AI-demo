@@ -1,3 +1,6 @@
+import os
+import json
+import re
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import json
@@ -9,6 +12,17 @@ import requests
 import logging
 import os
 import uuid
+from dotenv import load_dotenv
+# Try to import OpenAI for LLM query analysis
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("⚠️  OpenAI not available, using rule-based query parsing")
+    
+load_dotenv()
+
 
 # Try to import Chroma DB, fall back to mock if not available
 try:
@@ -57,6 +71,426 @@ class ChromaEventStore:
                 self.collection = None
         else:
             logger.warning("⚠️ Chroma DB not available, using fallback storage")
+    
+    def store_event(self, event: Dict[str, Any]) -> bool:
+        """Store user event in Chroma DB or fallback storage"""
+        try:
+            if self.collection:
+                # Store in Chroma DB
+                event_text = self._create_event_embedding_text(event)
+                logger.info(f"💾 Storing event in Chroma DB: {event['id']} for user {event['user_id']}")
+                logger.info(f"📝 Event text: {event_text}")
+                logger.info(f"📋 Event metadata: {event}")
+                
+                # Flatten metadata for Chroma DB (only primitive types allowed)
+                flattened_metadata = {
+                    'id': event['id'],
+                    'user_id': event['user_id'],
+                    'event_type': event['event_type'],
+                    'product_id': event['product_id'],
+                    'timestamp': event['timestamp']
+                }
+                
+                # Flatten product_data if it exists
+                if 'product_data' in event and isinstance(event['product_data'], dict):
+                    for key, value in event['product_data'].items():
+                        if isinstance(value, (str, int, float, bool)):
+                            flattened_metadata[f'product_{key}'] = value
+                        else:
+                            flattened_metadata[f'product_{key}'] = str(value)
+                
+                # Add other metadata fields if they exist
+                if 'metadata' in event and isinstance(event['metadata'], dict):
+                    for key, value in event['metadata'].items():
+                        if isinstance(value, (str, int, float, bool)):
+                            flattened_metadata[f'meta_{key}'] = value
+                        else:
+                            flattened_metadata[f'meta_{key}'] = str(value)
+                
+                logger.info(f"🔄 Flattened metadata: {flattened_metadata}")
+                
+                self.collection.add(
+                    documents=[event_text],
+                    metadatas=[flattened_metadata],
+                    ids=[event["id"]]
+                )
+                logger.info(f"✅ Event stored successfully in Chroma DB")
+                return True
+            else:
+                # Store in fallback storage
+                logger.info(f"📂 Storing event in fallback storage for user {event['user_id']}")
+                user_id = event["user_id"]
+                if user_id not in self.fallback_storage:
+                    self.fallback_storage[user_id] = []
+                self.fallback_storage[user_id].append(event)
+                return True
+                
+        except Exception as e:
+            logger.error(f"❌ Error storing event: {e}")
+            # Try fallback storage
+            user_id = event["user_id"]
+            if user_id not in self.fallback_storage:
+                self.fallback_storage[user_id] = []
+            self.fallback_storage[user_id].append(event)
+            return True
+    
+    def get_user_events(self, user_id: str, limit: int = 100, event_type: str = None) -> List[Dict]:
+        """Get user events from Chroma DB or fallback storage"""
+        try:
+            if self.collection:
+                # Query Chroma DB for user events
+                where_clause = {"user_id": user_id}
+                if event_type:
+                    where_clause["event_type"] = event_type
+                
+                logger.info(f"🔍 Querying Chroma DB with where clause: {where_clause}")
+                
+                results = self.collection.get(
+                    where=where_clause,
+                    limit=limit if limit > 0 else None
+                )
+                
+                logger.info(f"📊 Chroma DB query results: {len(results['ids'])} events found")
+                
+                # Convert results back to event format
+                events = []
+                for i, doc_id in enumerate(results["ids"]):
+                    metadata = results["metadatas"][i]
+                    logger.info(f"📄 Event {i}: {metadata}")
+                    
+                    # Reconstruct original event structure from flattened metadata
+                    event = {
+                        'id': metadata.get('id'),
+                        'user_id': metadata.get('user_id'),
+                        'event_type': metadata.get('event_type'),
+                        'product_id': metadata.get('product_id'),
+                        'timestamp': metadata.get('timestamp'),
+                        'product_data': {},
+                        'metadata': {}
+                    }
+                    
+                    # Reconstruct product_data and metadata from flattened fields
+                    for key, value in metadata.items():
+                        if key.startswith('product_'):
+                            event['product_data'][key[8:]] = value  # Remove 'product_' prefix
+                        elif key.startswith('meta_'):
+                            event['metadata'][key[5:]] = value  # Remove 'meta_' prefix
+                    
+                    events.append(event)
+                
+                return events
+            else:
+                # Get from fallback storage
+                logger.info(f"📂 Using fallback storage for user {user_id}")
+                user_events = self.fallback_storage.get(user_id, [])
+                if event_type:
+                    user_events = [e for e in user_events if e.get("event_type") == event_type]
+                return user_events[-limit:] if limit > 0 else user_events
+                
+        except Exception as e:
+            logger.error(f"❌ Error getting user events: {e}")
+            # Fallback to in-memory storage
+            user_events = self.fallback_storage.get(user_id, [])
+            if event_type:
+                user_events = [e for e in user_events if e.get("event_type") == event_type]
+            return user_events[-limit:] if limit > 0 else user_events
+    
+    def delete_user_event(self, user_id: str, event_id: str) -> bool:
+        """Delete a specific user event"""
+        try:
+            if self.collection:
+                # Delete from Chroma DB
+                self.collection.delete(ids=[event_id])
+                return True
+            else:
+                # Delete from fallback storage
+                if user_id in self.fallback_storage:
+                    self.fallback_storage[user_id] = [
+                        e for e in self.fallback_storage[user_id] 
+                        if e.get("id") != event_id
+                    ]
+                return True
+                
+        except Exception as e:
+            logger.error(f"❌ Error deleting event: {e}")
+            return False
+    
+    def delete_all_user_events(self, user_id: str) -> int:
+        """Delete all events for a user"""
+        try:
+            if self.collection:
+                # Get all event IDs for the user
+                results = self.collection.get(where={"user_id": user_id})
+                event_ids = results["ids"]
+                
+                if event_ids:
+                    self.collection.delete(ids=event_ids)
+                    return len(event_ids)
+                return 0
+            else:
+                # Fallback storage
+                if user_id in self.fallback_storage:
+                    count = len(self.fallback_storage[user_id])
+                    del self.fallback_storage[user_id]
+                    return count
+                return 0
+                
+        except Exception as e:
+            logger.error(f"❌ Error deleting user events: {e}")
+            return 0
+    
+    def find_similar_events(self, user_id: str, query_text: str, limit: int = 10) -> List[Dict]:
+        """Find similar events using vector similarity search"""
+        try:
+            if self.collection:
+                results = self.collection.query(
+                    query_texts=[query_text],
+                    where={"user_id": user_id},
+                    n_results=limit
+                )
+                
+                # Convert results to event format
+                events = []
+                for i, doc_id in enumerate(results["ids"][0]):
+                    metadata = results["metadatas"][0][i]
+                    events.append(metadata)
+                
+                return events
+            else:
+                # Simple text matching for fallback
+                user_events = self.fallback_storage.get(user_id, [])
+                query_lower = query_text.lower()
+                matched_events = []
+                
+                for event in user_events:
+                    event_text = self._create_event_embedding_text(event).lower()
+                    if query_lower in event_text:
+                        matched_events.append(event)
+                
+                return matched_events[:limit]
+                
+        except Exception as e:
+            logger.error(f"❌ Error finding similar events: {e}")
+            return []
+    
+    def _create_event_embedding_text(self, event: Dict[str, Any]) -> str:
+        """Create text representation of event for embedding"""
+        product_data = event.get("product_data", {})
+        return f"User {event['event_type']} action on {product_data.get('name', '')} {product_data.get('category', '')} {product_data.get('brand', '')} price {product_data.get('price', 0)}"
+
+class LLMQueryAnalyzer:
+    """Analyze natural language queries using LLM to extract structured filters"""
+    
+    def __init__(self):
+        self.openai_client = None
+        self.openai_available = OPENAI_AVAILABLE
+        
+        if self.openai_available:
+            # Try to get OpenAI API key from environment
+            api_key = os.getenv('OPENAI_API_KEY')
+            if api_key:
+                try:
+                    openai.api_key = api_key
+                    self.openai_client = openai
+                    logger.info("✅ OpenAI client initialized successfully")
+                except Exception as e:
+                    logger.error(f"❌ Failed to initialize OpenAI client: {e}")
+                    self.openai_available = False
+            else:
+                logger.warning("⚠️ OPENAI_API_KEY not found in environment variables")
+                self.openai_available = False
+    
+    def analyze_query(self, query: str) -> Dict[str, Any]:
+        """Analyze query and extract structured filters"""
+        if self.openai_available and self.openai_client:
+            return self._analyze_with_llm(query)
+        else:
+            return self._analyze_with_rules(query)
+    
+    def _analyze_with_llm(self, query: str) -> Dict[str, Any]:
+        """Use LLM to analyze query and extract filters"""
+        
+        print('Analyzing query with LLM...')
+        try:
+            prompt = f"""
+Analyze the following search query for an eCommerce website and extract structured filters.
+
+Query: "{query}"
+
+Extract the following information if present:
+1. Product categories (phone, laptop, headphone, etc.)
+2. Brands (Apple, Samsung, Dell, etc.)  
+3. Price constraints (min/max price, currency)
+4. Keywords for semantic search
+5. Features or specifications
+
+Return a JSON object with this structure:
+{{
+    "categories": ["category1", "category2"],
+    "brands": ["brand1", "brand2"],
+    "price_min": number or null,
+    "price_max": number or null,
+    "currency": "USD" or "VND" or null,
+    "keywords": "cleaned keywords for semantic search",
+    "features": ["feature1", "feature2"],
+    "intent": "brief description of user intent"
+}}
+
+Example:
+Query: "phone < 800$"
+Response: {{"categories": ["phone"], "price_max": 800, "currency": "USD", "keywords": "phone smartphone mobile", "intent": "looking for phones under $800"}}
+
+Query: "gaming laptop Dell under 2000$"  
+Response: {{"categories": ["laptop"], "brands": ["Dell"], "price_max": 2000, "currency": "USD", "keywords": "gaming laptop performance", "features": ["gaming"], "intent": "looking for Dell gaming laptops under $2000"}}
+"""
+
+            response = self.openai_client.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a query analysis assistant for an eCommerce search system. Always respond with valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=300,
+                temperature=0.1
+            )
+            
+            result_text = response.choices[0].message.content.strip()
+            
+            # Try to parse JSON response
+            try:
+                result = json.loads(result_text)
+                logger.info(f"🤖 LLM analyzed query '{query}': {result}")
+                return result
+            except json.JSONDecodeError:
+                logger.warning(f"⚠️ Failed to parse LLM response as JSON: {result_text}")
+                return self._analyze_with_rules(query)
+                
+        except Exception as e:
+            logger.error(f"❌ Error in LLM query analysis: {e}")
+            return self._analyze_with_rules(query)
+    
+    def _analyze_with_rules(self, query: str) -> Dict[str, Any]:
+        """Fallback rule-based query analysis"""
+        query_lower = query.lower()
+        result = {
+            "categories": [],
+            "brands": [],
+            "price_min": None,
+            "price_max": None,
+            "currency": None,
+            "keywords": "",
+            "features": [],
+            "intent": f"searching for: {query}"
+        }
+        
+        # Extract categories
+        categories_map = {
+            "Smartphones": ["phone", "smartphone", "mobile", "điện thoại"],
+            "Laptops": ["laptop", "notebook", "máy tính"],
+            "Tablets": ["tablet", "ipad"],
+            "Headphones": ["headphone", "earphone", "tai nghe"],
+            "Electronics": ["speaker", "loa", "electronics", "mouse", "keyboard", "gaming"],
+            "Smart Watches": ["watch", "smartwatch", "đồng hồ"],
+            "Cameras": ["camera", "máy ảnh"],
+            "TVs": ["tv", "television", "smart tv"],
+            "Gaming Consoles": ["console", "gaming console", "nintendo", "playstation", "xbox"]
+        }
+        
+        for category, keywords in categories_map.items():
+            if any(keyword in query_lower for keyword in keywords):
+                result["categories"].append(category)
+        
+        # Extract brands
+        brands = ["apple", "samsung", "dell", "hp", "lenovo", "asus", "sony", "lg", "xiaomi", "huawei", "microsoft", "google", "oneplus", "oppo", "vivo"]
+        for brand in brands:
+            if brand in query_lower:
+                result["brands"].append(brand.title())
+        
+        # Extract price constraints with currency
+        price_patterns = [
+            # USD patterns
+            (r"< ?\$?(\d+(?:,\d{3})*)", "max", "USD"),
+            (r"under ?\$?(\d+(?:,\d{3})*)", "max", "USD"),
+            (r"below ?\$?(\d+(?:,\d{3})*)", "max", "USD"),
+            (r"> ?\$?(\d+(?:,\d{3})*)", "min", "USD"),
+            (r"above ?\$?(\d+(?:,\d{3})*)", "min", "USD"),
+            (r"over ?\$?(\d+(?:,\d{3})*)", "min", "USD"),
+            (r"\$(\d+(?:,\d{3})*)", "max", "USD"),  # Just $800
+            
+            # VND patterns  
+            (r"< ?(\d+(?:,\d{3})*) ?(?:vnd|đ|dong)", "max", "VND"),
+            (r"dưới (\d+(?:,\d{3})*)", "max", "VND"),
+            (r"trên (\d+(?:,\d{3})*)", "min", "VND"),
+            
+            # General number patterns
+            (r"< ?(\d+(?:,\d{3})*)", "max", None),
+            (r"> ?(\d+(?:,\d{3})*)", "min", None),
+        ]
+        
+        for pattern, constraint_type, currency in price_patterns:
+            match = re.search(pattern, query_lower)
+            if match:
+                price_str = match.group(1).replace(",", "")
+                price = int(price_str)
+                
+                # Convert currency if needed
+                if currency == "USD":
+                    price = price  # Keep USD as is
+                elif currency == "VND":
+                    price = price  # Keep VND as is
+                else:
+                    # Try to infer currency from context
+                    if price > 10000:  # Likely VND
+                        currency = "VND"
+                    else:  # Likely USD
+                        currency = "USD"
+                
+                if constraint_type == "max":
+                    result["price_max"] = price
+                else:
+                    result["price_min"] = price
+                
+                result["currency"] = currency
+                break
+        
+        # Extract features
+        features_keywords = {
+            "gaming": ["gaming", "game", "chơi game"],
+            "business": ["business", "office", "văn phòng"],
+            "student": ["student", "học sinh", "sinh viên"],
+            "professional": ["professional", "pro", "chuyên nghiệp"],
+            "budget": ["budget", "cheap", "rẻ", "giá rẻ"],
+            "premium": ["premium", "high-end", "cao cấp"]
+        }
+        
+        for feature, keywords in features_keywords.items():
+            if any(keyword in query_lower for keyword in keywords):
+                result["features"].append(feature)
+        
+        # Clean keywords for semantic search
+        # Remove price info, brands, and categories to get clean search terms
+        clean_query = query_lower
+        for brand in result["brands"]:
+            clean_query = clean_query.replace(brand.lower(), "")
+        
+        # Remove price patterns but keep the main product terms
+        clean_query = re.sub(r'[<>]\s*\$?\d+(?:,\d{3})*\$?', '', clean_query)
+        clean_query = re.sub(r'\$\d+(?:,\d{3})*', '', clean_query)
+        clean_query = re.sub(r'under|above|below|over|dưới|trên', '', clean_query)
+        clean_query = re.sub(r'\$+', '', clean_query)  # Remove remaining $ symbols
+        
+        # Clean up extra spaces and get meaningful keywords
+        keywords = ' '.join(clean_query.split())
+        result["keywords"] = keywords.strip()
+        
+        # If keywords are empty or too short, use the main category as keywords
+        if not result["keywords"] or len(result["keywords"]) < 3:
+            if result["categories"]:
+                # Use the category name for better semantic search
+                result["keywords"] = result["categories"][0].lower()
+        
+        logger.info(f"🔧 Rule-based analysis for '{query}': {result}")
+        return result
 
 class SemanticProductSearch:
     """Semantic product search using embeddings and cosine similarity"""
@@ -66,6 +500,7 @@ class SemanticProductSearch:
         self.products_collection = None
         self.products_cache = {}
         self.embeddings_initialized = False
+        self.query_analyzer = LLMQueryAnalyzer()  # Add LLM query analyzer
         
         if CHROMA_AVAILABLE:
             try:
@@ -211,89 +646,154 @@ class SemanticProductSearch:
             return False
     
     def semantic_search(self, query: str, limit: int = 10, min_similarity: float = 0.3) -> List[Dict[str, Any]]:
-        """Perform semantic search using embeddings and cosine similarity"""
+        """Perform intelligent semantic search with LLM query analysis and metadata filtering"""
         if not self.products_collection or not self.embeddings_initialized:
             logger.error("❌ Products not embedded or collection not available")
             return []
         
         try:
-            # Query similar products using embeddings
+            # Step 1: Analyze query with LLM to extract structured filters
+            query_analysis = self.query_analyzer.analyze_query(query)
+            print(f"🔍 Analyzing query: {query}")
+            logger.info(f"🧠 Query analysis: {query_analysis}")
+            
+            # Step 2: Use keywords for semantic search if available, otherwise use original query
+            search_text = query_analysis.get("keywords", "").strip() or query.lower()
+            
+            # Step 3: Perform semantic search with a larger limit to allow filtering
+            semantic_limit = limit * 3  # Get more results for filtering
             results = self.products_collection.query(
-                query_texts=[query.lower()],
-                n_results=limit,
+                query_texts=[search_text],
+                n_results=semantic_limit,
                 include=['metadatas', 'distances', 'documents']
             )
             
-            # Process results
+            # Step 4: Process and filter results based on extracted filters
             search_results = []
-            
+
+
             for i, product_id in enumerate(results["ids"][0]):
                 metadata = results["metadatas"][0][i]
                 distance = results["distances"][0][i]
-                
+
                 # Convert distance to similarity score (cosine similarity)
                 similarity_score = 1 - distance
-                
+
                 # Filter by minimum similarity
                 if similarity_score < min_similarity:
                     continue
-                
+
                 # Get full product data from cache
                 product_data = self.products_cache.get(product_id, {})
-                
+                if not product_data:
+                    continue
+
+                # Step 5: Apply metadata filters from query analysis (including price)
+                if not self._matches_query_filters(product_data, query_analysis):
+                    continue
+
                 # Create result object
                 result = {
                     "product_id": product_id,
                     "similarity_score": round(similarity_score, 4),
                     "product_data": product_data,
                     "matched_text": results["documents"][0][i] if results.get("documents") else "",
-                    "metadata": metadata
+                    "metadata": metadata,
+                    "query_analysis": query_analysis  # Include analysis for debugging
                 }
-                
+
                 search_results.append(result)
-            
-            # Sort by similarity score
+
+            # Step 6: Sort by similarity score and apply final limit
             search_results.sort(key=lambda x: x["similarity_score"], reverse=True)
-            
-            logger.info(f"✅ Semantic search for '{query}' returned {len(search_results)} results")
-            return search_results
+            final_results = search_results[:limit]
+
+            logger.info(f"✅ Intelligent search for '{query}' returned {len(final_results)} results (filtered from {len(search_results)} candidates)")
+            return final_results
             
         except Exception as e:
             logger.error(f"❌ Error in semantic search: {e}")
             return []
     
-    def hybrid_search(self, query: str, limit: int = 10, semantic_weight: float = 0.7) -> List[Dict[str, Any]]:
-        """Combine semantic search with traditional keyword matching"""
-        semantic_results = self.semantic_search(query, limit * 2)  # Get more results for hybrid
+    def _matches_query_filters(self, product: Dict[str, Any], query_analysis: Dict[str, Any]) -> bool:
+        """Check if product matches the filters extracted from query analysis"""
         
-        # Traditional keyword search results
+        # Filter by categories
+        if query_analysis.get("categories"):
+            product_category = product.get("category", "").lower()
+            query_categories = [cat.lower() for cat in query_analysis["categories"]]
+            
+            # Check if product category contains any of the query categories
+            category_match = any(cat in product_category for cat in query_categories)
+            if not category_match:
+                return False
+        
+        # Filter by brands
+        if query_analysis.get("brands"):
+            product_brand = product.get("brand", "").lower()
+            query_brands = [brand.lower() for brand in query_analysis["brands"]]
+            
+            if product_brand not in query_brands:
+                return False
+        
+        # Filter by price constraints (ignore currency)
+        product_price = product.get("price", 0)
+        if query_analysis.get("price_min") is not None:
+            min_price = query_analysis["price_min"]
+            if product_price < min_price:
+                return False
+        if query_analysis.get("price_max") is not None:
+            max_price = query_analysis["price_max"]
+            if product_price > max_price:
+                return False
+        
+        # Filter by features (optional - can be used for additional matching)
+        if query_analysis.get("features"):
+            product_text = self.create_product_embedding_text(product).lower()
+            feature_match = any(feature.lower() in product_text for feature in query_analysis["features"])
+            # Features are not mandatory but can boost relevance
+            # For now, we don't filter by features, just use them for ranking
+        
+        return True
+    
+    def hybrid_search(self, query: str, limit: int = 10, semantic_weight: float = 0.7) -> List[Dict[str, Any]]:
+        """Combine semantic search with traditional keyword matching, using LLM query analysis and max_price filter"""
+        # Step 1: Analyze query with LLM to extract structured filters
+        query_analysis = self.query_analyzer.analyze_query(query)
+        
+        print(f"🔍 Analyzing query for hybrid search: {query_analysis}")
+
+        # Step 2: Semantic search (get more results for hybrid)
+        semantic_results = self.semantic_search(query, limit * 2)
+
+        # Step 3: Traditional keyword search results
         keyword_results = []
         query_lower = query.lower()
-        
         for product_id, product in self.products_cache.items():
             # Simple keyword matching score
             keyword_score = 0.0
             product_text = self.create_product_embedding_text(product).lower()
-            
+
             # Exact phrase match
             if query_lower in product_text:
                 keyword_score += 1.0
-            
+
             # Individual word matches
             query_words = query_lower.split()
-            word_matches = sum(1 for word in query_words if word in product_text)
-            keyword_score += (word_matches / len(query_words)) * 0.5
-            
+            if query_words:
+                word_matches = sum(1 for word in query_words if word in product_text)
+                keyword_score += (word_matches / len(query_words)) * 0.5
+
             if keyword_score > 0:
                 keyword_results.append({
                     "product_id": product_id,
                     "keyword_score": keyword_score,
                     "product_data": product
                 })
-        
-        # Combine results
+
+        # Step 4: Combine results
         hybrid_results = {}
-        
+
         # Add semantic results
         for result in semantic_results:
             product_id = result["product_id"]
@@ -303,7 +803,7 @@ class SemanticProductSearch:
                 "keyword_score": 0.0,
                 "hybrid_score": result["similarity_score"] * semantic_weight
             }
-        
+
         # Add/update with keyword results
         for result in keyword_results:
             product_id = result["product_id"]
@@ -322,11 +822,15 @@ class SemanticProductSearch:
                     "product_data": result["product_data"],
                     "similarity_score": 0.0
                 }
-        
-        # Convert to list and sort by hybrid score
+
+        # Step 5: Filter by max_price if present in query_analysis
         final_results = list(hybrid_results.values())
+        if query_analysis.get("price_max") is not None:
+            max_price = query_analysis["price_max"]
+            final_results = [r for r in final_results if r["product_data"].get("price", 0) <= max_price]
+
+        # Sort by hybrid score and apply final limit
         final_results.sort(key=lambda x: x["hybrid_score"], reverse=True)
-        
         return final_results[:limit]
     
     def store_event(self, event: Dict[str, Any]) -> bool:
@@ -673,7 +1177,7 @@ class RecommendationEngine:
         
         return filtered
     
-    def get_user_recommendations(self, user_id: str, limit: int = 5) -> List[Dict]:
+    def get_user_recommendations(self, user_id: str, limit: int = 8) -> List[Dict]:
         """Get personalized recommendations for a user based on their events"""
         products = self.get_cached_products()
         if not products:
@@ -901,9 +1405,9 @@ def delete_all_user_events(user_id: str):
 
 @app.route('/recommendations/<user_id>', methods=['GET'])
 def get_user_recommendations(user_id: str):
-    """Get top 5 product recommendations for a user"""
+    """Get top 8 product recommendations for a user"""
     try:
-        limit = request.args.get('limit', 5, type=int)
+        limit = request.args.get('limit', 8, type=int)
         
         recommendations = recommendation_engine.get_user_recommendations(user_id, limit)
         
@@ -920,7 +1424,7 @@ def get_user_recommendations(user_id: str):
 
 @app.route('/search', methods=['POST'])
 def smart_search():
-    """Smart search with natural language query"""
+    """Smart search with LLM query analysis and filtering"""
     try:
         data = request.get_json()
         
@@ -930,39 +1434,24 @@ def smart_search():
         query = data["query"]
         limit = data.get("limit", 10)
         
-        # Parse the natural language query
-        filters = recommendation_engine.parse_search_query(query)
+        # Ensure products are embedded
+        if not semantic_search_engine.embeddings_initialized:
+            products = recommendation_engine.get_cached_products()
+            if products:
+                success = semantic_search_engine.embed_all_products(products)
+                if not success:
+                    return jsonify({"error": "Failed to initialize product embeddings"}), 500
+            else:
+                return jsonify({"error": "No products available for search"}), 500
         
-        # Get all products
-        products = recommendation_engine.get_cached_products()
-        
-        if not products:
-            return jsonify({
-                "query": query,
-                "filters": filters,
-                "results": [],
-                "count": 0,
-                "message": "No products available"
-            })
-        
-        # Filter products based on parsed criteria
-        filtered_products = recommendation_engine.filter_products(products, filters)
-        
-        # Sort by relevance (rating, featured status)
-        filtered_products.sort(key=lambda x: (
-            x.get("rating", 0),
-            1 if x.get("featured", False) else 0
-        ), reverse=True)
-        
-        # Apply limit
-        results = filtered_products[:limit]
+        # Use semantic search with LLM query analysis
+        results = semantic_search_engine.semantic_search(query, limit, min_similarity=0.1)
         
         return jsonify({
             "query": query,
-            "parsed_filters": filters,
+            "search_type": "intelligent_semantic", 
             "results": results,
             "count": len(results),
-            "total_found": len(filtered_products),
             "timestamp": datetime.now().isoformat()
         })
         
