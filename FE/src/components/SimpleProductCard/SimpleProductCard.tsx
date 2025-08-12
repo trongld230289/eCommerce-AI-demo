@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart, faEye, faHeart } from '@fortawesome/free-solid-svg-icons';
+import { faShoppingCart, faEye } from '@fortawesome/free-solid-svg-icons';
+import { toast } from 'react-toastify';
 import { Product } from '../../contexts/ShopContext';
+import WishlistButton from '../WishlistButton/WishlistButton';
 
 interface SimpleProductCardProps {
   product: Product;
@@ -238,27 +240,31 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
           </div>
 
           {/* Action Buttons Container */}
-          <div style={styles.actionButtons}>
-            {/* Wishlist Button */}
-            <button
-              onClick={() => onAddToWishlist(product)}
-              style={{...styles.actionButton, ...styles.wishlistButton}}
-              title="Add to Wishlist"
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'scale(1.1)';
+          <div style={styles.actionButtons} className="thangnaozay">
+            {/* Wishlist Button with Modal */}
+            <WishlistButton 
+              productId={product.id}
+              className="card-wishlist"
+              onWishlistChange={(inWishlist: boolean) => {
+                // Optional: Update parent component state if needed
+                console.log(`Product ${product.id} wishlist status:`, inWishlist);
               }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              <FontAwesomeIcon 
-                icon={faHeart} 
-              />
-            </button>
+            />
 
             {/* Add to Cart Button */}
             <button
-              onClick={() => onAddToCart(product)}
+              onClick={() => {
+                onAddToCart(product);
+                // Add toast notification for add to cart
+                toast.success(`🛒 "${product.name}" added to cart!`, {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                });
+              }}
               style={{...styles.actionButton, ...styles.cartButton}}
               title="Add to Cart"
               onMouseOver={(e) => {

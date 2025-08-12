@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ShopProvider, useShop } from './contexts/ShopContext';
 import { ToastProvider } from './contexts/ToastContext';
 import Cart from './pages/Cart';
-import Wishlist from './pages/Wishlist';
+import Wishlist from './pages/Wishlist/Wishlist';
 import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
 import Settings from './pages/Settings';
@@ -19,12 +21,57 @@ import Chatbot from './components/Chatbot';
 import ChatbotIcon from './components/Chatbot/ChatbotIcon';
 import AuthDialog from './components/AuthDialog';
 
+// Add interface for Wishlist type
+interface Wishlist {
+  id: number;
+  name: string;
+  item_count?: number;
+  products?: number[];
+}
+
 // Navigation Component
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
   const { state, getCartItemsCount, getCartTotal } = useShop();
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const authDialog = useAuthDialog();
+
+  // Load wishlist count from localStorage
+  const updateWishlistCount = () => {
+    try {
+      const savedWishlists = localStorage.getItem('wishlists');
+      if (savedWishlists) {
+        const wishlists: Wishlist[] = JSON.parse(savedWishlists);
+        const totalItems = wishlists.reduce((total: number, wishlist: Wishlist) => {
+          return total + (wishlist.products ? wishlist.products.length : 0);
+        }, 0);
+        setWishlistCount(totalItems);
+      } else {
+        setWishlistCount(0);
+      }
+    } catch (error) {
+      console.error('Error reading wishlist from localStorage:', error);
+      setWishlistCount(0);
+    }
+  };
+
+  // Update wishlist count on component mount and when storage changes
+  React.useEffect(() => {
+    updateWishlistCount();
+    
+    const handleStorageChange = () => {
+      updateWishlistCount();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('wishlistUpdated', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('wishlistUpdated', handleStorageChange);
+    };
+  }, []);
   
   const handleLogout = async () => {
     try {
@@ -184,7 +231,7 @@ const Navbar = () => {
             <Link to="/wishlist" style={{ textAlign: 'center', textDecoration: 'none', color: '#2c3e50', position: 'relative' }}>
               <div style={{ fontSize: '1.2rem', position: 'relative' }}>
                 <FontAwesomeIcon icon={faHeart} />
-                {state.wishlist.length > 0 && (
+                {wishlistCount > 0 && (
                   <span style={{
                     position: 'absolute',
                     top: '-5px',
@@ -200,7 +247,7 @@ const Navbar = () => {
                     justifyContent: 'center',
                     fontFamily: 'Open Sans, Arial, sans-serif'
                   }}>
-                    {state.wishlist.length}
+                    {wishlistCount}
                   </span>
                 )}
               </div>
@@ -369,6 +416,23 @@ function App() {
               <Chatbot 
                 isVisible={isChatbotOpen} 
                 onClose={() => setIsChatbotOpen(false)} 
+              />
+              
+              {/* Toast Container with high z-index */}
+              <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                style={{ zIndex: 9999999 }}
+                toastStyle={{
+                  zIndex: 9999999
+                }}
               />
             </div>
           </Router>

@@ -11,6 +11,9 @@ const Home = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { showSuccess, showWarning, showWishlist } = useToast();
   
+  // Add wishlist count state
+  const [wishlistCount, setWishlistCount] = useState(0);
+  
   // Responsive state
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth <= 1024);
@@ -23,6 +26,42 @@ const Home = () => {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Update wishlist count from localStorage
+  const updateWishlistCount = () => {
+    try {
+      const savedWishlists = localStorage.getItem('wishlists');
+      if (savedWishlists) {
+        const wishlists = JSON.parse(savedWishlists);
+        const totalItems = wishlists.reduce((total: number, wishlist: any) => {
+          return total + (wishlist.products ? wishlist.products.length : 0);
+        }, 0);
+        setWishlistCount(totalItems);
+      } else {
+        setWishlistCount(0);
+      }
+    } catch (error) {
+      console.error('Error reading wishlist from localStorage:', error);
+      setWishlistCount(0);
+    }
+  };
+
+  // Listen for wishlist updates
+  useEffect(() => {
+    updateWishlistCount();
+    
+    const handleWishlistUpdate = () => {
+      updateWishlistCount();
+    };
+    
+    window.addEventListener('storage', handleWishlistUpdate);
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleWishlistUpdate);
+      window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+    };
   }, []);
 
   // Inline styles
@@ -806,14 +845,14 @@ const Home = () => {
 
   const handleAddToCart = (product: any) => {
     addToCart(product);
-    showSuccess(`Added to Cart!`, `${product.name} has been added to your cart.`);
   };
   
   const handleAddToWishlist = (product: any) => {
     if (isInWishlist(product.id)) {
       showWarning(`Already in Wishlist!`, `${product.name} is already in your wishlist.`);
     } else {
-      addToWishlist(product);
+      // The wishlist addition will be handled by WishlistButton component
+      // This will trigger the wishlistUpdated event which will update the count
       showWishlist(`Added to Wishlist!`, `${product.name} has been added to your wishlist.`);
     }
   };
