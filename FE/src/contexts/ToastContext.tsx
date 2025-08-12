@@ -92,7 +92,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         position: 'fixed',
         top: '20px',
         right: '20px',
-        zIndex: 9999,
+        zIndex: 9999999,
         pointerEvents: 'none'
       }}>
         <div style={{

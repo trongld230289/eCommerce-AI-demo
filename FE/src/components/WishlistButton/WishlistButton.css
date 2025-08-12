@@ -1,0 +1,80 @@
+.wishlist-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.wishlist-button:hover {
+  background-color: rgba(231, 76, 60, 0.1);
+  transform: scale(1.1);
+}
+
+.wishlist-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wishlist-button svg {
+  font-size: 18px;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.wishlist-button:hover svg {
+  color: #e74c3c;
+}
+
+.wishlist-button.active svg,
+.wishlist-button svg.filled {
+  color: #e74c3c;
+}
+
+.wishlist-button.active {
+  background-color: rgba(231, 76, 60, 0.1);
+}
+
+.wishlist-button.card-wishlist {
+  width: 35px;
+  height: 35px;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.wishlist-button.card-wishlist:hover {
+  background-color: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.wishlist-button.card-wishlist svg {
+  font-size: 1rem;
+  color: #333;
+}
+
+.wishlist-button.card-wishlist:hover svg {
+  color: #e74c3c;
+}
+
+.wishlist-button.card-wishlist.active {
+  background-color: #dc3545;
+}
+
+.wishlist-button.card-wishlist.active svg {
+  color: white;
+}
+
+.wishlist-button.card-wishlist.active:hover {
+  background-color: #c82333;
+  transform: scale(1.1);
+}
