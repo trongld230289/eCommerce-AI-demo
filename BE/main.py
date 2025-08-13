@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
-from models import Product, ProductCreate, ProductUpdate, SearchFilters, ApiResponse, ChatbotRequest, ChatbotResponse, SmartSearchRequest, SmartSearchResponse
+from models import Product, ProductCreate, ProductUpdate, SearchFilters, ApiResponse, ChatbotRequest, ChatbotResponse, SmartSearchRequest, SmartSearchResponse, Wishlist, WishlistCreate, WishlistAddProduct
 from product_service import product_service
+from services.wishlist_service import wishlist_service
 import uvicorn
 import httpx
 import json
+import os
 from datetime import datetime
 
 app = FastAPI(
@@ -47,6 +49,111 @@ async def get_products():
         return products
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving products: {str(e)}")
+
+# Featured and top products endpoints - MUST come before /products/{product_id}
+@app.get("/products/featured")
+async def get_featured_products(limit: int = Query(6, ge=1, le=50, description="Number of featured products to return")):
+    """Get featured products"""
+    try:
+        print(f"DEBUG: get_featured_products called with limit={limit}")
+        all_products = product_service.get_all_products()
+        print(f"DEBUG: Retrieved {len(all_products)} products from service")
+        
+        if not all_products:
+            print("DEBUG: No products found, returning empty list")
+            return []
+        
+        # Simple featured products selection - first N products or those marked as featured
+        featured_products = []
+        for product in all_products:
+            if product.get('featured', False):
+                featured_products.append(product)
+        
+        print(f"DEBUG: Found {len(featured_products)} featured products")
+        
+        if not featured_products:
+            # If no featured products, return first few products
+            featured_products = all_products[:limit]
+            print(f"DEBUG: No featured products found, using first {len(featured_products)} products")
+        else:
+            # Sort by rating for best featured products first
+            try:
+                featured_products.sort(key=lambda x: float(x.get('rating', 0)), reverse=True)
+                print("DEBUG: Successfully sorted featured products by rating")
+            except Exception as sort_error:
+                print(f"DEBUG: Error sorting products: {sort_error}")
+                # Just return unsorted if sorting fails
+        
+        result = featured_products[:limit]
+        print(f"DEBUG: Returning {len(result)} featured products")
+        return result
+        
+    except Exception as e:
+        print(f"ERROR in get_featured_products: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return a simple error response instead of raising HTTPException
+        return {"error": f"Error retrieving featured products: {str(e)}"}
+
+@app.get("/products/top-this-week")
+async def get_top_products_this_week(limit: int = Query(6, ge=1, le=50, description="Number of top products to return")):
+    """Get top products this week based on views and sales"""
+    try:
+        print(f"DEBUG: get_top_products_this_week called with limit={limit}")
+        all_products = product_service.get_all_products()
+        print(f"DEBUG: Retrieved {len(all_products)} products from service")
+        
+        if not all_products:
+            print("DEBUG: No products found, returning empty list")
+            return []
+        
+        # Simple popularity calculation with safe defaults
+        products_with_score = []
+        
+        for i, product in enumerate(all_products):
+            try:
+                weekly_sales = int(product.get('weeklySales', 0))
+                weekly_views = int(product.get('weeklyViews', 0))
+                rating = float(product.get('rating', 0))
+                
+                # Simple popularity score: sales + views + rating
+                popularity_score = weekly_sales + weekly_views + (rating * 10)
+                
+                # Create a clean copy of the product
+                product_copy = dict(product)
+                product_copy['popularity_score'] = popularity_score
+                products_with_score.append(product_copy)
+                
+            except (ValueError, TypeError) as e:
+                # Skip products with invalid data
+                print(f"DEBUG: Skipping product {i} due to data error: {e}")
+                continue
+        
+        print(f"DEBUG: Processed {len(products_with_score)} products with scores")
+        
+        # Sort by popularity score and return top products
+        if products_with_score:
+            try:
+                products_with_score.sort(key=lambda x: x.get('popularity_score', 0), reverse=True)
+                result = products_with_score[:limit]
+                print(f"DEBUG: Returning {len(result)} top products")
+                return result
+            except Exception as sort_error:
+                print(f"DEBUG: Error sorting products: {sort_error}")
+                # Return unsorted if sorting fails
+                return products_with_score[:limit]
+        else:
+            # Fallback: return first N products
+            result = all_products[:limit]
+            print(f"DEBUG: Fallback - returning first {len(result)} products")
+            return result
+            
+    except Exception as e:
+        print(f"ERROR in get_top_products_this_week: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return a simple error response instead of raising HTTPException
+        return {"error": f"Error retrieving top products: {str(e)}"}
 
 @app.get("/products/{product_id}")
 async def get_product(product_id: int):
@@ -123,47 +230,11 @@ async def search_products(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
 
-# Featured and top products endpoints
-@app.get("/products/featured")
-async def get_featured_products(limit: int = Query(6, description="Number of featured products to return")):
-    """Get featured products"""
-    try:
-        all_products = product_service.get_all_products()
-        featured_products = [p for p in all_products if p.get('featured', False)]
-        # Sort by rating for best featured products first
-        featured_products.sort(key=lambda x: x.get('rating', 0), reverse=True)
-        return featured_products[:limit]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving featured products: {str(e)}")
-
-@app.get("/products/top-this-week")
-async def get_top_products_this_week(limit: int = Query(6, description="Number of top products to return")):
-    """Get top products this week based on views and sales"""
-    try:
-        all_products = product_service.get_all_products()
-        
-        # Calculate popularity score based on views and sales
-        products_with_score = []
-        max_sales = max(p.get('weeklySales', 0) for p in all_products) or 1
-        max_views = max(p.get('weeklyViews', 0) for p in all_products) or 1
-        
-        for product in all_products:
-            weekly_sales = product.get('weeklySales', 0)
-            weekly_views = product.get('weeklyViews', 0)
-            
-            # Weight: 70% weekly sales, 30% weekly views (normalized)
-            sales_score = (weekly_sales / max_sales) * 0.7
-            views_score = (weekly_views / max_views) * 0.3
-            popularity_score = sales_score + views_score
-            
-            product['popularity_score'] = popularity_score
-            products_with_score.append(product)
-        
-        # Sort by popularity score and return top products
-        products_with_score.sort(key=lambda x: x['popularity_score'], reverse=True)
-        return products_with_score[:limit]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving top products: {str(e)}")
+# Test endpoint
+@app.get("/test")
+async def test_endpoint():
+    """Test endpoint to verify server is working"""
+    return {"message": "Server is working!", "timestamp": datetime.now().isoformat()}
 
 # Category and brand endpoints
 @app.get("/categories")
@@ -285,6 +356,104 @@ async def smart_search_endpoint(request: SmartSearchRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error performing smart search: {str(e)}")
+
+# ---------------------- RECOMMENDATIONS ENDPOINT ----------------------
+RECOMMENDATION_API_URL = os.getenv("RECOMMENDATION_API_URL", "http://localhost:8001")
+
+async def get_user_recommendations_from_system(user_id, limit=5):
+    """Get recommendations from recommendation system"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{RECOMMENDATION_API_URL}/api/recommendations/{user_id}?limit={limit}")
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("recommendations", [])
+            else:
+                print(f"❌ Failed to get recommendations: {response.status_code}")
+                return []
+    except Exception as e:
+        print(f"❌ Error getting recommendations: {e}")
+        return []
+
+@app.get("/recommendations")
+async def get_recommendations(user_id: str = Query(...), limit: int = Query(5, ge=1, le=20)):
+    """Get personalized recommendations for a user"""
+    try:
+        recommendations = await get_user_recommendations_from_system(user_id, limit)
+        return {"recommendations": recommendations, "user_id": user_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching recommendations: {str(e)}")
+
+# ---------------------- WISHLIST ENDPOINTS ----------------------
+@app.get("/api/wishlist", response_model=List[Wishlist])
+async def get_wishlist(user_id: str = Query(...)):
+    """Get wishlist for a user"""
+    try:
+        wishlists = wishlist_service.get_user_wishlists(user_id)
+        return wishlists
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching wishlist: {str(e)}")
+
+@app.post("/api/wishlist", response_model=Wishlist)
+async def create_wishlist(wishlist_data: WishlistCreate):
+    """Create a new wishlist"""
+    try:
+        wishlist = wishlist_service.create_wishlist(wishlist_data)
+        return wishlist
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating wishlist: {str(e)}")
+
+@app.get("/api/wishlist/{wishlist_id}", response_model=Wishlist)
+async def get_wishlist_by_id(wishlist_id: str, user_id: str = Query(...)):
+    """Get a specific wishlist by ID"""
+    try:
+        wishlist = wishlist_service.get_wishlist(wishlist_id, user_id)
+        if not wishlist:
+            raise HTTPException(status_code=404, detail="Wishlist not found")
+        return wishlist
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching wishlist: {str(e)}")
+
+@app.post("/api/wishlist/{wishlist_id}/products", response_model=Wishlist)
+async def add_product_to_wishlist(wishlist_id: str, product_data: WishlistAddProduct, user_id: str = Query(...)):
+    """Add product to wishlist"""
+    try:
+        wishlist = wishlist_service.add_product_to_wishlist(wishlist_id, user_id, product_data.product_id)
+        if not wishlist:
+            raise HTTPException(status_code=404, detail="Wishlist not found")
+        return wishlist
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding to wishlist: {str(e)}")
+
+@app.delete("/api/wishlist/{wishlist_id}/products/{product_id}", response_model=Wishlist)
+async def remove_product_from_wishlist(wishlist_id: str, product_id: int, user_id: str = Query(...)):
+    """Remove product from wishlist"""
+    try:
+        wishlist = wishlist_service.remove_product_from_wishlist(wishlist_id, user_id, product_id)
+        if not wishlist:
+            raise HTTPException(status_code=404, detail="Wishlist not found")
+        return wishlist
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error removing from wishlist: {str(e)}")
+
+@app.delete("/api/wishlist/{wishlist_id}")
+async def delete_wishlist(wishlist_id: str, user_id: str = Query(...)):
+    """Delete a wishlist"""
+    try:
+        success = wishlist_service.delete_wishlist(wishlist_id, user_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Wishlist not found")
+        return {"success": True, "message": "Wishlist deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting wishlist: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

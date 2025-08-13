@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Firebase Data Migration Script
-Migrates mock product data from flask_server.py to Firebase Firestore
+Migrates mock product data to Firebase Firestore for the FastAPI backend
 
 NOTE: This migration has been completed successfully.
 This file is kept for reference and can be removed if no longer needed.
@@ -13,7 +13,7 @@ import os
 from datetime import datetime, timezone
 from firebase_config import get_firestore_db
 
-# Mock data from flask_server.py
+# Mock data for FastAPI backend
 MOCK_PRODUCTS = [
     {
         "id": 1,
