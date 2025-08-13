@@ -113,3 +113,34 @@ class SmartSearchResponse(BaseModel):
     total_found: int
     search_type: str
     timestamp: str
+
+class WishlistItem(BaseModel):
+    product_id: int
+    added_at: float
+
+class WishlistItemWithDetails(BaseModel):
+    product_id: int
+    added_at: float
+    product_details: Optional[Product] = None
+
+class Wishlist(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    products: List[WishlistItemWithDetails] = Field(default_factory=list)
+    item_count: int = 0
+    created_at: float
+    updated_at: float
+
+class WishlistCreate(BaseModel):
+    name: str
+    user_id: str
+
+class WishlistUpdate(BaseModel):
+    name: Optional[str] = None
+
+class WishlistAddProduct(BaseModel):
+    product_id: int
+
+class WishlistRemoveProduct(BaseModel):
+    product_id: int
