@@ -191,8 +191,6 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
               <SimpleProductCard
                 product={product}
                 onAddToCart={onAddToCart || (() => {})}
-                onAddToWishlist={onAddToWishlist || (() => {})}
-                isInWishlist={isInWishlist || (() => false)}
               />
             </div>
           ))}

@@ -7,16 +7,12 @@ interface TopProductsThisWeekProps {
   limit?: number;
   title?: string;
   onAddToCart?: (product: Product) => void;
-  onAddToWishlist?: (product: Product) => void;
-  isInWishlist?: (productId: number) => boolean;
 }
 
 const TopProductsThisWeek: React.FC<TopProductsThisWeekProps> = ({ 
   limit = 6,
   title = "Top Products This Week",
-  onAddToCart,
-  onAddToWishlist,
-  isInWishlist
+  onAddToCart
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,8 +191,6 @@ const TopProductsThisWeek: React.FC<TopProductsThisWeekProps> = ({
               <SimpleProductCard
                 product={product}
                 onAddToCart={onAddToCart || (() => {})}
-                onAddToWishlist={onAddToWishlist || (() => {})}
-                isInWishlist={isInWishlist || (() => false)}
               />
             </div>
           ))}

@@ -9,15 +9,11 @@ import WishlistButton from '../WishlistButton/WishlistButton';
 interface SimpleProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
-  onAddToWishlist: (product: Product) => void;
-  isInWishlist: (id: number) => boolean;
 }
 
 const SimpleProductCard: React.FC<SimpleProductCardProps> = ({ 
   product, 
-  onAddToCart, 
-  onAddToWishlist, 
-  isInWishlist 
+  onAddToCart
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -144,10 +140,6 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
       justifyContent: 'center',
       transition: 'all 0.3s ease',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    },
-    wishlistButton: {
-      backgroundColor: isInWishlist(product.id) ? '#dc3545' : 'rgba(255,255,255,0.9)',
-      color: isInWishlist(product.id) ? 'white' : '#333'
     },
     cartButton: {
       backgroundColor: '#fed700',
