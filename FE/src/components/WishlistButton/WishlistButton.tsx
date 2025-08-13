@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import WishlistModal from '../WishlistModal/WishlistModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface WishlistButtonProps {
   productId: number;
@@ -18,7 +19,7 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { currentUser } = useAuth();
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -26,54 +27,21 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({
     
     console.log('Wishlist button clicked for product:', productId);
     
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.log('No token found, setting fake token for demo');
-      localStorage.setItem('token', 'demo-token');
+    // Check if user is logged in
+    if (!currentUser) {
+      toast.error('Please login to manage your wishlist', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
     }
     
     console.log('Setting showModal to true...');
     setShowModal(true);
-  };
-
-  const removeFromWishlist = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/wishlist/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        setIsInWishlist(false);
-        
-        // Dispatch event to update navbar count
-        window.dispatchEvent(new Event('wishlistUpdated'));
-        
-        toast.success('Removed from wishlist!', {
-          position: "top-right",
-          autoClose: 2000,
-        });
-        onWishlistChange && onWishlistChange(false);
-      } else {
-        toast.error('Failed to remove from wishlist', {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      console.error('Error removing from wishlist:', error);
-      toast.error('Failed to remove from wishlist', {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSuccess = () => {

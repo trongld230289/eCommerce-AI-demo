@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useShop } from '../contexts/ShopContext';
 import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/AuthContext';
+import { wishlistService } from '../services/wishlistService';
 import Recommendations from '../components/Recommendations';
 import TopProductsThisWeek from '../components/TopProductsThisWeek';
 import FeaturedProducts from '../components/FeaturedProducts';
@@ -10,6 +12,7 @@ import FeaturedProducts from '../components/FeaturedProducts';
 const Home = () => {
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { showSuccess, showWarning, showWishlist } = useToast();
+  const { currentUser } = useAuth();
   
   // Add wishlist count state
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -28,24 +31,24 @@ const Home = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Update wishlist count from localStorage
-  const updateWishlistCount = () => {
+  // Update wishlist count from API
+  const updateWishlistCount = useCallback(async () => {
     try {
-      const savedWishlists = localStorage.getItem('wishlists');
-      if (savedWishlists) {
-        const wishlists = JSON.parse(savedWishlists);
-        const totalItems = wishlists.reduce((total: number, wishlist: any) => {
-          return total + (wishlist.products ? wishlist.products.length : 0);
-        }, 0);
-        setWishlistCount(totalItems);
-      } else {
+      if (!currentUser) {
         setWishlistCount(0);
+        return;
       }
+      
+      const wishlists = await wishlistService.getUserWishlists(currentUser.uid);
+      const totalItems = wishlists.reduce((total: number, wishlist: any) => {
+        return total + (wishlist.products ? wishlist.products.length : 0);
+      }, 0);
+      setWishlistCount(totalItems);
     } catch (error) {
-      console.error('Error reading wishlist from localStorage:', error);
+      console.error('Error reading wishlist from API:', error);
       setWishlistCount(0);
     }
-  };
+  }, [currentUser]);
 
   // Listen for wishlist updates
   useEffect(() => {
@@ -62,7 +65,7 @@ const Home = () => {
       window.removeEventListener('storage', handleWishlistUpdate);
       window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
     };
-  }, []);
+  }, [currentUser, updateWishlistCount]); // Add both dependencies
 
   // Inline styles
   const styles = {
@@ -1015,8 +1018,6 @@ const Home = () => {
       <TopProductsThisWeek 
         limit={6}
         onAddToCart={handleAddToCart}
-        onAddToWishlist={handleAddToWishlist}
-        isInWishlist={isInWishlist}
       />
 
       {/* Categories Section */}

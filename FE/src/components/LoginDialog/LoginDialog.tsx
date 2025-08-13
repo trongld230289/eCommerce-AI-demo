@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebookF, faGoogle } from '@fortawesome/free-brands-svg-icons';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './LoginDialog.css';
 
 interface LoginDialogProps {

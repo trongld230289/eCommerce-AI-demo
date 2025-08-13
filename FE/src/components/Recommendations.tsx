@@ -124,8 +124,6 @@ const Recommendations: React.FC<RecommendationsProps> = ({
               <SimpleProductCard
                 product={product}
                 onAddToCart={handleAddToCart}
-                onAddToWishlist={handleAddToWishlist}
-                isInWishlist={isInWishlist}
               />
             </div>
           );
