@@ -1,69 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faShoppingCart, faHeart, faPlus, faEdit, faShare } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faShoppingCart, faHeart, faPlus, faShare } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
+import { wishlistService } from '../../services/wishlistService';
+import { useAuth } from '../../contexts/AuthContext';
 import './Wishlist.css';
-
-// Mock product data - replace with real data from your product context/API
-const mockProducts = {
-  1: { 
-    id: 1, 
-    name: 'Wireless Headphones', 
-    price: 99.99, 
-    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop&crop=center', 
-    description: 'High-quality wireless headphones with noise cancellation' 
-  },
-  2: { 
-    id: 2, 
-    name: 'Smart Watch', 
-    price: 199.99, 
-    imageUrl: 'https://images.unsplash.com/photo-1544117519-31a4b719223d?w=300&h=300&fit=crop&crop=center', 
-    description: 'Advanced fitness tracking and smart notifications' 
-  },
-  3: { 
-    id: 3, 
-    name: 'Bluetooth Speaker', 
-    price: 79.99, 
-    imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=300&h=300&fit=crop&crop=center', 
-    description: 'Portable speaker with excellent sound quality' 
-  },
-  4: { 
-    id: 4, 
-    name: 'Gaming Mouse', 
-    price: 59.99, 
-    imageUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&h=300&fit=crop&crop=center', 
-    description: 'Precision gaming mouse with RGB lighting' 
-  },
-  5: { 
-    id: 5, 
-    name: 'USB-C Cable', 
-    price: 19.99, 
-    imageUrl: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=300&h=300&fit=crop&crop=center', 
-    description: 'Fast charging USB-C cable' 
-  },
-  6: { 
-    id: 6, 
-    name: 'Laptop Stand', 
-    price: 49.99, 
-    imageUrl: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300&h=300&fit=crop&crop=center', 
-    description: 'Adjustable aluminum laptop stand' 
-  },
-  7: { 
-    id: 7, 
-    name: 'Wireless Charger', 
-    price: 29.99, 
-    imageUrl: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300&h=300&fit=crop&crop=center', 
-    description: 'Fast wireless charging pad' 
-  },
-  8: { 
-    id: 8, 
-    name: 'Phone Case', 
-    price: 24.99, 
-    imageUrl: 'https://images.unsplash.com/photo-1601593346740-925612772716?w=300&h=300&fit=crop&crop=center', 
-    description: 'Protective phone case with drop protection' 
-  }
-};
 
 const Wishlist = () => {
   const [wishlists, setWishlists] = useState([]);
@@ -71,48 +13,26 @@ const Wishlist = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newWishlistName, setNewWishlistName] = useState('');
+  const { currentUser } = useAuth();
 
-  useEffect(() => {
-    loadWishlists();
-    
-    // Listen for localStorage changes (when items are added from other components)
-    const handleStorageChange = () => {
-      console.log('Wishlist updated event received'); // Debug log
-      loadWishlists();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('wishlistUpdated', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('wishlistUpdated', handleStorageChange);
-    };
-  }, []);
+  const loadWishlists = useCallback(async (preserveCurrentId = null) => {
+    if (!currentUser) {
+      setLoading(false);
+      return;
+    }
 
-  const loadWishlists = () => {
     try {
-      const savedWishlists = localStorage.getItem('wishlists');
-      if (savedWishlists) {
-        const wishlistsData = JSON.parse(savedWishlists);
-        setWishlists(wishlistsData);
-        
-        // Set current wishlist (maintain current selection or use first)
-        if (currentWishlist) {
-          const updatedCurrent = wishlistsData.find(w => w.id === currentWishlist.id);
-          setCurrentWishlist(updatedCurrent || wishlistsData[0]);
-        } else if (wishlistsData.length > 0) {
-          setCurrentWishlist(wishlistsData[0]);
-        }
-      } else {
-        // Create default wishlists if none exist
-        const defaultWishlists = [
-          { id: 1, name: 'My Favorites ❤️', item_count: 0, products: [] },
-          { id: 2, name: 'Gift Ideas 🎁', item_count: 0, products: [] }
-        ];
-        setWishlists(defaultWishlists);
-        setCurrentWishlist(defaultWishlists[0]);
-        localStorage.setItem('wishlists', JSON.stringify(defaultWishlists));
+      setLoading(true);
+      const wishlistsData = await wishlistService.getUserWishlists(currentUser.uid);
+      setWishlists(wishlistsData);
+      
+      // Set current wishlist (maintain current selection or use first)
+      const currentId = preserveCurrentId;
+      if (currentId) {
+        const updatedCurrent = wishlistsData.find(w => w.id === currentId);
+        setCurrentWishlist(updatedCurrent || (wishlistsData.length > 0 ? wishlistsData[0] : null));
+      } else if (wishlistsData.length > 0) {
+        setCurrentWishlist(wishlistsData[0]);
       }
     } catch (error) {
       console.error('Error loading wishlists:', error);
@@ -120,14 +40,18 @@ const Wishlist = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser]); // Include currentUser as dependency
 
-  // Force refresh when modal closes
   useEffect(() => {
+    // Initial load
+    loadWishlists();
+    
+    // Listen for wishlist updates from other components
     const handleWishlistUpdate = () => {
-      setTimeout(() => {
-        loadWishlists();
-      }, 100); // Small delay to ensure localStorage is updated
+      console.log('Wishlist updated event received');
+      // Preserve current selection when reloading
+      const currentId = currentWishlist?.id;
+      loadWishlists(currentId);
     };
     
     window.addEventListener('wishlistUpdated', handleWishlistUpdate);
@@ -135,120 +59,137 @@ const Wishlist = () => {
     return () => {
       window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
     };
-  }, [currentWishlist]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array to run only once - we handle updates via event listeners
 
-  const createWishlist = () => {
+  const createWishlist = async () => {
+    if (!currentUser) {
+      toast.error('Please login to create a wishlist');
+      return;
+    }
+
     if (!newWishlistName.trim()) {
       toast.error('Please enter a wishlist name');
       return;
     }
 
-    const newWishlist = {
-      id: Date.now(),
-      name: newWishlistName.trim(),
-      item_count: 0,
-      products: []
-    };
+    try {
+      const newWishlist = await wishlistService.createWishlist({
+        name: newWishlistName.trim(),
+        user_id: currentUser.uid
+      });
 
-    const updatedWishlists = [...wishlists, newWishlist];
-    setWishlists(updatedWishlists);
-    localStorage.setItem('wishlists', JSON.stringify(updatedWishlists));
-    setCurrentWishlist(newWishlist);
-    setNewWishlistName('');
-    setShowCreateForm(false);
-    
-    // Dispatch event to update navbar count
-    window.dispatchEvent(new Event('wishlistUpdated'));
-    
-    toast.success(`✨ Wishlist "${newWishlist.name}" created successfully!`, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
+      // Refresh wishlists and set the new one as current
+      setWishlists(prev => [...prev, newWishlist]);
+      setCurrentWishlist(newWishlist);
+      setNewWishlistName('');
+      setShowCreateForm(false);
+      
+      // Dispatch event to update navbar count
+      window.dispatchEvent(new Event('wishlistUpdated'));
+      
+      toast.success(`✨ Wishlist "${newWishlist.name}" created successfully!`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error creating wishlist:', error);
+      toast.error('Failed to create wishlist');
+    }
   };
 
-  const removeFromWishlist = (productId) => {
-    if (!currentWishlist) return;
+  const removeFromWishlist = async (productId) => {
+    if (!currentWishlist || !currentUser) return;
 
-    // Find the product being removed for the toast message
-    const productBeingRemoved = mockProducts[productId];
-    const productName = productBeingRemoved?.name || `Product #${productId}`;
+    try {
+      // Get product name from the wishlist item for the toast message
+      const productItem = currentWishlist.products.find(item => item.product_id === productId);
+      const productName = productItem?.product?.name || `Product #${productId}`;
 
-    const updatedWishlists = wishlists.map(wishlist => {
-      if (wishlist.id === currentWishlist.id) {
-        const updatedProducts = (wishlist.products || []).filter(id => id !== productId);
-        return {
-          ...wishlist,
-          products: updatedProducts,
-          item_count: updatedProducts.length
-        };
-      }
-      return wishlist;
-    });
-
-    setWishlists(updatedWishlists);
-    localStorage.setItem('wishlists', JSON.stringify(updatedWishlists));
-    
-    // Update current wishlist
-    const updatedCurrentWishlist = updatedWishlists.find(w => w.id === currentWishlist.id);
-    setCurrentWishlist(updatedCurrentWishlist);
-    
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new Event('wishlistUpdated'));
-    
-    toast.success(`🗑️ "${productName}" removed from "${currentWishlist.name}"`, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
+      // Remove product from wishlist via API
+      await wishlistService.removeProductFromWishlist(currentWishlist.id, productId, currentUser.uid);
+      
+      // Update local state immediately for better UX
+      const updatedProducts = currentWishlist.products.filter(item => item.product_id !== productId);
+      setCurrentWishlist(prev => ({ ...prev, products: updatedProducts }));
+      setWishlists(prev => prev.map(wl => 
+        wl.id === currentWishlist.id 
+          ? { ...wl, products: updatedProducts }
+          : wl
+      ));
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new Event('wishlistUpdated'));
+      
+      toast.success(`🗑️ "${productName}" removed from "${currentWishlist.name}"`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error removing product from wishlist:', error);
+      toast.error('Failed to remove product from wishlist');
+      // Reload on error
+      loadWishlists(currentWishlist?.id);
+    }
   };
 
-  const clearWishlist = () => {
+  const clearWishlist = async () => {
     if (!currentWishlist || !window.confirm('Are you sure you want to clear this wishlist?')) {
       return;
     }
 
     const itemCount = currentWishlist.products?.length || 0;
 
-    const updatedWishlists = wishlists.map(wishlist => {
-      if (wishlist.id === currentWishlist.id) {
-        return {
-          ...wishlist,
-          products: [],
-          item_count: 0
-        };
+    try {
+      // Remove all products from wishlist
+      for (const item of currentWishlist.products) {
+        await wishlistService.removeProductFromWishlist(currentWishlist.id, item.product_id, currentUser.uid);
       }
-      return wishlist;
-    });
-
-    setWishlists(updatedWishlists);
-    localStorage.setItem('wishlists', JSON.stringify(updatedWishlists));
-    
-    const updatedCurrentWishlist = updatedWishlists.find(w => w.id === currentWishlist.id);
-    setCurrentWishlist(updatedCurrentWishlist);
-    
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new Event('wishlistUpdated'));
-    
-    toast.success(`🧹 Cleared ${itemCount} item${itemCount !== 1 ? 's' : ''} from "${currentWishlist.name}"`, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
+      
+      // Update local state immediately
+      const clearedWishlist = { ...currentWishlist, products: [] };
+      setCurrentWishlist(clearedWishlist);
+      setWishlists(prev => prev.map(wl => 
+        wl.id === currentWishlist.id 
+          ? clearedWishlist
+          : wl
+      ));
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new Event('wishlistUpdated'));
+      
+      toast.success(`🧹 Cleared ${itemCount} item${itemCount !== 1 ? 's' : ''} from "${currentWishlist.name}"`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error clearing wishlist:', error);
+      toast.error('Failed to clear wishlist');
+      // Reload on error
+      loadWishlists(currentWishlist?.id);
+    }
   };
 
-  const deleteWishlist = (wishlistId) => {
-    if (wishlists.length <= 2) {
-      toast.error('Cannot delete default wishlists');
+  const deleteWishlist = async (wishlistId) => {
+    if (!currentUser) {
+      toast.error('Please login to delete wishlists');
+      return;
+    }
+
+    if (wishlists.length <= 1) {
+      toast.error('Cannot delete the last remaining wishlist');
       return;
     }
 
@@ -256,22 +197,33 @@ const Wishlist = () => {
       return;
     }
 
-    // Find the wishlist being deleted for the toast message
-    const wishlistToDelete = wishlists.find(w => w.id === wishlistId);
-    const wishlistName = wishlistToDelete?.name || 'Wishlist';
-
-    const updatedWishlists = wishlists.filter(w => w.id !== wishlistId);
-    setWishlists(updatedWishlists);
-    localStorage.setItem('wishlists', JSON.stringify(updatedWishlists));
-    
-    if (currentWishlist?.id === wishlistId) {
-      setCurrentWishlist(updatedWishlists[0]);
+    try {
+      await wishlistService.deleteWishlist(wishlistId, currentUser.uid);
+      
+      // Remove from local state
+      const updatedWishlists = wishlists.filter(w => w.id !== wishlistId);
+      setWishlists(updatedWishlists);
+      
+      // Update current wishlist if deleted
+      if (currentWishlist?.id === wishlistId) {
+        setCurrentWishlist(updatedWishlists.length > 0 ? updatedWishlists[0] : null);
+      }
+      
+      // Dispatch event to update navbar count
+      window.dispatchEvent(new Event('wishlistUpdated'));
+      
+      toast.success('Wishlist deleted successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error deleting wishlist:', error);
+      toast.error('Failed to delete wishlist');
     }
-    
-    // Dispatch event to update navbar count
-    window.dispatchEvent(new Event('wishlistUpdated'));
-    
-    toast.success(`"${wishlistName}" deleted successfully`);
   };
 
   const shareWishlist = () => {
@@ -306,31 +258,56 @@ const Wishlist = () => {
     );
   }
 
+  // Check if user is logged in
+  if (!currentUser) {
+    return (
+      <div className="wishlist-container">
+        <div className="wishlist-header">
+          <h1>
+            <FontAwesomeIcon icon={faHeart} className="wishlist-icon" />
+            My Wishlists
+          </h1>
+        </div>
+        <div className="auth-required">
+          <div className="auth-message">
+            <FontAwesomeIcon icon={faHeart} className="auth-icon" />
+            <h2>Login Required</h2>
+            <p>Please login to view and manage your wishlists</p>
+            <Link to="/login" className="auth-login-btn">
+              Login Now
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Get products for current wishlist
   const currentProducts = currentWishlist?.products || [];
-  const wishlistItems = currentProducts.map(productId => {
-    const product = mockProducts[productId];
-    if (!product) {
+  const wishlistItems = currentProducts.map(item => {
+    // Backend now returns enhanced product data with full product details
+    if (item.product) {
       return {
-        id: `${currentWishlist.id}-${productId}`,
-        product_id: productId,
+        id: `${currentWishlist.id}-${item.product_id}`,
+        product_id: item.product_id,
+        product: item.product,
+        added_at: item.added_at
+      };
+    } else {
+      // Fallback for items without full product data
+      return {
+        id: `${currentWishlist.id}-${item.product_id}`,
+        product_id: item.product_id,
         product: { 
-          id: productId, 
-          name: `Product #${productId}`, 
+          id: item.product_id, 
+          name: `Product #${item.product_id}`, 
           price: 0, 
           imageUrl: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center',
-          description: 'Product not found'
+          description: 'Product details loading...'
         },
-        created_at: new Date().toISOString()
+        added_at: item.added_at
       };
     }
-    
-    return {
-      id: `${currentWishlist.id}-${productId}`,
-      product_id: productId,
-      product: product,
-      created_at: new Date().toISOString()
-    };
   });
 
   return (
@@ -354,8 +331,8 @@ const Wishlist = () => {
               {wishlist.name}
               <span className="item-count">({(wishlist.products || []).length})</span>
             </button>
-            {/* Only show delete button for custom wishlists (not default ones) */}
-            {wishlists.length > 2 && wishlist.id !== 1 && wishlist.id !== 2 && (
+            {/* Show delete button for custom wishlists (allow deleting user-created wishlists) */}
+            {wishlists.length > 1 && wishlist.name !== 'My Wishlist' && wishlist.name !== 'Favorites' && (
               <button
                 className="delete-wishlist-btn"
                 onClick={() => deleteWishlist(wishlist.id)}

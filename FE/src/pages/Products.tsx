@@ -564,8 +564,6 @@ const Products: React.FC = () => {
                     key={product.id}
                     product={product as any}
                     onAddToCart={handleAddToCart}
-                    onAddToWishlist={handleAddToWishlist}
-                    isInWishlist={isInWishlist}
                   />
                 ))
               ) : (

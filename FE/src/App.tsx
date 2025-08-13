@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ShopProvider, useShop } from './contexts/ShopContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { wishlistService } from './services/wishlistService';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist/Wishlist';
 import Products from './pages/Products';
@@ -21,40 +22,61 @@ import Chatbot from './components/Chatbot';
 import ChatbotIcon from './components/Chatbot/ChatbotIcon';
 import AuthDialog from './components/AuthDialog';
 
-// Add interface for Wishlist type
-interface Wishlist {
-  id: number;
-  name: string;
-  item_count?: number;
-  products?: number[];
-}
-
 // Navigation Component
 const Navbar = () => {
   const { currentUser, logout } = useAuth();
-  const { state, getCartItemsCount, getCartTotal } = useShop();
+  const { getCartItemsCount, getCartTotal } = useShop();
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const authDialog = useAuthDialog();
 
-  // Load wishlist count from localStorage
-  const updateWishlistCount = () => {
+  // Debug logging
+  console.log('Navbar render - currentUser:', currentUser);
+
+  // Load wishlist count from API with fallback to localStorage
+  const updateWishlistCount = useCallback(async () => {
     try {
-      const savedWishlists = localStorage.getItem('wishlists');
-      if (savedWishlists) {
-        const wishlists: Wishlist[] = JSON.parse(savedWishlists);
-        const totalItems = wishlists.reduce((total: number, wishlist: Wishlist) => {
+      console.log('updateWishlistCount called, currentUser:', currentUser);
+      
+      if (!currentUser) {
+        console.log('No current user, setting count to 0');
+        setWishlistCount(0);
+        return;
+      }
+      
+      console.log('Current user ID:', currentUser.uid);
+      
+      // Try API first
+      try {
+        const wishlists = await wishlistService.getUserWishlists(currentUser.uid);
+        const totalItems = wishlists.reduce((total: number, wishlist: any) => {
           return total + (wishlist.products ? wishlist.products.length : 0);
         }, 0);
+        console.log('API wishlists count:', totalItems);
         setWishlistCount(totalItems);
-      } else {
-        setWishlistCount(0);
+        return;
+      } catch (apiError) {
+        console.log('API failed, falling back to localStorage:', apiError);
+        
+        // Fallback to localStorage (original behavior)
+        const savedWishlists = localStorage.getItem('wishlists');
+        if (savedWishlists) {
+          const wishlists: any[] = JSON.parse(savedWishlists);
+          const totalItems = wishlists.reduce((total: number, wishlist: any) => {
+            return total + (wishlist.products ? wishlist.products.length : 0);
+          }, 0);
+          console.log('localStorage wishlists count:', totalItems);
+          setWishlistCount(totalItems);
+        } else {
+          console.log('No localStorage wishlists found');
+          setWishlistCount(0);
+        }
       }
     } catch (error) {
-      console.error('Error reading wishlist from localStorage:', error);
+      console.error('Error updating wishlist count:', error);
       setWishlistCount(0);
     }
-  };
+  }, [currentUser]);
 
   // Update wishlist count on component mount and when storage changes
   React.useEffect(() => {
@@ -71,7 +93,7 @@ const Navbar = () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('wishlistUpdated', handleStorageChange);
     };
-  }, []);
+  }, [updateWishlistCount, currentUser]); // Add both dependencies
   
   const handleLogout = async () => {
     try {
@@ -386,56 +408,63 @@ const Navbar = () => {
   );
 };
 
-function App() {
+// App Content Component (inside all providers)
+const AppContent = () => {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
+  return (
+    <Router>
+      <div className={`App ${isChatbotOpen ? 'chatbot-open' : ''}`} style={{ 
+        fontFamily: 'Open Sans, Arial, sans-serif',
+        minHeight: '100vh'
+      }}>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+        
+        {/* Chatbot Components */}
+        <ChatbotIcon 
+          onClick={() => setIsChatbotOpen(true)} 
+          isVisible={isChatbotOpen} 
+        />
+        <Chatbot 
+          isVisible={isChatbotOpen} 
+          onClose={() => setIsChatbotOpen(false)} 
+        />
+        
+        {/* Toast Container with high z-index */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          style={{ zIndex: 9999999 }}
+          toastStyle={{
+            zIndex: 9999999
+          }}
+        />
+      </div>
+    </Router>
+  );
+};
+
+function App() {
   return (
     <AuthProvider>
       <ShopProvider>
         <ToastProvider>
-          <Router>
-            <div className={`App ${isChatbotOpen ? 'chatbot-open' : ''}`} style={{ 
-              fontFamily: 'Open Sans, Arial, sans-serif',
-              minHeight: '100vh'
-            }}>
-              <Navbar />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/product/:id" element={<ProductDetails />} />
-                <Route path="/settings" element={<Settings />} />
-              </Routes>
-              
-              {/* Chatbot Components */}
-              <ChatbotIcon 
-                onClick={() => setIsChatbotOpen(true)} 
-                isVisible={isChatbotOpen} 
-              />
-              <Chatbot 
-                isVisible={isChatbotOpen} 
-                onClose={() => setIsChatbotOpen(false)} 
-              />
-              
-              {/* Toast Container with high z-index */}
-              <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop={false}
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                style={{ zIndex: 9999999 }}
-                toastStyle={{
-                  zIndex: 9999999
-                }}
-              />
-            </div>
-          </Router>
+          <AppContent />
         </ToastProvider>
       </ShopProvider>
     </AuthProvider>

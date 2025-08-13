@@ -9,11 +9,19 @@ from google.api_core.retry import Retry
 from firebase_config import get_firestore_db
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, methods=['GET', 'POST', 'DELETE', 'OPTIONS'], allow_headers=['Content-Type'])
+
+# Additional CORS handling for preflight requests
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # ---------------------- Config ----------------------
 RECOMMENDATION_API_URL = os.getenv("RECOMMENDATION_API_URL", "http://localhost:8001")
-USE_FIREBASE = os.getenv("USE_FIREBASE", "true").lower() == "true"
+USE_FIREBASE = True  # Enable Firebase to read existing wishlist data
 
 # Optional: avoid gRPC flakiness on Windows (set env outside too)
 os.environ.setdefault("FIRESTORE_USE_GRPC", "false")
@@ -22,113 +30,36 @@ os.environ.setdefault("FIRESTORE_USE_GRPC", "false")
 RETRY = Retry(initial=0.2, maximum=2.0, multiplier=2.0, deadline=5.0)
 RPC_TIMEOUT = 3.0
 
-# ---------------------- Helpers ----------------------
-
-def get_sample_products():
-    return [
-        {
-            "id": 1,
-            "name": "Wireless Bluetooth Headphones",
-            "price": 89.99,
-            "original_price": 129.99,
-            "category": "Electronics",
-            "brand": "TechSound",
-            "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
-            "rating": 4.5,
-            "reviews": 128,
-            "description": "Premium wireless headphones with noise cancellation",
-            "featured": True,
-            "weeklySales": 45,
-            "weeklyViews": 1250,
-        },
-        {
-            "id": 2,
-            "name": "Smart Fitness Watch",
-            "price": 199.99,
-            "original_price": 249.99,
-            "category": "Electronics",
-            "brand": "FitTech",
-            "image": "https://images.unsplash.com/photo-1544117519-31a4b719223d?w=500",
-            "rating": 4.3,
-            "reviews": 89,
-            "description": "Advanced fitness tracking with heart rate monitor",
-            "featured": True,
-            "weeklySales": 32,
-            "weeklyViews": 890,
-        },
-        {
-            "id": 3,
-            "name": "Portable Speaker",
-            "price": 59.99,
-            "original_price": 79.99,
-            "category": "Electronics",
-            "brand": "SoundMax",
-            "image": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500",
-            "rating": 4.7,
-            "reviews": 203,
-            "description": "Waterproof portable speaker with amazing sound",
-            "featured": False,
-            "weeklySales": 67,
-            "weeklyViews": 1580,
-        },
-        {
-            "id": 4,
-            "name": "Laptop Stand",
-            "price": 39.99,
-            "original_price": 59.99,
-            "category": "Accessories",
-            "brand": "DeskPro",
-            "image": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500",
-            "rating": 4.2,
-            "reviews": 156,
-            "description": "Adjustable aluminum laptop stand for better ergonomics",
-            "featured": False,
-            "weeklySales": 28,
-            "weeklyViews": 720,
-        },
-        {
-            "id": 5,
-            "name": "Wireless Mouse",
-            "price": 29.99,
-            "original_price": 39.99,
-            "category": "Accessories",
-            "brand": "ClickTech",
-            "image": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500",
-            "rating": 4.4,
-            "reviews": 92,
-            "description": "Ergonomic wireless mouse with precision tracking",
-            "featured": True,
-            "weeklySales": 51,
-            "weeklyViews": 1120,
-        },
-        {
-            "id": 6,
-            "name": "USB-C Hub",
-            "price": 49.99,
-            "original_price": 69.99,
-            "category": "Accessories",
-            "brand": "ConnectPro",
-            "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
-            "rating": 4.6,
-            "reviews": 174,
-            "description": "Multi-port USB-C hub with HDMI and card readers",
-            "featured": False,
-            "weeklySales": 39,
-            "weeklyViews": 950,
-        },
-    ]
 
 # ---------------------- Firestore access ----------------------
 
-def get_all_products_from_firestore(limit: int = 200):
-    """Read products with retry + timeout; fall back to sample data."""
-    if not USE_FIREBASE:
+def load_products_from_json():
+    """Load products from products.json file"""
+    try:
+        products_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'products.json')
+        if os.path.exists(products_file):
+            with open(products_file, 'r', encoding='utf-8') as f:
+                products = json.load(f)
+                print(f"Loaded {len(products)} products from products.json")
+                return products
+        else:
+            print("products.json file not found")
+            return get_sample_products()
+    except Exception as e:
+        print(f"Error loading products from JSON: {e}")
         return get_sample_products()
+
+def get_all_products_from_firestore(limit: int = 200):
+    """Read products with retry + timeout; fall back to JSON then sample data."""
+    if not USE_FIREBASE:
+        # Try loading from products.json first, then fall back to sample data
+        products = load_products_from_json()
+        return products[:limit] if len(products) > limit else products
 
     try:
         db = get_firestore_db()
         if db is None:
-            return get_sample_products()
+            return load_products_from_json()
 
         print("Attempting to fetch products from Firestore…")
         q = db.collection("products").order_by("id").limit(limit)
@@ -142,23 +73,26 @@ def get_all_products_from_firestore(limit: int = 200):
             products.append(p)
 
         if not products:
-            print("No products found in Firestore, using sample data")
-            return get_sample_products()
+            print("No products found in Firestore, loading from JSON")
+            return load_products_from_json()
         print(f"Fetched {len(products)} products from Firestore")
         return products
     except Exception as e:
         print(f"Error fetching products from Firestore: {e}")
-        return get_sample_products()
+        return load_products_from_json()
 
 
 def get_product_by_id_from_firestore(product_id):
     if not USE_FIREBASE:
-        return next((p for p in get_sample_products() if str(p["id"]) == str(product_id)), None)
+        # Try loading from products.json first
+        products = load_products_from_json()
+        return next((p for p in products if str(p["id"]) == str(product_id)), None)
 
     try:
         db = get_firestore_db()
         if db is None:
-            return next((p for p in get_sample_products() if str(p["id"]) == str(product_id)), None)
+            products = load_products_from_json()
+            return next((p for p in products if str(p["id"]) == str(product_id)), None)
 
         doc = db.collection("products").document(str(product_id)).get(timeout=RPC_TIMEOUT)
         if doc.exists:
@@ -168,7 +102,8 @@ def get_product_by_id_from_firestore(product_id):
         return None
     except Exception as e:
         print(f"Error fetching product {product_id} from Firestore: {e}")
-        return next((p for p in get_sample_products() if str(p["id"]) == str(product_id)), None)
+        products = load_products_from_json()
+        return next((p for p in products if str(p["id"]) == str(product_id)), None)
 
 # ---------------------- Recommendation calls ----------------------
 
@@ -230,12 +165,12 @@ def smart_search_from_recommendation_system(query, limit=10):
 
 # ---------------------- Routes ----------------------
 
-@app.get("/health")
+@app.route("/health", methods=["GET"])
 def health_check():
     return jsonify({"status": "healthy", "message": "Backend is running"})
 
 
-@app.get("/products")
+@app.route("/products", methods=["GET"])
 def get_products():
     try:
         products = get_all_products_from_firestore()
@@ -244,7 +179,7 @@ def get_products():
         return jsonify({"error": str(e)}), 500
 
 
-@app.get("/products/featured")
+@app.route("/products/featured", methods=["GET"])
 def get_featured_products():
     try:
         limit = request.args.get("limit", 6, type=int)
@@ -256,7 +191,7 @@ def get_featured_products():
         return jsonify({"error": str(e)}), 500
 
 
-@app.get("/products/top-this-week")
+@app.route("/products/top-this-week", methods=["GET"])
 def get_top_products_this_week():
     try:
         limit = request.args.get("limit", 6, type=int)
@@ -278,7 +213,7 @@ def get_top_products_this_week():
         return jsonify({"error": str(e)}), 500
 
 
-@app.get("/products/<int:product_id>")
+@app.route("/products/<int:product_id>", methods=["GET"])
 def get_product(product_id):
     try:
         product = get_product_by_id_from_firestore(product_id)
@@ -289,7 +224,7 @@ def get_product(product_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.get("/search")
+@app.route("/search", methods=["GET"])
 def search_products():
     try:
         query = request.args.get("q", "").strip()
@@ -314,7 +249,7 @@ def search_products():
         return jsonify({"error": str(e)}), 500
 
 
-@app.get("/categories")
+@app.route("/categories", methods=["GET"])
 def get_categories():
     try:
         products = get_all_products_from_firestore()
@@ -324,7 +259,7 @@ def get_categories():
         return jsonify({"error": str(e)}), 500
 
 
-@app.get("/brands")
+@app.route("/brands", methods=["GET"])
 def get_brands():
     try:
         products = get_all_products_from_firestore()
@@ -335,7 +270,7 @@ def get_brands():
 
 
 # ---- Recommendation (fallback route kept for compatibility) ----
-@app.get("/recommendations")
+@app.route("/recommendations", methods=["GET"])
 def get_recommendations():
     try:
         limit = request.args.get("limit", 4, type=int)
@@ -394,7 +329,7 @@ def save_user_event_to_firestore(event_data):
         return None
 
 
-@app.post("/events")
+@app.route("/events", methods=["POST"])
 def track_user_event():
     try:
         data = request.get_json()
@@ -449,7 +384,7 @@ def track_user_event():
         return jsonify({"error": str(e)}), 500
 
 
-@app.get("/events/<user_id>")
+@app.route("/events/<user_id>", methods=["GET"])
 def get_user_events(user_id):
     try:
         db = get_firestore_db()
@@ -477,7 +412,7 @@ def get_user_events(user_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.get("/events/analytics/<user_id>")
+@app.route("/events/analytics/<user_id>", methods=["GET"])
 def get_user_analytics(user_id):
     try:
         db = get_firestore_db()
@@ -515,7 +450,7 @@ def get_user_analytics(user_id):
 
 # ---------------------- Rec Sys Utilities ----------------------
 
-@app.get("/recommendation-health")
+@app.route("/recommendation-health", methods=["GET"])
 def check_recommendation_system_health():
     try:
         r = requests.get(f"{RECOMMENDATION_API_URL}/health", timeout=2.0)
@@ -536,7 +471,7 @@ def check_recommendation_system_health():
 
 # ---------------------- Simple Chatbot Demo ----------------------
 
-@app.post("/chatbot")
+@app.route("/chatbot", methods=["POST"])
 def chatbot_endpoint():
     try:
         data = request.get_json() or {}
@@ -584,10 +519,507 @@ def chatbot_endpoint():
         }), 500
 
 
+# ---------------------- Wishlist Management ----------------------
+
+# In-memory storage for demo purposes (replace with database in production)
+demo_wishlists = []
+demo_wishlist_counter = 1
+
+def enhance_wishlist_with_product_details(wishlist):
+    """Enhance wishlist products with full product details"""
+    if not wishlist or "products" not in wishlist:
+        return wishlist
+    
+    print(f"Debug: Enhancing wishlist {wishlist.get('id')} with {len(wishlist['products'])} products")
+    enhanced_products = []
+    for item in wishlist["products"]:
+        if isinstance(item, dict) and "product_id" in item:
+            # Get full product details
+            product = get_product_by_id_from_firestore(item["product_id"])
+            print(f"Debug: Product {item['product_id']} found: {product is not None}")
+            if product:
+                # Create enhanced product object with wishlist metadata
+                enhanced_item = {
+                    "product_id": item["product_id"],
+                    "added_at": item.get("added_at"),
+                    "product": product  # Full product details
+                }
+                enhanced_products.append(enhanced_item)
+                print(f"Debug: Enhanced item keys: {list(enhanced_item.keys())}")
+            else:
+                # Keep original if product not found
+                enhanced_products.append(item)
+        else:
+            # Keep original if not a proper wishlist item
+            enhanced_products.append(item)
+    
+    # Update wishlist with enhanced products
+    enhanced_wishlist = wishlist.copy()
+    enhanced_wishlist["products"] = enhanced_products
+    print(f"Debug: Enhanced wishlist product count: {len(enhanced_products)}")
+    return enhanced_wishlist
+
+def get_user_wishlists_from_firestore(user_id):
+    """Get all wishlists for a user - Demo version using in-memory storage"""
+    try:
+        if USE_FIREBASE:
+            db = get_firestore_db()
+            if db is None:
+                wishlists = [wishlist for wishlist in demo_wishlists if wishlist.get("user_id") == user_id]
+                return [enhance_wishlist_with_product_details(w) for w in wishlists]
+
+            docs = db.collection("wishlists").where("user_id", "==", user_id).get(timeout=RPC_TIMEOUT)
+            wishlists = []
+            for doc in docs:
+                wishlist = doc.to_dict()
+                wishlist["id"] = doc.id
+                # Ensure products is a list and count items
+                products = wishlist.get("products", [])
+                if not isinstance(products, list):
+                    products = []
+                wishlist["products"] = products
+                wishlist["item_count"] = len(products)
+                wishlists.append(enhance_wishlist_with_product_details(wishlist))
+            
+            return wishlists
+        else:
+            # Demo mode: use in-memory storage
+            wishlists = [wishlist for wishlist in demo_wishlists if wishlist.get("user_id") == user_id]
+            return [enhance_wishlist_with_product_details(w) for w in wishlists]
+    except Exception as e:
+        print(f"Error fetching wishlists: {e}")
+        # Fallback to demo storage
+        wishlists = [wishlist for wishlist in demo_wishlists if wishlist.get("user_id") == user_id]
+        return [enhance_wishlist_with_product_details(w) for w in wishlists]
+
+
+def create_wishlist_in_firestore(user_id, name):
+    """Create a new wishlist - Demo version using in-memory storage"""
+    global demo_wishlist_counter
+    
+    try:
+        if USE_FIREBASE:
+            db = get_firestore_db()
+            if db is None:
+                # Fallback to demo storage
+                wishlist_data = {
+                    "id": str(demo_wishlist_counter),
+                    "user_id": user_id,
+                    "name": name,
+                    "products": [],
+                    "item_count": 0,
+                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat()
+                }
+                demo_wishlists.append(wishlist_data)
+                demo_wishlist_counter += 1
+                return wishlist_data
+
+            wishlist_data = {
+                "user_id": user_id,
+                "name": name,
+                "products": [],
+                "item_count": 0,
+                "created_at": datetime.now(),
+                "updated_at": datetime.now()
+            }
+            
+            doc_ref = db.collection("wishlists").add(wishlist_data, timeout=RPC_TIMEOUT)
+            wishlist_data["id"] = doc_ref[1].id
+            return wishlist_data
+        else:
+            # Demo mode: use in-memory storage
+            wishlist_data = {
+                "id": str(demo_wishlist_counter),
+                "user_id": user_id,
+                "name": name,
+                "products": [],
+                "item_count": 0,
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }
+            demo_wishlists.append(wishlist_data)
+            demo_wishlist_counter += 1
+            return wishlist_data
+    except Exception as e:
+        print(f"Error creating wishlist: {e}")
+        # Fallback to demo storage
+        wishlist_data = {
+            "id": str(demo_wishlist_counter),
+            "user_id": user_id,
+            "name": name,
+            "products": [],
+            "item_count": 0,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        demo_wishlists.append(wishlist_data)
+        demo_wishlist_counter += 1
+        return wishlist_data
+
+
+def add_product_to_wishlist_in_firestore(wishlist_id, user_id, product_id):
+    """Add a product to wishlist - Demo version using in-memory storage"""
+    try:
+        if USE_FIREBASE:
+            db = get_firestore_db()
+            if db is None:
+                # Fallback to demo storage
+                for wishlist in demo_wishlists:
+                    if wishlist["id"] == wishlist_id and wishlist["user_id"] == user_id:
+                        # Check if product already exists
+                        for item in wishlist["products"]:
+                            if item.get("product_id") == product_id:
+                                raise Exception("Product already in wishlist")
+                        
+                        # Add new product
+                        wishlist["products"].append({
+                            "product_id": product_id,
+                            "added_at": datetime.now().timestamp()
+                        })
+                        wishlist["item_count"] = len(wishlist["products"])
+                        wishlist["updated_at"] = datetime.now().isoformat()
+                        return enhance_wishlist_with_product_details(wishlist)
+                return None
+
+            # Verify product exists
+            product = get_product_by_id_from_firestore(product_id)
+            if not product:
+                raise Exception("Product not found")
+
+            doc_ref = db.collection("wishlists").document(wishlist_id)
+            doc = doc_ref.get(timeout=RPC_TIMEOUT)
+            
+            if not doc.exists:
+                return None
+            
+            wishlist = doc.to_dict()
+            if wishlist.get("user_id") != user_id:
+                return None
+            
+            products = wishlist.get("products", [])
+            if not isinstance(products, list):
+                products = []
+            
+            # Check if product already exists
+            for item in products:
+                if item.get("product_id") == product_id:
+                    raise Exception("Product already in wishlist")
+            
+            # Add new product
+            products.append({
+                "product_id": product_id,
+                "added_at": datetime.now().timestamp()
+            })
+            
+            # Update wishlist
+            update_data = {
+                "products": products,
+                "item_count": len(products),
+                "updated_at": datetime.now()
+            }
+            
+            doc_ref.update(update_data, timeout=RPC_TIMEOUT)
+            
+            # Return updated wishlist with product details
+            wishlist.update(update_data)
+            wishlist["id"] = wishlist_id
+            return enhance_wishlist_with_product_details(wishlist)
+        else:
+            # Demo mode: use in-memory storage
+            for wishlist in demo_wishlists:
+                if wishlist["id"] == wishlist_id and wishlist["user_id"] == user_id:
+                    # Check if product already exists
+                    for item in wishlist["products"]:
+                        if item.get("product_id") == product_id:
+                            raise Exception("Product already in wishlist")
+                    
+                    # Add new product
+                    wishlist["products"].append({
+                        "product_id": product_id,
+                        "added_at": datetime.now().timestamp()
+                    })
+                    wishlist["item_count"] = len(wishlist["products"])
+                    wishlist["updated_at"] = datetime.now().isoformat()
+                    return enhance_wishlist_with_product_details(wishlist)
+            return None
+    except Exception as e:
+        print(f"Error adding product to wishlist: {e}")
+        # Fallback to demo storage if Firebase fails
+        if "Product already in wishlist" in str(e):
+            raise  # Re-raise this specific error
+        for wishlist in demo_wishlists:
+            if wishlist["id"] == wishlist_id and wishlist["user_id"] == user_id:
+                # Check if product already exists
+                for item in wishlist["products"]:
+                    if item.get("product_id") == product_id:
+                        raise Exception("Product already in wishlist")
+                
+                # Add new product
+                wishlist["products"].append({
+                    "product_id": product_id,
+                    "added_at": datetime.now().timestamp()
+                })
+                wishlist["item_count"] = len(wishlist["products"])
+                wishlist["updated_at"] = datetime.now().isoformat()
+                return enhance_wishlist_with_product_details(wishlist)
+        return None
+
+
+def remove_product_from_wishlist_in_firestore(wishlist_id, user_id, product_id):
+    """Remove a product from wishlist - Demo version using in-memory storage"""
+    try:
+        if USE_FIREBASE:
+            db = get_firestore_db()
+            if db is None:
+                # Fallback to demo storage
+                for wishlist in demo_wishlists:
+                    if wishlist["id"] == wishlist_id and wishlist["user_id"] == user_id:
+                        # Remove product
+                        wishlist["products"] = [item for item in wishlist["products"] if item.get("product_id") != product_id]
+                        wishlist["item_count"] = len(wishlist["products"])
+                        wishlist["updated_at"] = datetime.now().isoformat()
+                        return enhance_wishlist_with_product_details(wishlist)
+                return None
+
+            doc_ref = db.collection("wishlists").document(wishlist_id)
+            doc = doc_ref.get(timeout=RPC_TIMEOUT)
+            
+            if not doc.exists:
+                return None
+            
+            wishlist = doc.to_dict()
+            if wishlist.get("user_id") != user_id:
+                return None
+            
+            products = wishlist.get("products", [])
+            if not isinstance(products, list):
+                products = []
+            
+            # Remove product
+            products = [item for item in products if item.get("product_id") != product_id]
+            
+            # Update wishlist
+            update_data = {
+                "products": products,
+                "item_count": len(products),
+                "updated_at": datetime.now()
+            }
+            
+            doc_ref.update(update_data, timeout=RPC_TIMEOUT)
+            
+            # Return updated wishlist with product details
+            wishlist.update(update_data)
+            wishlist["id"] = wishlist_id
+            return enhance_wishlist_with_product_details(wishlist)
+        else:
+            # Demo mode: use in-memory storage
+            for wishlist in demo_wishlists:
+                if wishlist["id"] == wishlist_id and wishlist["user_id"] == user_id:
+                    # Remove product
+                    wishlist["products"] = [item for item in wishlist["products"] if item.get("product_id") != product_id]
+                    wishlist["item_count"] = len(wishlist["products"])
+                    wishlist["updated_at"] = datetime.now().isoformat()
+                    return enhance_wishlist_with_product_details(wishlist)
+            return None
+    except Exception as e:
+        print(f"Error removing product from wishlist: {e}")
+        # Fallback to demo storage
+        for wishlist in demo_wishlists:
+            if wishlist["id"] == wishlist_id and wishlist["user_id"] == user_id:
+                # Remove product
+                wishlist["products"] = [item for item in wishlist["products"] if item.get("product_id") != product_id]
+                wishlist["item_count"] = len(wishlist["products"])
+                wishlist["updated_at"] = datetime.now().isoformat()
+                return enhance_wishlist_with_product_details(wishlist)
+        return None
+
+
+@app.route("/api/test", methods=["POST"])
+def test_post():
+    """Test POST endpoint"""
+    print("DEBUG: Test POST endpoint hit!")
+    return jsonify({"message": "POST test successful"})
+
+
+@app.route("/api/wishlist", methods=["GET"])
+def get_user_wishlists():
+    """Get all wishlists for a user"""
+    try:
+        user_id = request.args.get("user_id")
+        if not user_id:
+            return jsonify({"error": "user_id parameter is required"}), 400
+        
+        wishlists = get_user_wishlists_from_firestore(user_id)
+        print(f"Debug: API returning {len(wishlists)} wishlists for user {user_id}")
+        if wishlists:
+            print(f"Debug: First wishlist product keys: {list(wishlists[0]['products'][0].keys()) if wishlists[0].get('products') else 'No products'}")
+        return jsonify(wishlists)
+    except Exception as e:
+        print(f"Error in get_user_wishlists: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/wishlist", methods=["POST"])
+def create_wishlist():
+    """Create a new wishlist"""
+    print("DEBUG: Create wishlist endpoint hit!")
+    try:
+        data = request.get_json()
+        print(f"DEBUG: Received data: {data}")
+        if not data or not data.get("name"):
+            print("DEBUG: Missing name in request")
+            return jsonify({"error": "Wishlist name is required"}), 400
+        
+        user_id = data.get("user_id")
+        if not user_id:
+            print("DEBUG: Missing user_id in request")
+            return jsonify({"error": "user_id is required"}), 400
+        
+        print(f"DEBUG: Creating wishlist for user {user_id} with name {data['name']}")
+        wishlist = create_wishlist_in_firestore(user_id, data["name"])
+        if not wishlist:
+            print("DEBUG: Failed to create wishlist")
+            return jsonify({"error": "Failed to create wishlist"}), 500
+        
+        print(f"DEBUG: Created wishlist: {wishlist}")
+        return jsonify(wishlist)
+    except Exception as e:
+        print(f"DEBUG: Exception in create_wishlist: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/wishlist/<wishlist_id>/products", methods=["POST"])
+def add_product_to_wishlist(wishlist_id):
+    """Add a product to wishlist"""
+    try:
+        data = request.get_json()
+        if not data or not data.get("product_id"):
+            return jsonify({"error": "Product ID is required"}), 400
+        
+        user_id = data.get("user_id")
+        if not user_id:
+            return jsonify({"error": "user_id is required"}), 400
+        
+        product_id = int(data["product_id"])
+        wishlist = add_product_to_wishlist_in_firestore(wishlist_id, user_id, product_id)
+        
+        if not wishlist:
+            return jsonify({"error": "Wishlist not found"}), 404
+        
+        return jsonify(wishlist)
+    except ValueError:
+        return jsonify({"error": "Invalid product ID"}), 400
+    except Exception as e:
+        if "already in wishlist" in str(e):
+            return jsonify({"error": str(e)}), 400
+        if "Product not found" in str(e):
+            return jsonify({"error": str(e)}), 404
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/wishlist/<wishlist_id>/products/<int:product_id>", methods=["DELETE"])
+def remove_product_from_wishlist(wishlist_id, product_id):
+    """Remove a product from wishlist"""
+    try:
+        print(f"[DEBUG] DELETE request to remove product {product_id} from wishlist {wishlist_id}")
+        user_id = request.args.get("user_id")
+        print(f"[DEBUG] Received user_id: {user_id}")
+        if not user_id:
+            print("[DEBUG] Error: user_id parameter is missing")
+            return jsonify({"error": "user_id parameter is required"}), 400
+        
+        wishlist = remove_product_from_wishlist_in_firestore(wishlist_id, user_id, product_id)
+        
+        if not wishlist:
+            print(f"[DEBUG] Error: Wishlist {wishlist_id} not found for user {user_id}")
+            return jsonify({"error": "Wishlist not found"}), 404
+        
+        print(f"[DEBUG] Successfully removed product {product_id} from wishlist {wishlist_id}")
+        return jsonify(wishlist)
+    except Exception as e:
+        print(f"[DEBUG] Exception occurred: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/wishlist/<wishlist_id>", methods=["DELETE"])
+def delete_wishlist(wishlist_id):
+    """Delete a wishlist"""
+    try:
+        print(f"[DEBUG] DELETE request to delete wishlist {wishlist_id}")
+        user_id = request.args.get("user_id")
+        print(f"[DEBUG] Received user_id: {user_id}")
+        if not user_id:
+            print("[DEBUG] Error: user_id parameter is missing")
+            return jsonify({"error": "user_id parameter is required"}), 400
+        
+        # Delete wishlist from Firestore
+        success = delete_wishlist_from_firestore(wishlist_id, user_id)
+        
+        if not success:
+            print(f"[DEBUG] Error: Wishlist {wishlist_id} not found for user {user_id}")
+            return jsonify({"error": "Wishlist not found or not authorized"}), 404
+        
+        print(f"[DEBUG] Successfully deleted wishlist {wishlist_id}")
+        return jsonify({"message": "Wishlist deleted successfully"}), 200
+    except Exception as e:
+        print(f"[DEBUG] Exception occurred: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/wishlist/<wishlist_id>/debug", methods=["GET"])
+def debug_wishlist_route(wishlist_id):
+    """Debug route to test if routing is working"""
+    return jsonify({"message": f"Debug route working for wishlist_id: {wishlist_id}"}), 200
+
+
+def delete_wishlist_from_firestore(wishlist_id, user_id):
+    """Delete a wishlist from Firestore"""
+    global demo_wishlists
+    try:
+        if USE_FIREBASE:
+            db = get_firestore_db()
+            if db is None:
+                # Fallback to demo storage
+                demo_wishlists = [w for w in demo_wishlists if not (w["id"] == wishlist_id and w["user_id"] == user_id)]
+                return True
+
+            # Get the wishlist first to verify ownership
+            wishlist_ref = db.collection("wishlists").document(wishlist_id)
+            wishlist_doc = wishlist_ref.get(timeout=RPC_TIMEOUT)
+            
+            if not wishlist_doc.exists:
+                return False
+                
+            wishlist_data = wishlist_doc.to_dict()
+            if wishlist_data.get("user_id") != user_id:
+                return False
+                
+            # Delete the wishlist
+            wishlist_ref.delete()
+            return True
+        else:
+            # Demo mode - remove from in-memory storage
+            original_count = len(demo_wishlists)
+            demo_wishlists = [w for w in demo_wishlists if not (w["id"] == wishlist_id and w["user_id"] == user_id)]
+            return len(demo_wishlists) < original_count
+        
+    except Exception as e:
+        print(f"Error deleting wishlist from Firestore: {e}")
+        return False
+
+
 if __name__ == "__main__":
     print("🚀 Starting eCommerce Backend API Server (Flask)…")
     print("📍 Server will be available at: http://localhost:8000")
     print("🛑 Press Ctrl+C to stop the server")
     print("-" * 50)
+    
+    # List all registered routes for debugging
+    print("📋 Registered routes:")
+    for rule in app.url_map.iter_rules():
+        print(f"  {rule.rule} -> {rule.endpoint} ({', '.join(rule.methods)})")
+    print("-" * 50)
+    
     # Avoid double init of Firebase in debug
     app.run(host="127.0.0.1", port=8000, debug=True, use_reloader=False)

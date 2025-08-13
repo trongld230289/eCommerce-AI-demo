@@ -2,19 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faHeart, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
+import { wishlistService, Wishlist } from '../../services/wishlistService';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface WishlistModalProps {
   isOpen: boolean;
   onClose: () => void;
   productId: number;
   onSuccess?: () => void;
-}
-
-interface Wishlist {
-  id: number;
-  name: string;
-  item_count?: number;
-  products?: number[];
 }
 
 const WishlistModal: React.FC<WishlistModalProps> = ({ 
@@ -26,22 +21,41 @@ const WishlistModal: React.FC<WishlistModalProps> = ({
   const [wishlists, setWishlists] = useState<Wishlist[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newWishlistName, setNewWishlistName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { currentUser } = useAuth();
 
-  // Initialize default wishlists
+  // Load wishlists from API
   useEffect(() => {
-    const savedWishlists = localStorage.getItem('wishlists');
-    if (savedWishlists) {
-      setWishlists(JSON.parse(savedWishlists));
-    } else {
-      // Create default wishlists
-      const defaultWishlists = [
-        { id: 1, name: 'My Favorites ❤️', item_count: 0, products: [] },
-        { id: 2, name: 'Gift Ideas 🎁', item_count: 0, products: [] }
-      ];
-      setWishlists(defaultWishlists);
-      localStorage.setItem('wishlists', JSON.stringify(defaultWishlists));
+    const loadWishlists = async () => {
+      if (!currentUser) {
+        toast.error('Please login to manage your wishlist', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        onClose();
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const wishlistsData = await wishlistService.getUserWishlists(currentUser.uid);
+        setWishlists(wishlistsData);
+      } catch (error) {
+        console.error('Error loading wishlists:', error);
+        toast.error('Failed to load wishlists');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      loadWishlists();
     }
-  }, []);
+  }, [isOpen, currentUser, onClose]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -61,7 +75,19 @@ const WishlistModal: React.FC<WishlistModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  const createWishlist = () => {
+  const createWishlist = async () => {
+    if (!currentUser) {
+      toast.error('Please login to create a wishlist', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      return;
+    }
+
     if (!newWishlistName.trim()) {
       toast.error('Please enter a wishlist name', {
         position: "top-right",
@@ -74,72 +100,103 @@ const WishlistModal: React.FC<WishlistModalProps> = ({
       return;
     }
 
-    console.log('Creating wishlist:', newWishlistName);
+    try {
+      setLoading(true);
+      console.log('Creating wishlist:', newWishlistName);
 
-    const newWishlist = {
-      id: Date.now(),
-      name: newWishlistName.trim(),
-      item_count: 1,
-      products: [productId]
-    };
+      // Create wishlist via API
+      const newWishlist = await wishlistService.createWishlist({
+        name: newWishlistName.trim(),
+        user_id: currentUser.uid
+      });
 
-    const updatedWishlists = [...wishlists, newWishlist];
-    setWishlists(updatedWishlists);
-    localStorage.setItem('wishlists', JSON.stringify(updatedWishlists));
-    
-    setNewWishlistName('');
-    setShowCreateForm(false);
-    
-    window.dispatchEvent(new Event('wishlistUpdated'));
-    
-    // Close modal first, then show toast
-    onSuccess && onSuccess();
-    onClose();
-    
-    // Show toast after a small delay to ensure modal is closed
-    setTimeout(() => {
-      toast.success(`🎉 Created "${newWishlist.name}" and added product!`, {
+      // Add product to the new wishlist
+      await wishlistService.addProductToWishlist(newWishlist.id, productId, currentUser.uid);
+
+      // Refresh wishlists
+      const updatedWishlists = await wishlistService.getUserWishlists(currentUser.uid);
+      setWishlists(updatedWishlists);
+      
+      setNewWishlistName('');
+      setShowCreateForm(false);
+      
+      window.dispatchEvent(new Event('wishlistUpdated'));
+      
+      // Close modal first, then show toast
+      onSuccess && onSuccess();
+      onClose();
+      
+      // Show toast after a small delay to ensure modal is closed
+      setTimeout(() => {
+        toast.success(`🎉 Created "${newWishlist.name}" and added product!`, {
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }, 300);
+      
+    } catch (error) {
+      console.error('Error creating wishlist:', error);
+      toast.error('Failed to create wishlist', {
         position: "top-right",
-        autoClose: 4000,
+        autoClose: 3000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addToWishlist = async (wishlistId: string, wishlistName: string) => {
+    if (!currentUser) {
+      toast.error('Please login to add to wishlist', {
+        position: "top-right",
+        autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
       });
-    }, 300);
-  };
+      return;
+    }
 
-  const addToWishlist = (wishlistId: number, wishlistName: string) => {
-    const currentWishlists: Wishlist[] = wishlists.length > 0 ? wishlists : JSON.parse(localStorage.getItem('wishlists') || '[]');
-    
-    let productAdded = false;
-    const updatedWishlists = currentWishlists.map((wishlist: Wishlist) => {
-      if (wishlist.id === wishlistId) {
-        const products = wishlist.products || [];
-        if (!products.includes(productId)) {
-          productAdded = true;
-          return {
-            ...wishlist,
-            products: [...products, productId],
-            item_count: (wishlist.products?.length || 0) + 1
-          };
+    try {
+      setLoading(true);
+      
+      // Check if product is already in this wishlist
+      const wishlist = wishlists.find(w => w.id === wishlistId);
+      if (wishlist) {
+        const isProductInWishlist = wishlist.products.some(item => item.product_id === productId);
+        if (isProductInWishlist) {
+          toast.warning(`⚠️ Already in "${wishlistName}"`, {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+          return;
         }
-        return wishlist;
       }
-      return wishlist;
-    });
 
-    setWishlists(updatedWishlists);
-    localStorage.setItem('wishlists', JSON.stringify(updatedWishlists));
-    window.dispatchEvent(new Event('wishlistUpdated'));
-    
-    // Close modal first
-    onSuccess && onSuccess();
-    onClose();
-    
-    // Show appropriate toast after modal closes
-    setTimeout(() => {
-      if (productAdded) {
+      // Add product to wishlist via API
+      await wishlistService.addProductToWishlist(wishlistId, productId, currentUser.uid);
+
+      // Refresh wishlists
+      const updatedWishlists = await wishlistService.getUserWishlists(currentUser.uid);
+      setWishlists(updatedWishlists);
+      
+      window.dispatchEvent(new Event('wishlistUpdated'));
+      
+      // Close modal first, then show toast
+      onSuccess && onSuccess();
+      onClose();
+      
+      // Show toast after a small delay to ensure modal is closed
+      setTimeout(() => {
         toast.success(`❤️ Added to "${wishlistName}"!`, {
           position: "top-right",
           autoClose: 3000,
@@ -148,17 +205,17 @@ const WishlistModal: React.FC<WishlistModalProps> = ({
           pauseOnHover: true,
           draggable: true,
         });
-      } else {
-        toast.warning(`⚠️ Already in "${wishlistName}"`, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-      }
-    }, 300);
+      }, 300);
+      
+    } catch (error) {
+      console.error('Error adding to wishlist:', error);
+      toast.error('Failed to add to wishlist', {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -250,7 +307,18 @@ const WishlistModal: React.FC<WishlistModalProps> = ({
 
           {/* Wishlists List */}
           <div style={{ marginBottom: '16px' }}>
-            {wishlists.map((wishlist) => (
+            {loading ? (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                padding: '40px',
+                color: '#666'
+              }}>
+                Loading wishlists...
+              </div>
+            ) : (
+              wishlists.map((wishlist) => (
               <div
                 key={wishlist.id}
                 onClick={() => addToWishlist(wishlist.id, wishlist.name)}
@@ -293,7 +361,8 @@ const WishlistModal: React.FC<WishlistModalProps> = ({
                   {wishlist.item_count || 0} items
                 </span>
               </div>
-            ))}
+            ))
+            )}
           </div>
 
           {/* Create Form or Create Button */}

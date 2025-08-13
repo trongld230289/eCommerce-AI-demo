@@ -127,8 +127,6 @@ const Wishlist = () => {
             key={product.id}
             product={product}
             onAddToCart={handleAddToCart}
-            onAddToWishlist={() => removeFromWishlist(product.id)}
-            isInWishlist={() => true}
           />
         ))}
       </div>
