@@ -52,10 +52,10 @@ const WishlistModal: React.FC<WishlistModalProps> = ({
       }
     };
 
-    if (isOpen) {
+    if (isOpen && currentUser) {
       loadWishlists();
     }
-  }, [isOpen, currentUser, onClose]);
+  }, [isOpen, currentUser?.uid]); // Removed onClose from dependencies
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {

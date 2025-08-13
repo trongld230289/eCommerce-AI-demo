@@ -286,7 +286,15 @@ const Wishlist = () => {
   const currentProducts = currentWishlist?.products || [];
   const wishlistItems = currentProducts.map(item => {
     // Backend now returns enhanced product data with full product details
-    if (item.product) {
+    if (item.product_details) {
+      return {
+        id: `${currentWishlist.id}-${item.product_id}`,
+        product_id: item.product_id,
+        product: item.product_details,
+        added_at: item.added_at
+      };
+    } else if (item.product) {
+      // Fallback for legacy product data structure
       return {
         id: `${currentWishlist.id}-${item.product_id}`,
         product_id: item.product_id,

@@ -1,8 +1,28 @@
 import { apiService } from './apiService';
 
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  original_price?: number;
+  imageUrl: string;
+  category: string;
+  description?: string;
+  brand?: string;
+  tags?: string[];
+  color?: string;
+  size?: string;
+  rating?: number;
+  is_new?: boolean;
+  discount?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface WishlistItem {
   product_id: number;
   added_at: number;
+  product_details?: Product;
 }
 
 export interface Wishlist {
@@ -62,12 +82,12 @@ class WishlistService {
   }
 
   async addProductToWishlist(wishlistId: string, productId: number, userId: string): Promise<Wishlist> {
-    const response = await fetch(`${this.baseURL}/${wishlistId}/products`, {
+    const response = await fetch(`${this.baseURL}/${wishlistId}/products?user_id=${encodeURIComponent(userId)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ product_id: productId, user_id: userId })
+      body: JSON.stringify({ product_id: productId })
     });
     
     if (!response.ok) {

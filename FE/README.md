@@ -1,25 +1,45 @@
-# E-Commerce AI Demo
+# E-Commerce AI Demo Frontend
 
-A modern e-commerce web application built with React, TypeScript, Firebase, and Tailwind CSS. This project demonstrates a complete shopping experience with authentication, product browsing, cart management, and wishlist functionality.
+A modern e-commerce React application built with TypeScript, Firebase, and Tailwind CSS. This project demonstrates a complete shopping experience with authentication, product browsing, cart management, and wishlist functionality.
 
-## 🚀 Features
+## 🚀 Quick Start
+
+### Option 1: Convenient Startup (Recommended)
+```bash
+python run_FE.py
+```
+
+### Option 2: Batch File (Windows)
+```bash
+run_FE.bat
+```
+
+### Option 3: Standard npm
+```bash
+npm install
+npm start
+```
+
+## 🎯 Features
 
 - **User Authentication**: Login and registration with Firebase Auth
-- **Product Catalog**: Browse and search products
+- **Product Catalog**: Browse and search products with semantic search
 - **Shopping Cart**: Add/remove items with quantity management
-- **Wishlist**: Save favorite products for later
+- **Wishlist System**: Save favorite products with full CRUD operations
 - **Responsive Design**: Mobile-friendly interface with Tailwind CSS
 - **Real-time Updates**: Firebase Firestore integration
 - **TypeScript**: Type-safe development experience
+- **Hot Reload**: Instant updates during development
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 18, TypeScript
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS, PostCSS
 - **Icons**: FontAwesome, Heroicons
 - **Routing**: React Router DOM
-- **Backend**: Firebase (Authentication & Firestore)
-- **Build Tool**: Create React App
+- **Backend Integration**: Firebase (Authentication & Firestore)
+- **Build Tool**: Create React App with TypeScript template
+- **Development**: Hot reload, ESLint, TypeScript compiler
 
 ## 📋 Prerequisites
 
@@ -27,6 +47,7 @@ Before running this project, make sure you have the following installed:
 
 - **Node.js** (version 16.0 or higher)
 - **npm** or **yarn** package manager
+- **Python** (for convenient startup script)
 - **Firebase account** for backend services
 
 ## 🔧 Installation & Setup
@@ -35,7 +56,7 @@ Before running this project, make sure you have the following installed:
 
 ```bash
 git clone https://github.com/trongld230289/eCommerce-AI-demo.git
-cd eCommerce-AI-demo
+cd eCommerce-AI-demo/FE
 ```
 
 ### 2. Install Dependencies
@@ -49,6 +70,68 @@ or if you prefer yarn:
 ```bash
 yarn install
 ```
+
+## 🚀 Running the Application
+
+### Method 1: Smart Python Launcher (Recommended)
+The `run_FE.py` script provides automatic setup and enhanced startup:
+
+```bash
+python run_FE.py
+```
+
+**Features:**
+- ✅ Automatic Node.js and npm version checking
+- ✅ Dependency installation if needed
+- ✅ Port availability checking
+- ✅ Process cleanup
+- ✅ Backend connection verification
+- ✅ Colored console output
+- ✅ Error handling and recovery
+
+### Method 2: Windows Batch File
+For Windows users who prefer batch files:
+
+```bash
+run_FE.bat
+```
+
+**Features:**
+- ✅ Basic dependency checking
+- ✅ Automatic npm install
+- ✅ Process cleanup
+- ✅ Simple startup
+
+### Method 3: Standard npm
+Traditional npm approach:
+
+```bash
+npm start
+```
+
+### Method 4: Development Options
+```bash
+# Start with specific port
+npm start -- --port 3001
+
+# Start without opening browser
+BROWSER=none npm start
+
+# Start with custom environment
+REACT_APP_API_URL=http://localhost:8000 npm start
+```
+
+## 📱 Access the Application
+
+Once started, the application will be available at:
+- **Local**: http://localhost:3000
+- **Network**: http://your-ip:3000 (for testing on mobile devices)
+
+The development server includes:
+- 🔥 **Hot reload** for instant updates
+- 🔍 **TypeScript checking**
+- 🧹 **ESLint integration**
+- 📱 **Mobile responsive design**
 
 ### 3. Firebase Configuration
 
