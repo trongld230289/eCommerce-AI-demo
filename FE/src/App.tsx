@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHeart, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import { ToastContainer } from 'react-toastify';
@@ -15,6 +15,7 @@ import ProductDetails from './pages/ProductDetails';
 import Settings from './pages/Settings';
 import Home from './pages/Home';
 import SearchBar from './components/SearchBar';
+import { aiService } from './services/aiService';
 import CartDropdown from './components/CartDropdown';
 // import MockAuthDialog from './components/MockAuthDialog';
 import { useAuthDialog } from './hooks/useAuthDialog';
@@ -29,6 +30,7 @@ const Navbar = () => {
   const [isCartDropdownOpen, setIsCartDropdownOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const authDialog = useAuthDialog();
+  const navigate = useNavigate();
 
   // Debug logging
   console.log('Navbar render - currentUser:', currentUser);
@@ -236,14 +238,49 @@ const Navbar = () => {
           }}>
             <SearchBar
               placeholder="Search for Products"
-              onSearch={(query, category) => {
+              onSearch={async (query, category) => {
                 console.log('Search:', query, 'Category:', category);
-                // Here you would typically navigate to search results
-                // or update the current page with search results
+                
+                try {
+                  // Use AI search if query is complex enough
+                  if (query.length > 3) {
+                    const aiResponse = await aiService.searchProducts({
+                      query: query,
+                      limit: 20
+                    });
+                    
+                    if (aiResponse.status === 'success' && aiResponse.products) {
+                      // Convert AI products to regular products and navigate to search results
+                      const products = aiService.convertToProducts(aiResponse.products);
+                      const searchParams = new URLSearchParams();
+                      searchParams.append('q', query);
+                      searchParams.append('ai_search', 'true');
+                      navigate(`/products?${searchParams.toString()}`);
+                      return;
+                    }
+                  }
+                  
+                  // Fallback to regular search
+                  const searchParams = new URLSearchParams();
+                  searchParams.append('q', query);
+                  if (category !== 'All Categories') {
+                    searchParams.append('category', category);
+                  }
+                  navigate(`/products?${searchParams.toString()}`);
+                } catch (error) {
+                  console.error('Search error:', error);
+                  // Fallback to regular search on error
+                  const searchParams = new URLSearchParams();
+                  searchParams.append('q', query);
+                  if (category !== 'All Categories') {
+                    searchParams.append('category', category);
+                  }
+                  navigate(`/products?${searchParams.toString()}`);
+                }
               }}
               onProductSelect={(product) => {
                 console.log('Selected product:', product);
-                // Here you would typically navigate to product detail page
+                navigate(`/product/${product.id}`);
               }}
             />
           </div>

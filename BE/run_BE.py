@@ -52,7 +52,7 @@ def print_banner():
 {Colors.CYAN}{Colors.BOLD}
 ╔══════════════════════════════════════════════════════════════╗
 ║                   🚀 eCommerce FastAPI Backend               ║
-║                      Starting Server...                     ║
+║                      Starting Server...                      ║
 ╚══════════════════════════════════════════════════════════════╝
 {Colors.END}
 """
@@ -194,7 +194,7 @@ def main():
         return
     
     # Install dependencies
-    install_dependencies()
+    # install_dependencies()
     
     # Check Firebase configuration
     check_firebase_config()

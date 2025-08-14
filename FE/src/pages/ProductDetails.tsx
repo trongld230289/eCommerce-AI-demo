@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faShoppingCart, 
@@ -24,7 +24,6 @@ import type { Product } from '../contexts/ShopContext';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { currentUser } = useAuth();
   const { showSuccess, showWishlist } = useToast();
@@ -69,7 +68,7 @@ const ProductDetails: React.FC = () => {
           eventTrackingService.trackProductView(currentUser.uid, productData.id.toString(), {
             product_name: productData.name,
             product_category: productData.category,
-            product_brand: productData.brand,
+            product_brand: 'Unknown',
             product_price: productData.price,
           }).catch(error => {
             console.error('Failed to track product view event:', error);
@@ -488,61 +487,43 @@ const ProductDetails: React.FC = () => {
   
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedColor, setSelectedColor] = useState('');
   const [activeTab, setActiveTab] = useState('description');
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
   // Mock additional product data that would come from API
   const productDetails = {
     images: [
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500',
+      product?.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500',
       'https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500',
       'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500',
       'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500'
     ],
-    colors: ['Black', 'White', 'Silver', 'Rose Gold'],
     features: [
-      '4.5 inch HD Touch Screen (1280 x 720)',
-      'Android 4.4 KitKat OS',
-      '1.4 GHz Quad Core™ Processor',
-      '20 MP Electro and 28 megapixel CMOS rear camera'
+      'High-quality construction and materials',
+      'Modern design and functionality',
+      'Easy to use and maintain',
+      'Great value for money'
     ],
-    description: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+    description: product?.description || `High-quality product designed to meet your needs. This item features excellent craftsmanship and attention to detail, making it a perfect choice for discerning customers.
 
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`,
+Built with premium materials and modern technology, this product offers reliable performance and long-lasting durability. Whether for personal or professional use, it delivers exceptional value.`,
     specifications: {
-      'Brand': 'TechPro',
-      'Model': 'TP-2024',
-      'Weight': '1.2 kg',
-      'Dimensions': '15 x 10 x 3 cm',
-      'Warranty': '2 years',
-      'Color Options': 'Multiple'
+      'Category': product?.category || 'General',
+      'Model': 'Premium Edition',
+      'Price': product?.price ? `$${product.price}` : 'N/A',
+      'Rating': product?.rating ? `${product.rating}/5.0` : 'N/A',
+      'Warranty': '1 year',
+      'Availability': 'In Stock'
     },
     reviews: [
       {
         id: 1,
-        name: 'John Doe',
-        rating: 5,
-        comment: 'Excellent product! Very satisfied with the quality.',
+        name: 'Customer Review',
+        rating: product?.rating || 4.5,
+        comment: 'Great product! Exactly as described and excellent quality.',
         date: '2024-01-15'
-      },
-      {
-        id: 2,
-        name: 'Jane Smith',
-        rating: 4,
-        comment: 'Good value for money. Fast delivery.',
-        date: '2024-01-10'
-      },
-      {
-        id: 3,
-        name: 'Mike Johnson',
-        rating: 5,
-        comment: 'Outstanding quality and great customer service.',
-        date: '2024-01-05'
       }
-    ],
-    stock: 26,
-    sku: 'FW511948218'
+    ]
   };
 
   // Load related products when product is loaded
@@ -567,10 +548,8 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 
   // Set default color when product loads
   useEffect(() => {
-    if (product && productDetails.colors.length > 0) {
-      setSelectedColor(productDetails.colors[0]);
-    }
-  }, [product, productDetails.colors]);
+    // Color selection no longer needed with simplified model
+  }, [product]);
 
   // Loading state
   if (isLoading) {
@@ -750,7 +729,7 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
           {/* Availability */}
           <div style={styles.productAvailability}>
             <FontAwesomeIcon icon={faCheck} style={styles.checkIcon} />
-            <span>Availability: {productDetails.stock} in stock</span>
+            <span>Availability: In Stock</span>
           </div>
 
           {/* Features */}
@@ -767,9 +746,9 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
             {productDetails.description.split('\n')[0]}
           </div>
 
-          {/* SKU */}
+          {/* Rating */}
           <div style={styles.productSku}>
-            <strong>SKU:</strong> {productDetails.sku}
+            <strong>Rating:</strong> {product.rating} stars
           </div>
 
           {/* Price */}
@@ -780,27 +759,8 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
             )}
           </div>
 
-          {/* Color Selection */}
+          {/* Product Options */}
           <div style={styles.productOptions}>
-            <div style={styles.colorSelection}>
-              <label style={styles.optionLabel}>Color:</label>
-              <div style={styles.colorOptions}>
-                {productDetails.colors.map((color) => (
-                  <button
-                    key={color}
-                    style={{
-                      ...styles.colorOption,
-                      ...(selectedColor === color ? styles.colorOptionSelected : {})
-                    }}
-                    onClick={() => setSelectedColor(color)}
-                    title={color}
-                  >
-                    {color}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Quantity Selection */}
             <div style={styles.quantitySelection}>
               <label style={styles.optionLabel}>Quantity:</label>
@@ -819,10 +779,10 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
                 <button 
                   style={{
                     ...styles.quantityBtn,
-                    ...(quantity >= productDetails.stock ? styles.quantityBtnDisabled : {})
+                    ...(quantity >= 10 ? styles.quantityBtnDisabled : {})
                   }}
-                  onClick={() => setQuantity(Math.min(productDetails.stock, quantity + 1))}
-                  disabled={quantity >= productDetails.stock}
+                  onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                  disabled={quantity >= 10}
                 >
                   <FontAwesomeIcon icon={faPlus} />
                 </button>

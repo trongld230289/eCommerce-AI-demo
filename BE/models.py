@@ -18,12 +18,7 @@ class Product(BaseModel):
     imageUrl: str
     category: str
     description: Optional[str] = None
-    brand: Optional[str] = None
-    tags: Optional[List[str]] = Field(default_factory=list)
-    color: Optional[str] = None
-    size: Optional[str] = None
     rating: Optional[float] = None
-    is_new: Optional[bool] = False
     discount: Optional[float] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -35,12 +30,7 @@ class ProductCreate(BaseModel):
     imageUrl: str
     category: str
     description: Optional[str] = None
-    brand: Optional[str] = None
-    tags: Optional[List[str]] = Field(default_factory=list)
-    color: Optional[str] = None
-    size: Optional[str] = None
     rating: Optional[float] = None
-    is_new: Optional[bool] = False
     discount: Optional[float] = None
 
 class ProductUpdate(BaseModel):
@@ -50,12 +40,7 @@ class ProductUpdate(BaseModel):
     imageUrl: Optional[str] = None
     category: Optional[str] = None
     description: Optional[str] = None
-    brand: Optional[str] = None
-    tags: Optional[List[str]] = None
-    color: Optional[str] = None
-    size: Optional[str] = None
     rating: Optional[float] = None
-    is_new: Optional[bool] = None
     discount: Optional[float] = None
 
 class SearchFilters(BaseModel):
