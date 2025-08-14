@@ -3,7 +3,7 @@ import { Product } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 
 // API endpoints
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 interface RecommendationResponse {
   recommendations?: Product[];

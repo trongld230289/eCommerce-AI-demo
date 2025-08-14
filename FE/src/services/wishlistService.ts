@@ -48,7 +48,7 @@ export interface WishlistAddProduct {
 }
 
 class WishlistService {
-  private baseURL = 'http://localhost:8000/api/wishlist';
+  private baseURL = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/wishlist`;
 
   async getUserWishlists(userId: string): Promise<Wishlist[]> {
     const response = await fetch(`${this.baseURL}?user_id=${encodeURIComponent(userId)}`, {
