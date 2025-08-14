@@ -123,7 +123,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
     featuredStarBadge: {
       position: 'absolute' as const,
       top: '10px',
-      left: '10px',
+      right: '10px',
       backgroundColor: '#ffd700',
       color: '#333',
       padding: '0.25rem 0.5rem',
@@ -186,7 +186,7 @@ const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
             <div key={product.id} style={{ position: 'relative' }}>
               {/* Featured star badge */}
               <div style={styles.featuredStarBadge}>
-                ⭐ Featured
+                ⭐
               </div>
               <SimpleProductCard
                 product={product}
