@@ -12,6 +12,7 @@ import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist/Wishlist';
 import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
+import SearchResult from './pages/SearchResult';
 import Settings from './pages/Settings';
 import Home from './pages/Home';
 import SearchBar from './components/SearchBar';
@@ -250,8 +251,7 @@ const Navbar = () => {
                     });
                     
                     if (aiResponse.status === 'success' && aiResponse.products) {
-                      // Convert AI products to regular products and navigate to search results
-                      const products = aiService.convertToProducts(aiResponse.products);
+                      // Navigate to search results with AI search parameters
                       const searchParams = new URLSearchParams();
                       searchParams.append('q', query);
                       searchParams.append('ai_search', 'true');
@@ -461,6 +461,7 @@ const AppContent = () => {
           <Route path="/cart" element={<Cart />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/search-results" element={<SearchResult />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
