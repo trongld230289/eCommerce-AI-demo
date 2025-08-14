@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faShoppingCart, faHeart, faPlus, faShare } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faShoppingCart, faHeart, faPlus, faShare, faBolt, faEye } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { wishlistService } from '../../services/wishlistService';
+import { cartService } from '../../services/cartService';
+import { eventTrackingService } from '../../services/eventTrackingService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useShop } from '../../contexts/ShopContext';
 import './Wishlist.css';
 
 const Wishlist = () => {
@@ -14,6 +17,116 @@ const Wishlist = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newWishlistName, setNewWishlistName] = useState('');
   const { currentUser } = useAuth();
+  const { addToCart } = useShop();
+
+  // Function to handle adding product to cart
+  const handleAddToCart = async (wishlistItem) => {
+    if (!currentUser) {
+      toast.error('Please log in to add items to cart');
+      return;
+    }
+
+    try {
+      // Debug logging
+      console.log('Wishlist item structure:', wishlistItem);
+      console.log('Product data:', wishlistItem.product);
+      
+      // Create proper product object for API calls
+      const productForCart = {
+        id: wishlistItem.product_id,
+        name: wishlistItem.product?.name || `Product #${wishlistItem.product_id}`,
+        price: wishlistItem.product?.price || 0,
+        original_price: wishlistItem.product?.original_price,
+        imageUrl: wishlistItem.product?.imageUrl || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center',
+        category: wishlistItem.product?.category || 'General',
+        description: wishlistItem.product?.description || '',
+        rating: wishlistItem.product?.rating
+      };
+
+      console.log('Product for cart:', productForCart);
+
+      // Add to cart via API
+      await cartService.addItemToCart(currentUser.uid, wishlistItem.product_id, 1);
+      
+      // Add to local cart context to refresh cart icon
+      addToCart(productForCart);
+      
+      // Track user event
+      await eventTrackingService.trackEvent({
+        event_type: 'add_to_cart',
+        user_id: currentUser.uid,
+        product_id: wishlistItem.product_id, // Send as integer, not string
+        metadata: {
+          product_name: productForCart.name,
+          product_category: productForCart.category,
+          product_price: productForCart.price,
+          source: 'wishlist',
+          device: navigator.userAgent
+        }
+      });
+      
+      // Dispatch event to refresh cart count in header
+      window.dispatchEvent(new Event('cartUpdated'));
+      
+      toast.success(`🛒 "${productForCart.name}" added to cart!`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error('Failed to add item to cart');
+    }
+  };
+
+  // Function to handle buy now
+  const handleBuyNow = async (wishlistItem) => {
+    if (!currentUser) {
+      toast.error('Please log in to purchase items');
+      return;
+    }
+
+    try {
+      // Create proper product object for tracking
+      const productForTracking = {
+        id: wishlistItem.product_id,
+        name: wishlistItem.product?.name || `Product #${wishlistItem.product_id}`,
+        price: wishlistItem.product?.price || 0,
+        category: wishlistItem.product?.category || 'General',
+      };
+
+      // Track user event for buy now
+      await eventTrackingService.trackEvent({
+        event_type: 'purchase',
+        user_id: currentUser.uid,
+        product_id: wishlistItem.product_id, // Send as integer, not string
+        metadata: {
+          product_name: productForTracking.name,
+          product_category: productForTracking.category,
+          product_price: productForTracking.price,
+          source: 'wishlist_buy_now',
+          device: navigator.userAgent
+        }
+      });
+      
+      // Show success message
+      toast.success(`⚡ Successfully purchased "${productForTracking.name}"!`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+    } catch (error) {
+      console.error('Error processing buy now:', error);
+      toast.error('Failed to process purchase');
+    }
+  };
 
   const loadWishlists = useCallback(async (preserveCurrentId = null) => {
     if (!currentUser) {
@@ -412,7 +525,7 @@ const Wishlist = () => {
               <div className="wishlist-grid">
                 {wishlistItems.map((item) => (
                   <div key={item.id} className="wishlist-item">
-                    <div className="item-image">
+                      <div className="item-image">
                       <img 
                         src={item.product?.imageUrl || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center'} 
                         alt={item.product?.name}
@@ -421,6 +534,13 @@ const Wishlist = () => {
                         }}
                       />
                       <div className="item-actions">
+                        <Link
+                          to={`/product/${item.product_id}`}
+                          className="view-product-btn"
+                          title="View product details"
+                        >
+                          <FontAwesomeIcon icon={faEye} />
+                        </Link>
                         <button
                           className="remove-item-btn"
                           onClick={() => removeFromWishlist(item.product_id)}
@@ -429,9 +549,7 @@ const Wishlist = () => {
                           <FontAwesomeIcon icon={faTrash} />
                         </button>
                       </div>
-                    </div>
-
-                    <div className="item-details">
+                    </div>                    <div className="item-details">
                       <h3 className="item-name">
                         <Link to={`/product/${item.product_id}`}>
                           {item.product?.name}
@@ -439,7 +557,10 @@ const Wishlist = () => {
                       </h3>
                       
                       <p className="item-price">
-                        ${item.product?.price?.toFixed(2)}
+                        <span className="current-price">${item.product?.price?.toFixed(2)}</span>
+                        {item.product?.original_price && item.product?.original_price > item.product?.price && (
+                          <span className="original-price">${item.product?.original_price?.toFixed(2)}</span>
+                        )}
                       </p>
                       
                       <p className="item-description">
@@ -448,26 +569,21 @@ const Wishlist = () => {
                       </p>
                       
                       <div className="item-footer">
-                        <span className="saved-date">
-                          Product ID: #{item.product_id}
-                        </span>
-                        
                         <div className="item-buttons">
                           <button 
                             className="add-to-cart-btn"
-                            onClick={() => {
-                              // Add to cart logic here
-                              toast.success(`🛒 "${item.product?.name}" added to cart!`, {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                              });
-                            }}
+                            onClick={() => handleAddToCart(item)}
+                            title="Add to cart"
                           >
                             <FontAwesomeIcon icon={faShoppingCart} /> Add to Cart
+                          </button>
+                          
+                          <button 
+                            className="buy-now-btn"
+                            onClick={() => handleBuyNow(item)}
+                            title="Buy now"
+                          >
+                            <FontAwesomeIcon icon={faBolt} /> Buy Now
                           </button>
                         </div>
                       </div>

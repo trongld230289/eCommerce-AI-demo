@@ -25,7 +25,7 @@ class CartService:
     def _calculate_cart_totals(self, items: List[CartItem]) -> Dict[str, Any]:
         """Calculate cart totals and item count"""
         item_count = sum(item.quantity for item in items)
-        total_amount = sum(item.quantity * item.product_details.price for item in items if item.product_details)
+        total_amount = sum(item.quantity * item.product_details['price'] for item in items if item.product_details)
         return {
             "item_count": item_count,
             "total_amount": round(total_amount, 2)
