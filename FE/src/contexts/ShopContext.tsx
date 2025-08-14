@@ -243,8 +243,8 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
-      // Add to Firebase
-      const updatedCart = await cartService.addItemToCart(currentUser.uid, product.id);
+      // Add to Firebase with product details
+      const updatedCart = await cartService.addItemToCart(currentUser.uid, product.id, 1, product);
       
       // Convert to frontend format and update state
       const cartItems: CartItem[] = updatedCart.items.map((item: any) => ({
@@ -262,15 +262,15 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
       
       dispatch({ type: 'LOAD_CART_FROM_FIREBASE', payload: cartItems });
       
-      // Track add to cart event
-      eventTrackingService.trackAddToCart(currentUser.uid, product.id.toString(), {
-        product_name: product.name,
-        product_category: product.category,
-        product_brand: 'Unknown',
-        product_price: product.price,
-      }).catch(error => {
-        console.error('Failed to track add to cart event:', error);
-      });
+      // Track add to cart event - DISABLED to avoid duplicate tracking (handled by useRecommendations hook)
+      // eventTrackingService.trackAddToCart(currentUser.uid, product.id.toString(), {
+      //   product_name: product.name,
+      //   product_category: product.category,
+      //   product_brand: 'Unknown',
+      //   product_price: product.price,
+      // }).catch(error => {
+      //   console.error('Failed to track add to cart event:', error);
+      // });
     } catch (error) {
       console.error('Error adding item to cart:', error);
       dispatch({ type: 'SET_LOADING', payload: false });

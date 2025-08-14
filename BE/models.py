@@ -9,6 +9,7 @@ class EventType(str, Enum):
     REMOVE_FROM_CART = "remove_from_cart"
     ADD_TO_WISHLIST = "add_to_wishlist"
     REMOVE_FROM_WISHLIST = "remove_from_wishlist"
+    PURCHASE = "purchase"
 
 class Product(BaseModel):
     id: Optional[int] = None
@@ -106,7 +107,7 @@ class WishlistItem(BaseModel):
 class WishlistItemWithDetails(BaseModel):
     product_id: int
     added_at: float
-    product_details: Optional[Product] = None
+    product_details: Optional[Dict[str, Any]] = None
 
 class Wishlist(BaseModel):
     id: str
@@ -135,7 +136,7 @@ class CartItem(BaseModel):
     product_id: int
     quantity: int
     added_at: float
-    product_details: Optional[Product] = None
+    product_details: Optional[Dict[str, Any]] = None
 
 class Cart(BaseModel):
     id: str
