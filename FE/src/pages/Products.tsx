@@ -6,6 +6,7 @@ import type { Product } from '../contexts/ShopContext';
 import SimpleProductCard from '../components/SimpleProductCard';
 import Recommendations from '../components/Recommendations';
 import { searchService } from '../services/searchService';
+import { aiService } from '../services/aiService';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
@@ -23,16 +24,71 @@ const Products: React.FC = () => {
   const [productsError, setProductsError] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>(['All', 'Electronics']);
 
-  // Initialize from URL parameters
+  // Initialize from URL parameters and handle AI search
   useEffect(() => {
     const query = searchParams.get('q') || '';
     const category = searchParams.get('category') || 'All';
+    const isAiSearch = searchParams.get('ai_search') === 'true';
 
     setSearchQuery(query);
     setSelectedCategory(category);
-  }, [searchParams]);
+    
+    // AI search functionality
+    const performAISearch = async (searchQuery: string) => {
+      setIsLoadingProducts(true);
+      setProductsError(null);
+      
+      try {
+        const aiResponse = await aiService.searchProducts({
+          query: searchQuery,
+          limit: 20
+        });
+        
+        if (aiResponse.status === 'success' && aiResponse.products) {
+          const products = aiService.convertToProducts(aiResponse.products);
+          setAllProducts(products);
+          
+          // Show success message with search intent if available
+          if (aiResponse.search_intent) {
+            const intent = aiResponse.search_intent;
+            let intentMessage = `AI Search found ${products.length} results for "${searchQuery}".`;
+            
+            if (intent.filters.category) {
+              intentMessage += ` Filtered by category: ${intent.filters.category}.`;
+            }
+            if (intent.filters.min_price || intent.filters.max_price) {
+              intentMessage += ` Price filters applied.`;
+            }
+            if (intent.filters.min_rating) {
+              intentMessage += ` Minimum rating: ${intent.filters.min_rating} stars.`;
+            }
+            
+            showSuccess(intentMessage);
+          } else {
+            showSuccess(`AI Search found ${products.length} results for "${searchQuery}".`);
+          }
+        } else {
+          // Fallback to regular search if AI search fails
+          await loadTop8Products();
+          showWarning(`AI Search couldn't find results for "${searchQuery}". Showing default products.`);
+        }
+      } catch (error) {
+        console.error('AI search error:', error);
+        // Fallback to regular search
+        await loadTop8Products();
+        showWarning(`Search error occurred. Showing default products.`);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+    
+    // If there's a search query and it's marked as AI search, perform AI search
+    if (query && isAiSearch) {
+      performAISearch(query);
+    }
+  }, [searchParams, showSuccess, showWarning]);
 
-  // Load top 8 products from backend on component mount
+  // Load top 8 products from backend on component mount (only when no search is active)
   useEffect(() => {
     loadTop8Products();
   }, []);
@@ -314,10 +370,7 @@ const Products: React.FC = () => {
     const matchesSearch = searchQuery === '' || (
       product.name.toLowerCase().includes(searchLower) ||
       (product.description && product.description.toLowerCase().includes(searchLower)) ||
-      product.category.toLowerCase().includes(searchLower) ||
-      (product.brand && product.brand.toLowerCase().includes(searchLower)) ||
-      (product.color && product.color.toLowerCase().includes(searchLower)) ||
-      (product.tags && product.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+      product.category.toLowerCase().includes(searchLower)
     );
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;

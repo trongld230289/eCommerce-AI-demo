@@ -10,12 +10,7 @@ export interface Product {
   imageUrl: string;
   category: string;
   description?: string;
-  brand?: string;
-  tags?: string[];
-  color?: string;
-  size?: string;
   rating?: number;
-  isNew?: boolean;
   discount?: number;
 }
 
@@ -180,7 +175,7 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
       eventTrackingService.trackAddToCart(currentUser.uid, product.id.toString(), {
         product_name: product.name,
         product_category: product.category,
-        product_brand: product.brand,
+        product_brand: 'Unknown',
         product_price: product.price,
       }).catch(error => {
         console.error('Failed to track add to cart event:', error);
@@ -199,7 +194,7 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
       eventTrackingService.trackRemoveFromCart(currentUser.uid, productId.toString(), {
         product_name: product.name,
         product_category: product.category,
-        product_brand: product.brand,
+        product_brand: 'Unknown',
         product_price: product.price,
       }).catch(error => {
         console.error('Failed to track remove from cart event:', error);
@@ -227,7 +222,7 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
       eventTrackingService.trackAddToWishlist(currentUser.uid, product.id.toString(), {
         product_name: product.name,
         product_category: product.category,
-        product_brand: product.brand,
+        product_brand: 'Unknown',
         product_price: product.price,
       }).catch(error => {
         console.error('Failed to track add to wishlist event:', error);
@@ -246,7 +241,7 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
       eventTrackingService.trackRemoveFromWishlist(currentUser.uid, productId.toString(), {
         product_name: product.name,
         product_category: product.category,
-        product_brand: product.brand,
+        product_brand: 'Unknown',
         product_price: product.price,
       }).catch(error => {
         console.error('Failed to track remove from wishlist event:', error);

@@ -4,6 +4,7 @@ from typing import Optional, List
 from models import Product, ProductCreate, ProductUpdate, SearchFilters, ApiResponse, ChatbotRequest, ChatbotResponse, SmartSearchRequest, SmartSearchResponse, Wishlist, WishlistCreate, WishlistAddProduct
 from product_service import product_service
 from services.wishlist_service import wishlist_service
+from routers.ai_router import router as ai_router
 import uvicorn
 import httpx
 import json
@@ -29,6 +30,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include AI router
+app.include_router(ai_router, prefix="/api", tags=["AI"])
 
 @app.get("/")
 async def root():
@@ -364,7 +368,7 @@ async def get_user_recommendations_from_system(user_id, limit=5):
     """Get recommendations from recommendation system"""
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{RECOMMENDATION_API_URL}/api/recommendations/{user_id}?limit={limit}")
+            response = await client.get(f"{RECOMMENDATION_API_URL}/recommendations/{user_id}?limit={limit}")
             if response.status_code == 200:
                 data = response.json()
                 return data.get("recommendations", [])

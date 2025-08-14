@@ -3,14 +3,53 @@ from firebase_config import get_firestore_db
 from models import Product, ProductCreate, ProductUpdate, SearchFilters
 from google.cloud.firestore_v1.base_query import FieldFilter
 import time
+import threading
+from datetime import datetime, timedelta
 
 class ProductService:
     def __init__(self):
         self.db = get_firestore_db()
         self.collection_name = 'products'
         
+        # Cache management
+        self._cache = {}
+        self._cache_expiry = {}
+        self._cache_lock = threading.Lock()
+        self.cache_duration = 300  # 5 minutes
+        
         if self.db is None:
-            raise Exception("Firebase connection failed. Please check your configuration.")
+            raise ConnectionError("Firebase connection failed. Please check your configuration.")
+    
+    def _is_cache_valid(self, key: str) -> bool:
+        """Check if cache is still valid"""
+        return (key in self._cache and 
+                key in self._cache_expiry and 
+                datetime.now() < self._cache_expiry[key])
+    
+    def _set_cache(self, key: str, data: Any) -> None:
+        """Set cache with expiry"""
+        with self._cache_lock:
+            self._cache[key] = data
+            self._cache_expiry[key] = datetime.now() + timedelta(seconds=self.cache_duration)
+    
+    def _get_cache(self, key: str) -> Optional[Any]:
+        """Get from cache if valid"""
+        with self._cache_lock:
+            if self._is_cache_valid(key):
+                return self._cache[key]
+            # Clean expired cache
+            if key in self._cache:
+                del self._cache[key]
+                del self._cache_expiry[key]
+            return None
+    
+    def _clear_products_cache(self) -> None:
+        """Clear products-related cache"""
+        with self._cache_lock:
+            keys_to_remove = [k for k in self._cache.keys() if k.startswith('products_')]
+            for key in keys_to_remove:
+                del self._cache[key]
+                del self._cache_expiry[key]
     
     def create_product(self, product_data: ProductCreate) -> Dict[str, Any]:
         """Create a new product"""

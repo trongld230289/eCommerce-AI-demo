@@ -1,17 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMicrophone, faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
-import { useAuth } from '../../contexts/AuthContext';
-import { chatbotService } from '../../services/chatbotService';
+import { faMicrophone, faStop, faUpload, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { aiService } from '../../services/aiService';
 import { Product } from '../../contexts/ShopContext';
 import './Chatbot.css';
-
-// Add type declarations for Web Speech API
-interface Window {
-  SpeechRecognition: any;
-  webkitSpeechRecognition: any;
-}
 
 interface Message {
   id: number;
@@ -27,7 +20,6 @@ interface ChatbotProps {
 }
 
 const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
-  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -39,41 +31,212 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
   const [lastSearchResults, setLastSearchResults] = useState<Product[]>([]);
   const [lastSearchQuery, setLastSearchQuery] = useState<string>('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [showVoiceOptions, setShowVoiceOptions] = useState(false);
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize speech recognition
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = 'en-US';
-
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputValue(transcript);
-        setIsListening(false);
-      };
-
-      recognitionInstance.onerror = () => {
-        setIsListening(false);
-      };
-
-      recognitionInstance.onend = () => {
-        setIsListening(false);
-      };
-
-      setRecognition(recognitionInstance);
-    }
-  }, []);
+  useEffect(() => {}, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // ---- FIX: pick best MIME per browser; don't force-convert on client
+  const chooseMime = (): string => {
+    if (typeof MediaRecorder !== 'undefined') {
+      if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) return "audio/webm;codecs=opus"; // Chrome/Edge
+      if (MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm";
+      if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4"; // Safari/iOS
+      if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) return "audio/ogg;codecs=opus"; // Firefox
+    }
+    return ""; // let browser decide
+  };
+
+  // ---- Voice recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = chooseMime();
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
+
+      recorder.onstop = async () => {
+        setIsRecording(false);
+        stream.getTracks().forEach(track => track.stop());
+
+        // FIX: keep original format, set correct extension based on actual MIME
+        const blobType = recorder.mimeType || chunks[0]?.type || "audio/webm";
+        const ext = blobType.includes("mp4") ? "m4a"
+                 : blobType.includes("webm") ? "webm"
+                 : blobType.includes("ogg") ? "ogg"
+                 : blobType.includes("mpeg") ? "mp3"
+                 : blobType.includes("wav") ? "wav"
+                 : "webm";
+
+        const audioBlob = new Blob(chunks, { type: blobType });
+        const file = new File([audioBlob], `recording.${ext}`, { type: blobType });
+
+        await processVoiceSearch(file); // send original file; no client-side WAV conversion
+      };
+
+      setMediaRecorder(recorder);
+      recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      addMessage('Sorry, I couldn\'t access your microphone. Please check your browser permissions.', false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+    }
+  };
+
+  // ---- FIX: simplified; send original file/blob as-is; field name = 'file'
+  const processVoiceSearch = async (fileOrBlob: File | Blob) => {
+    setIsTyping(true);
+    setIsProcessingVoice(true);
+    try {
+      let file: File;
+      if (fileOrBlob instanceof File) {
+        file = fileOrBlob;
+      } else {
+        const type = fileOrBlob.type || "audio/webm";
+        const ext = type.includes("mp4") ? "m4a"
+                 : type.includes("webm") ? "webm"
+                 : type.includes("ogg") ? "ogg"
+                 : type.includes("mpeg") ? "mp3"
+                 : type.includes("wav") ? "wav"
+                 : "webm";
+        file = new File([fileOrBlob], `recording.${ext}`, { type });
+      }
+
+      const formData = new FormData();
+      formData.append('audio', file);            // <--- IMPORTANT: 'audio' to match backend
+      formData.append('language', 'vi');        // optional but helpful
+
+      const response = await fetch('http://localhost:8000/api/ai/search-by-voice', {
+        method: 'POST',
+        body: formData
+      });
+
+      const voiceResponse = await response.json();
+      console.log('Voice search response:', voiceResponse);
+
+      if (voiceResponse.status === 'success') {
+        if (voiceResponse.transcribed_text) {
+          const transcriptMessage: Message = {
+            id: Date.now(),
+            text: `🎤 "${voiceResponse.transcribed_text}"`,
+            isUser: true,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, transcriptMessage]);
+        }
+
+        if (voiceResponse.products && voiceResponse.products.length > 0) {
+          const products = voiceResponse.products.map((product: any) => ({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            original_price: product.original_price,
+            category: product.category,
+            imageUrl: product.imageUrl || product.image_url,
+            description: product.description
+          }));
+
+          setLastSearchResults(products);
+          setLastSearchQuery(voiceResponse.transcribed_text || '');
+
+          let responseText = `🎤 Voice search completed! I found ${voiceResponse.total_results} products`;
+          if (voiceResponse.transcribed_text) {
+            responseText += ` for "${voiceResponse.transcribed_text}"`;
+          }
+          responseText += '.\n\nHere are the top results:';
+
+          const voiceSearchMessage: Message = {
+            id: Date.now() + 1,
+            text: responseText,
+            isUser: false,
+            timestamp: new Date(),
+            products: products.slice(0, 3)
+          };
+
+          setMessages(prev => [...prev, voiceSearchMessage]);
+
+          if (products.length > 3) {
+            setTimeout(() => {
+              const showAllMessage: Message = {
+                id: Date.now() + 2,
+                text: `Would you like to see all ${products.length} results on the products page?`,
+                isUser: false,
+                timestamp: new Date()
+              };
+              setMessages(prev => [...prev, showAllMessage]);
+            }, 1000);
+          }
+        } else {
+          addMessage('🎤 I heard you, but couldn\'t find any products matching your voice search. Please try again.', false);
+        }
+      } else {
+        addMessage('🎤 Sorry, I had trouble processing your voice search. Please try again.', false);
+      }
+    } catch (error) {
+      console.error('Voice search error:', error);
+      let errorMessage = '🎤 There was an error processing your voice search. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = '🎤 Network error. Please check your connection and try again.';
+        } else if (error.message.includes('format') || error.message.includes('file')) {
+          errorMessage = '🎤 Audio format error. Your browser might not be compatible with voice recording.';
+        } else if (error.message.includes('permission') || error.message.includes('microphone')) {
+          errorMessage = '🎤 Microphone permission denied. Please allow microphone access and try again.';
+        }
+      }
+      addMessage(errorMessage, false);
+    } finally {
+      setIsTyping(false);
+      setIsProcessingVoice(false);
+    }
+  };
+
+  // ---- Upload: keep original file; don't rename to .wav
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('audio/')) {
+        if (file.size <= 25 * 1024 * 1024) { // 25MB limit
+          processVoiceSearch(file);
+        } else {
+          addMessage('Audio file is too large. Please upload a file smaller than 25MB.', false);
+        }
+      } else {
+        addMessage('Please upload an audio file (webm, m4a, mp3, ogg, wav, flac).', false);
+      }
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const addMessage = (text: string, isUser: boolean, products?: Product[]) => {
+    const message: Message = {
+      id: Date.now(),
+      text,
+      isUser,
+      timestamp: new Date(),
+      products
+    };
+    setMessages(prev => [...prev, message]);
   };
 
   useEffect(() => {
@@ -86,7 +249,6 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     } else {
       document.body.classList.remove('chatbot-open');
     }
-
     return () => {
       document.body.classList.remove('chatbot-open');
     };
@@ -109,14 +271,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     setIsTyping(true);
 
     try {
-      // Check if user is asking to see all results from previous search
       const isShowAllRequest = (inputValue.toLowerCase().includes('show all') || 
                                inputValue.toLowerCase().includes('see all') ||
                                inputValue.toLowerCase().includes('view all') ||
                                (inputValue.toLowerCase().includes('yes') && lastSearchResults.length > 0));
       
       if (isShowAllRequest && lastSearchResults.length > 0) {
-        // Create search URL with the last query
         const searchParams = new URLSearchParams();
         searchParams.append('q', lastSearchQuery);
         searchParams.append('chatbot', 'true');
@@ -137,79 +297,68 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         return;
       }
 
-      // Call the backend chatbot API
-      const response = await chatbotService.sendMessage({
-        message: messageText,
-        user_id: currentUser?.uid
+      const aiResponse = await aiService.searchProducts({
+        query: messageText,
+        limit: 10
       });
 
-      console.log('Chatbot response received:', response);
-      console.log('Products in response:', response.products);
-      console.log('Smart search used:', response.smart_search_used);
+      console.log('AI search response:', aiResponse);
 
-      // Handle smart search responses differently
-      if (response.smart_search_used && response.products && response.products.length > 0) {
-        // Store search results for potential "show all" request
-        setLastSearchResults(response.products);
+      if (aiResponse.status === 'success' && aiResponse.products && aiResponse.products.length > 0) {
+        const products = aiService.convertToProducts(aiResponse.products);
+        setLastSearchResults(products);
         setLastSearchQuery(messageText);
         
-        // Smart search found products - show them in chatbot first
-        const smartSearchMessage: Message = {
+        let responseText = `I found ${aiResponse.total_results} products for "${messageText}".`;
+        if (aiResponse.search_intent) {
+          const intent = aiResponse.search_intent;
+          const appliedFilters: string[] = [];
+          if (intent.filters.category) appliedFilters.push(`Category: ${intent.filters.category}`);
+          if (intent.filters.min_price || intent.filters.max_price) {
+            const priceRange: string[] = [];
+            if (intent.filters.min_price) priceRange.push(`min $${intent.filters.min_price}`);
+            if (intent.filters.max_price) priceRange.push(`max $${intent.filters.max_price}`);
+            appliedFilters.push(`Price: ${priceRange.join(', ')}`);
+          }
+          if (intent.filters.min_rating) appliedFilters.push(`Min rating: ${intent.filters.min_rating} stars`);
+          if (intent.filters.min_discount) appliedFilters.push(`Min discount: ${intent.filters.min_discount}%`);
+          if (appliedFilters.length > 0) responseText += `\n\nI detected these filters: ${appliedFilters.join(', ')}`;
+        }
+        responseText += `\n\nHere are the top results:`;
+        
+        const aiSearchMessage: Message = {
           id: Date.now() + 1,
-          text: response.response + `\n\nFilters detected: ${JSON.stringify(response.parsed_filters || {})}`,
+          text: responseText,
           isUser: false,
           timestamp: new Date(),
-          products: response.products.slice(0, 3) // Show top 3 products in chat
+          products: products.slice(0, 3)
         };
         
-        setMessages(prev => [...prev, smartSearchMessage]);
+        setMessages(prev => [...prev, aiSearchMessage]);
 
-        // If there are many results, offer to show all
-        if (response.products.length > 3) {
+        if (products.length > 3) {
           setTimeout(() => {
             const moreResultsMessage: Message = {
               id: Date.now() + 2,
-              text: `I found ${response.products?.length} total results. Would you like me to show you all of them on the products page?`,
+              text: `I found ${products.length} total results. Would you like me to show you all of them on the products page?`,
               isUser: false,
               timestamp: new Date()
             };
             setMessages(prev => [...prev, moreResultsMessage]);
           }, 1000);
         }
-      }
-      // Check if we should redirect to search page (traditional behavior)
-      else if (response.redirect_url && response.redirect_url !== '') {
-        // Add a message about redirecting
-        const redirectMessage: Message = {
-          id: Date.now() + 1,
-          text: `${response.response}\n\nRedirecting you to the search page to show all results...`,
-          isUser: false,
-          timestamp: new Date(),
-          products: response.products?.slice(0, 2) // Show just a preview
-        };
-        
-        setMessages(prev => [...prev, redirectMessage]);
-        
-        // Close chatbot and redirect after a short delay
-        setTimeout(() => {
-          // onClose();
-          navigate(response.redirect_url!);
-        }, 2000);
       } else {
-        // Normal chatbot response
+        const errorMessage = aiResponse.message || 'I couldn\'t find any products matching your request. Could you try rephrasing your search?';
         const botResponse: Message = {
           id: Date.now() + 1,
-          text: response.response,
+          text: errorMessage,
           isUser: false,
-          timestamp: new Date(),
-          products: response.products
+          timestamp: new Date()
         };
-
         setMessages(prev => [...prev, botResponse]);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      // Fallback to local response
+      console.error('Error with AI search:', error);
       const botResponse: Message = {
         id: Date.now() + 1,
         text: getBotResponse(messageText),
@@ -222,24 +371,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     }
   };
 
-  const toggleVoiceRecording = () => {
-    if (!recognition) {
-      alert('Speech recognition is not supported in your browser.');
-      return;
-    }
-
-    if (isListening) {
-      recognition.stop();
-      setIsListening(false);
-    } else {
-      recognition.start();
-      setIsListening(true);
-    }
-  };
-
   const getBotResponse = (userInput: string): string => {
     const input = userInput.toLowerCase();
-    
     if (input.includes('help') || input.includes('support')) {
       return "I'm here to help! You can ask me about our products, shipping, returns, or any other questions you have.";
     } else if (input.includes('product') || input.includes('laptop') || input.includes('phone')) {
@@ -294,8 +427,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
               <div className="chatbot-message-content">
                 {message.text}
               </div>
-              
-              {/* Render products if available */}
+
               {message.products && message.products.length > 0 && (
                 <div className="chatbot-products">
                   <div className="chatbot-products-grid">
@@ -305,7 +437,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                           <img src={product.imageUrl} alt={product.name} className="chatbot-product-image" />
                           <div className="chatbot-product-info">
                             <h4 className="chatbot-product-name">{product.name}</h4>
-                            <p className="chatbot-product-brand">{product.brand}</p>
+                            <p className="chatbot-product-category">{product.category}</p>
                             <p className="chatbot-product-price">
                               ${product.price}
                               {product.original_price && (
@@ -326,46 +458,109 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                   )}
                 </div>
               )}
-              
+
               <div className="chatbot-message-time">
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
           ))}
-          
+
           {isTyping && (
             <div className="chatbot-message bot">
               <div className="chatbot-message-content">
-                <div className="chatbot-typing">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
+                {isProcessingVoice ? (
+                  <div className="chatbot-voice-processing">
+                    🎤 Processing your voice search...
+                    <div className="chatbot-typing">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="chatbot-typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                )}
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
+        {showVoiceOptions && (
+          <div className="chatbot-voice-options">
+            <div className="voice-options-header">
+              <h4>Voice Search Options</h4>
+              <button 
+                onClick={() => setShowVoiceOptions(false)}
+                className="voice-options-close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="voice-options-content">
+              <div className="voice-option">
+                <button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  className={`voice-record-btn ${isRecording ? 'recording' : ''} ${isProcessingVoice ? 'processing' : ''}`}
+                  disabled={isProcessingVoice}
+                >
+                  <FontAwesomeIcon 
+                    icon={isProcessingVoice ? faSpinner : (isRecording ? faStop : faMicrophone)} 
+                    spin={isProcessingVoice}
+                  />
+                  {isProcessingVoice ? 'Processing...' : (isRecording ? 'Stop Recording' : 'Start Recording')}
+                </button>
+                {isRecording && (
+                  <div className="recording-indicator">
+                    <div className="recording-pulse"></div>
+                    🎤 Recording... (click Stop to finish)
+                  </div>
+                )}
+              </div>
+
+              <div className="voice-option-divider">OR</div>
+
+              <div className="voice-option">
+                <label htmlFor="audio-upload" className="voice-upload-btn">
+                  <FontAwesomeIcon icon={faUpload} />
+                  Upload Audio File
+                </label>
+                <input
+                  id="audio-upload"
+                  type="file"
+                  accept="audio/*,.webm,.m4a,.mp3,.ogg,.wav,.flac"  // FIX: include common formats
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                  ref={fileInputRef}
+                />
+                <small className="voice-upload-note">
+                  Supports: WEBM, M4A/MP4, MP3, OGG, WAV, FLAC (max 25MB)
+                </small>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form className="chatbot-input-form" onSubmit={sendMessage}>
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={isListening ? "Listening..." : "Type your message..."}
+            placeholder="Type your message..."
             className="chatbot-input"
             maxLength={500}
           />
           <button 
             type="button" 
-            className={`chatbot-voice-btn ${isListening ? 'listening' : ''}`}
-            onClick={toggleVoiceRecording}
-            title={isListening ? "Stop recording" : "Start voice recording"}
+            className={`chatbot-voice-btn ${showVoiceOptions ? 'active' : ''}`}
+            onClick={() => setShowVoiceOptions(!showVoiceOptions)}
+            title="Voice search options"
           >
-            <FontAwesomeIcon 
-              icon={isListening ? faMicrophoneSlash : faMicrophone} 
-              className={isListening ? 'recording' : ''}
-            />
+            <FontAwesomeIcon icon={faMicrophone} />
           </button>
           <button type="submit" className="chatbot-send-btn" disabled={!inputValue.trim()}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

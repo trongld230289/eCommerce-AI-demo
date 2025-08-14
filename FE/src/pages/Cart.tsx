@@ -440,7 +440,7 @@ const Cart = () => {
                         <p style={{
                           fontSize: '0.875rem',
                           color: '#6b7280'
-                        }}>{item.brand || 'Unknown Brand'}</p>
+                        }}>{item.category || 'Unknown Category'}</p>
                       </div>
                     </div>
                   </td>
