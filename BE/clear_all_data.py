@@ -142,6 +142,88 @@ class BackendDataCleaner:
             print(f"❌ Error clearing Firebase events: {e}")
             return False
 
+    def clear_firebase_wishlists(self) -> bool:
+        """Clear all wishlists from Firebase Firestore"""
+        if not self.firebase_config or not self.firebase_config.db:
+            print("❌ Firebase not available, skipping wishlists cleanup")
+            return False
+        
+        try:
+            print("🧹 Clearing Firebase wishlists...")
+            wishlists_ref = self.firebase_config.db.collection('wishlists')
+            
+            # Get all wishlists
+            wishlists = wishlists_ref.stream()
+            count = 0
+            
+            # Delete wishlists in batches
+            batch = self.firebase_config.db.batch()
+            batch_count = 0
+            
+            for wishlist in wishlists:
+                batch.delete(wishlist.reference)
+                batch_count += 1
+                count += 1
+                
+                # Commit batch every 500 items (Firestore limit)
+                if batch_count >= 500:
+                    batch.commit()
+                    batch = self.firebase_config.db.batch()
+                    batch_count = 0
+                    print(f"   Deleted {count} wishlists so far...")
+            
+            # Commit remaining items
+            if batch_count > 0:
+                batch.commit()
+            
+            print(f"✅ Cleared {count} wishlists from Firebase")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error clearing Firebase wishlists: {e}")
+            return False
+
+    def clear_firebase_user_events(self) -> bool:
+        """Clear all user_events from Firebase Firestore"""
+        if not self.firebase_config or not self.firebase_config.db:
+            print("❌ Firebase not available, skipping user_events cleanup")
+            return False
+        
+        try:
+            print("🧹 Clearing Firebase user_events...")
+            user_events_ref = self.firebase_config.db.collection('user_events')
+            
+            # Get all user_events
+            user_events = user_events_ref.stream()
+            count = 0
+            
+            # Delete user_events in batches
+            batch = self.firebase_config.db.batch()
+            batch_count = 0
+            
+            for user_event in user_events:
+                batch.delete(user_event.reference)
+                batch_count += 1
+                count += 1
+                
+                # Commit batch every 500 items (Firestore limit)
+                if batch_count >= 500:
+                    batch.commit()
+                    batch = self.firebase_config.db.batch()
+                    batch_count = 0
+                    print(f"   Deleted {count} user_events so far...")
+            
+            # Commit remaining items
+            if batch_count > 0:
+                batch.commit()
+            
+            print(f"✅ Cleared {count} user_events from Firebase")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error clearing Firebase user_events: {e}")
+            return False
+
     def clear_cache_files(self) -> bool:
         """Clear cache files and directories"""
         try:
@@ -184,11 +266,13 @@ class BackendDataCleaner:
         verification = {
             'firebase_products': 0,
             'firebase_events': 0,
+            'firebase_wishlists': 0,
+            'firebase_user_events': 0,
             'cache_cleared': False
         }
         
         try:
-            # Check Firebase products
+            # Check Firebase collections
             if self.firebase_config and self.firebase_config.db:
                 try:
                     products = list(self.firebase_config.db.collection('products').limit(1).stream())
@@ -196,10 +280,21 @@ class BackendDataCleaner:
                 except Exception:
                     pass
                 
-                # Check Firebase events
                 try:
                     events = list(self.firebase_config.db.collection('events').limit(1).stream())
                     verification['firebase_events'] = len(events)
+                except Exception:
+                    pass
+                
+                try:
+                    wishlists = list(self.firebase_config.db.collection('wishlists').limit(1).stream())
+                    verification['firebase_wishlists'] = len(wishlists)
+                except Exception:
+                    pass
+                
+                try:
+                    user_events = list(self.firebase_config.db.collection('user_events').limit(1).stream())
+                    verification['firebase_user_events'] = len(user_events)
                 except Exception:
                     pass
             
@@ -226,6 +321,10 @@ class BackendDataCleaner:
             success = False
         if not self.clear_firebase_events():
             success = False
+        if not self.clear_firebase_wishlists():
+            success = False
+        if not self.clear_firebase_user_events():
+            success = False
         
         # Clear cache files
         print("\n💾 Clearing cache files...")
@@ -243,7 +342,9 @@ class BackendDataCleaner:
         results = self.verify_cleanup()
         print(f"📊 Firebase products remaining: {results['firebase_products']}")
         print(f"📊 Firebase events remaining: {results['firebase_events']}")
-        print(f"💾 Cache cleared: {results['cache_cleared']}")
+        print(f"� Firebase wishlists remaining: {results['firebase_wishlists']}")
+        print(f"📊 Firebase user_events remaining: {results['firebase_user_events']}")
+        print(f"�💾 Cache cleared: {results['cache_cleared']}")
         
         return success
 
@@ -255,6 +356,8 @@ def main():
     print("This will clear:")
     print("• All products from Firebase Firestore")
     print("• All events from Firebase Firestore")
+    print("• All wishlists from Firebase Firestore")
+    print("• All user_events from Firebase Firestore")
     print("• Cache files and directories")
     print("\n⚠️  WARNING: This action cannot be undone!")
     

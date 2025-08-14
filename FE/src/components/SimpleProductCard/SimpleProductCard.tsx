@@ -174,9 +174,9 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
         </Link>
         
         {/* Product Badges */}
-        {product.isNew && (
+        {product.discount && product.discount > 0 && (
           <span style={{...styles.productBadge, ...styles.productBadgeNew}}>
-            NEW
+            -{product.discount}%
           </span>
         )}
         

@@ -1,15 +1,13 @@
 export interface Product {
-  id: string;
+  id: number;
   name: string;
-  description: string;
   price: number;
-  image: string;
+  original_price?: number;
+  imageUrl: string;
   category: string;
-  brand?: string;
-  inStock: boolean;
-  stock: number;
-  rating: number;
-  reviews: number;
+  description?: string;
+  rating?: number;
+  discount?: number;
 }
 
 export interface CartItem {
