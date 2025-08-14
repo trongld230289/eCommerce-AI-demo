@@ -3,7 +3,7 @@ import { Product } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 
 // API endpoints
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 interface RecommendationResponse {
   recommendations?: Product[];
@@ -17,7 +17,7 @@ interface RecommendationResponse {
 interface UserEvent {
   user_id: string;
   event_type: 'view' | 'add_to_cart' | 'remove_from_cart' | 'add_to_wishlist' | 'remove_from_wishlist' | 'purchase';
-  product_id: string | number;
+  product_id: number; // Changed from string | number to number
   session_id?: string;
   metadata?: Record<string, any>;
 }
@@ -136,7 +136,7 @@ export function useRecommendations(limit: number = 10) {
       const eventData: UserEvent = {
         user_id: currentUser.uid,
         event_type: eventType,
-        product_id: productId,
+        product_id: typeof productId === 'string' ? parseInt(productId) : productId, // Convert to number
         session_id: `session_${Date.now()}`,
         metadata: {
           timestamp: new Date().toISOString(),
