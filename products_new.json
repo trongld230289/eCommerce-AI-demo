@@ -1,0 +1,112 @@
+[
+  {
+    "id": 1,
+    "name": "RGB Gaming Mouse",
+    "price": 49.99,
+    "original_price": 69.99,
+    "imageUrl": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500",
+    "category": "Electronics",
+    "description": "Professional gaming mouse with RGB lighting and precision sensor",
+    "rating": 4.4,
+    "discount": 20
+  },
+  {
+    "id": 2,
+    "name": "Wireless Headphones",
+    "price": 129.99,
+    "original_price": 159.99,
+    "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
+    "category": "Electronics",
+    "description": "High-quality wireless headphones with noise cancellation",
+    "rating": 4.6,
+    "discount": 19
+  },
+  {
+    "id": 3,
+    "name": "Mechanical Keyboard",
+    "price": 89.99,
+    "original_price": 119.99,
+    "imageUrl": "https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=500",
+    "category": "Electronics",
+    "description": "Mechanical gaming keyboard with backlit keys",
+    "rating": 4.3,
+    "discount": 25
+  },
+  {
+    "id": 4,
+    "name": "Smartphone",
+    "price": 699.99,
+    "original_price": 799.99,
+    "imageUrl": "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=500",
+    "category": "Electronics",
+    "description": "Latest smartphone with advanced camera system",
+    "rating": 4.7,
+    "discount": 13
+  },
+  {
+    "id": 5,
+    "name": "Running Shoes",
+    "price": 79.99,
+    "original_price": 99.99,
+    "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500",
+    "category": "Sports",
+    "description": "Comfortable running shoes for daily training",
+    "rating": 4.2,
+    "discount": 20
+  },
+  {
+    "id": 6,
+    "name": "Coffee Maker",
+    "price": 159.99,
+    "original_price": 199.99,
+    "imageUrl": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500",
+    "category": "Home",
+    "description": "Automatic coffee maker with programmable settings",
+    "rating": 4.1,
+    "discount": 20
+  },
+  {
+    "id": 7,
+    "name": "Desk Lamp",
+    "price": 39.99,
+    "original_price": 59.99,
+    "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500",
+    "category": "Home",
+    "description": "LED desk lamp with adjustable brightness",
+    "rating": 4.0,
+    "discount": 33
+  },
+  {
+    "id": 8,
+    "name": "Backpack",
+    "price": 49.99,
+    "original_price": 69.99,
+    "imageUrl": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500",
+    "category": "Fashion",
+    "description": "Waterproof backpack for outdoor activities",
+    "rating": 4.3,
+    "discount": 29
+  },
+  {
+    "id": 9,
+    "name": "Fitness Tracker",
+    "price": 99.99,
+    "original_price": 129.99,
+    "imageUrl": "https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=500",
+    "category": "Electronics",
+    "description": "Advanced fitness tracker with heart rate monitoring",
+    "rating": 4.5,
+    "discount": 23
+  },
+  {
+    "id": 10,
+    "name": "Water Bottle",
+    "price": 19.99,
+    "original_price": 29.99,
+    "imageUrl": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500",
+    "category": "Sports",
+    "description": "Insulated water bottle for hot and cold beverages",
+    "rating": 4.2,
+    "discount": 33
+  }
+]
