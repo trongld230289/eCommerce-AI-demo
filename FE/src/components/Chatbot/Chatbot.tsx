@@ -277,21 +277,21 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                                (inputValue.toLowerCase().includes('yes') && lastSearchResults.length > 0));
       
       if (isShowAllRequest && lastSearchResults.length > 0) {
-        const searchParams = new URLSearchParams();
-        searchParams.append('q', lastSearchQuery);
-        searchParams.append('chatbot', 'true');
-        
         const showAllMessage: Message = {
           id: Date.now() + 1,
-          text: `Perfect! I'll show you all ${lastSearchResults.length} results on the products page.`,
+          text: `Perfect! I'll show you all ${lastSearchResults.length} results on the search results page.`,
           isUser: false,
           timestamp: new Date()
         };
         
         setMessages(prev => [...prev, showAllMessage]);
         
+        // Store search results in sessionStorage for the SearchResult page
+        sessionStorage.setItem('chatbotSearchResults', JSON.stringify(lastSearchResults));
+        sessionStorage.setItem('chatbotSearchQuery', lastSearchQuery);
+        
         setTimeout(() => {
-          navigate(`/products?${searchParams.toString()}`);
+          navigate('/search-results');
         }, 1500);
         
         return;
@@ -433,7 +433,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                   <div className="chatbot-products-grid">
                     {message.products.slice(0, 3).map((product) => (
                       <div key={product.id} className="chatbot-product-item">
-                        <div className="chatbot-product-card">
+                        <div 
+                          className="chatbot-product-card"
+                          onClick={() => navigate(`/product/${product.id}`)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <img src={product.imageUrl} alt={product.name} className="chatbot-product-image" />
                           <div className="chatbot-product-info">
                             <h4 className="chatbot-product-name">{product.name}</h4>
@@ -453,7 +457,29 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                   </div>
                   {message.products.length > 3 && (
                     <div className="chatbot-more-products">
-                      and {message.products.length - 3} more products...
+                      <p>Found {message.products.length} products total.</p>
+                      <button 
+                        className="chatbot-view-all-btn"
+                        onClick={() => {
+                          if (!message.products) return;
+                          console.log('🚀 View All button clicked!');
+                          console.log('📦 Storing products:', message.products.length, message.products);
+                          console.log('🔍 Last search query:', lastSearchQuery);
+                          
+                          // Store search results in sessionStorage for the SearchResult page
+                          sessionStorage.setItem('chatbotSearchResults', JSON.stringify(message.products));
+                          sessionStorage.setItem('chatbotSearchQuery', lastSearchQuery);
+                          
+                          // Verify storage
+                          const stored = sessionStorage.getItem('chatbotSearchResults');
+                          console.log('✅ Verified storage:', stored ? JSON.parse(stored).length : 'null');
+                          
+                          // Navigate to dedicated search results page
+                          navigate('/search-results');
+                        }}
+                      >
+                        View All {message.products.length} Results
+                      </button>
                     </div>
                   )}
                 </div>

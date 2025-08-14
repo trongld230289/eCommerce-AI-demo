@@ -71,8 +71,6 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({
     document.body
   ) : null;
 
-  console.log('WishlistButton render - showModal:', showModal, 'productId:', productId);
-
   return (
     <>
       <button
