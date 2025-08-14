@@ -1,6 +1,6 @@
 import React from 'react';
-import { useRecommendations } from '../hooks/useRecommendations';
-import SimpleProductCard from './SimpleProductCard';
+import useRecommendations from '../hooks/useRecommendations';
+import SimpleProductCard from './SimpleProductCard/SimpleProductCard';
 import { useShop } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -18,8 +18,8 @@ const Recommendations: React.FC<RecommendationsProps> = ({
   className = ""
 }) => {
   const { recommendations, loading, error, isPersonalized, source, trackEvent } = useRecommendations(limit);
-  const { addToCart, addToWishlist, isInWishlist } = useShop();
-  const { showSuccess, showWishlist, showWarning } = useToast();
+  const { addToCart } = useShop();
+  const { showSuccess } = useToast();
   const { currentUser } = useAuth();
 
   // Enhanced cart handler with event tracking
@@ -29,19 +29,6 @@ const Recommendations: React.FC<RecommendationsProps> = ({
     
     // Track the add_to_cart event
     await trackEvent('add_to_cart', product.id);
-  };
-
-  // Enhanced wishlist handler with event tracking
-  const handleAddToWishlist = async (product: Product) => {
-    if (isInWishlist(product.id)) {
-      showWarning(`Already in wishlist!`, `${product.name} is already in your wishlist.`);
-    } else {
-      addToWishlist(product);
-      showWishlist(`${product.name} added to wishlist!`, 'View your wishlist to see all saved items.');
-      
-      // Track the add_to_wishlist event
-      await trackEvent('add_to_wishlist', product.id);
-    }
   };
 
   // Track product view when user interacts with product card

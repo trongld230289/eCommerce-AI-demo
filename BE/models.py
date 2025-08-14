@@ -129,3 +129,64 @@ class WishlistAddProduct(BaseModel):
 
 class WishlistRemoveProduct(BaseModel):
     product_id: int
+
+# Cart Models
+class CartItem(BaseModel):
+    product_id: int
+    quantity: int
+    added_at: float
+    product_details: Optional[Product] = None
+
+class Cart(BaseModel):
+    id: str
+    user_id: str
+    items: List[CartItem] = Field(default_factory=list)
+    item_count: int = 0
+    total_amount: float = 0.0
+    created_at: float
+    updated_at: float
+
+class CartCreate(BaseModel):
+    user_id: str
+
+class CartAddItem(BaseModel):
+    product_id: int
+    quantity: int = 1
+
+class CartUpdateItem(BaseModel):
+    product_id: int
+    quantity: int
+
+class CartRemoveItem(BaseModel):
+    product_id: int
+
+# User Event Models for Recommendation System
+class UserEvent(BaseModel):
+    user_id: str
+    event_type: EventType
+    product_id: int
+    session_id: Optional[str] = None
+    timestamp: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+class UserEventCreate(BaseModel):
+    user_id: str
+    event_type: EventType
+    product_id: int
+    session_id: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+# Recommendation Models
+class RecommendationRequest(BaseModel):
+    user_id: Optional[str] = None
+    limit: int = Field(default=10, ge=1, le=50)
+    category: Optional[str] = None
+    context: Optional[str] = None  # "homepage", "product_detail", "cart", etc.
+
+class RecommendationResponse(BaseModel):
+    recommendations: List[Dict[str, Any]]
+    user_id: Optional[str] = None
+    source: str  # "personalized", "trending", "category_based", "fallback"
+    context: Optional[str] = None
+    total_count: int
+    timestamp: datetime

@@ -1,9 +1,14 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
-from models import Product, ProductCreate, ProductUpdate, SearchFilters, ApiResponse, ChatbotRequest, ChatbotResponse, SmartSearchRequest, SmartSearchResponse, Wishlist, WishlistCreate, WishlistAddProduct
+from models import (Product, ProductCreate, ProductUpdate, SearchFilters, ApiResponse, 
+                   ChatbotRequest, ChatbotResponse, SmartSearchRequest, SmartSearchResponse, 
+                   Wishlist, WishlistCreate, WishlistAddProduct, Cart, CartAddItem, CartUpdateItem, CartRemoveItem,
+                   UserEvent, UserEventCreate, RecommendationRequest, RecommendationResponse)
 from product_service import product_service
 from services.wishlist_service import wishlist_service
+from services.cart_service import cart_service
+from services.recommendation_service import recommendation_service
 from routers.ai_router import router as ai_router
 import uvicorn
 import httpx
@@ -361,33 +366,6 @@ async def smart_search_endpoint(request: SmartSearchRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error performing smart search: {str(e)}")
 
-# ---------------------- RECOMMENDATIONS ENDPOINT ----------------------
-RECOMMENDATION_API_URL = os.getenv("RECOMMENDATION_API_URL", "http://localhost:8001")
-
-async def get_user_recommendations_from_system(user_id, limit=5):
-    """Get recommendations from recommendation system"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{RECOMMENDATION_API_URL}/recommendations/{user_id}?limit={limit}")
-            if response.status_code == 200:
-                data = response.json()
-                return data.get("recommendations", [])
-            else:
-                print(f"❌ Failed to get recommendations: {response.status_code}")
-                return []
-    except Exception as e:
-        print(f"❌ Error getting recommendations: {e}")
-        return []
-
-@app.get("/recommendations")
-async def get_recommendations(user_id: str = Query(...), limit: int = Query(5, ge=1, le=20)):
-    """Get personalized recommendations for a user"""
-    try:
-        recommendations = await get_user_recommendations_from_system(user_id, limit)
-        return {"recommendations": recommendations, "user_id": user_id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching recommendations: {str(e)}")
-
 # ---------------------- WISHLIST ENDPOINTS ----------------------
 @app.get("/api/wishlist", response_model=List[Wishlist])
 async def get_wishlist(user_id: str = Query(...)):
@@ -458,6 +436,178 @@ async def delete_wishlist(wishlist_id: str, user_id: str = Query(...)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting wishlist: {str(e)}")
+
+# ---------------------- CART ENDPOINTS ----------------------
+@app.get("/api/cart", response_model=Cart)
+async def get_cart(user_id: str = Query(...)):
+    """Get cart for a user"""
+    try:
+        cart = await cart_service.get_cart(user_id)
+        return cart
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching cart: {str(e)}")
+
+@app.post("/api/cart/add", response_model=Cart)
+async def add_item_to_cart(cart_item: CartAddItem, user_id: str = Query(...)):
+    """Add item to cart"""
+    try:
+        cart = await cart_service.add_item_to_cart(user_id, cart_item)
+        return cart
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding item to cart: {str(e)}")
+
+@app.put("/api/cart/update", response_model=Cart)
+async def update_cart_item(cart_item: CartUpdateItem, user_id: str = Query(...)):
+    """Update item quantity in cart"""
+    try:
+        cart = await cart_service.update_item_quantity(user_id, cart_item)
+        return cart
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating cart item: {str(e)}")
+
+@app.delete("/api/cart/remove", response_model=Cart)
+async def remove_item_from_cart(cart_item: CartRemoveItem, user_id: str = Query(...)):
+    """Remove item from cart"""
+    try:
+        cart = await cart_service.remove_item_from_cart(user_id, cart_item)
+        return cart
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error removing item from cart: {str(e)}")
+
+@app.delete("/api/cart/clear", response_model=Cart)
+async def clear_cart(user_id: str = Query(...)):
+    """Clear all items from cart"""
+    try:
+        cart = await cart_service.clear_cart(user_id)
+        return cart
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing cart: {str(e)}")
+
+@app.post("/api/cart/sync", response_model=Cart)
+async def sync_cart(frontend_cart: List[dict], user_id: str = Query(...)):
+    """Sync cart from frontend localStorage to Firebase"""
+    try:
+        cart = await cart_service.sync_cart_from_frontend(user_id, frontend_cart)
+        return cart
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error syncing cart: {str(e)}")
+
+# ===== RECOMMENDATION SYSTEM ENDPOINTS =====
+
+@app.post("/api/recommendations/track")
+async def track_user_event(event: UserEventCreate):
+    """Track user event for recommendation system"""
+    try:
+        success = await recommendation_service.track_user_event(event)
+        if success:
+            return {"status": "success", "message": "Event tracked successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to track event")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error tracking event: {str(e)}")
+
+@app.get("/api/recommendations")
+async def get_recommendations(
+    user_id: Optional[str] = Query(None, description="User ID for personalized recommendations"),
+    limit: int = Query(10, ge=1, le=50, description="Number of recommendations to return"),
+    category: Optional[str] = Query(None, description="Category to filter recommendations"),
+    context: Optional[str] = Query(None, description="Context where recommendations are shown")
+):
+    """Get product recommendations for user or guest"""
+    try:
+        request = RecommendationRequest(
+            user_id=user_id,
+            limit=limit,
+            category=category,
+            context=context
+        )
+        
+        recommendations = await recommendation_service.get_recommendations(request)
+        
+        # Convert to simple format for frontend
+        return {
+            "recommendations": recommendations.recommendations,
+            "products": recommendations.recommendations,  # Alias for compatibility
+            "user_id": recommendations.user_id,
+            "source": recommendations.source,
+            "context": recommendations.context,
+            "count": recommendations.total_count,
+            "timestamp": recommendations.timestamp
+        }
+        
+    except Exception as e:
+        print(f"Error in get_recommendations: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching recommendations: {str(e)}")
+
+@app.get("/api/recommendations/{user_id}")
+async def get_user_recommendations(
+    user_id: str,
+    limit: int = Query(10, ge=1, le=50, description="Number of recommendations to return"),
+    category: Optional[str] = Query(None, description="Category to filter recommendations"),
+    context: Optional[str] = Query(None, description="Context where recommendations are shown")
+):
+    """Get personalized recommendations for a specific user"""
+    try:
+        request = RecommendationRequest(
+            user_id=user_id,
+            limit=limit,
+            category=category,
+            context=context
+        )
+        
+        recommendations = await recommendation_service.get_recommendations(request)
+        
+        return {
+            "recommendations": recommendations.recommendations,
+            "products": recommendations.recommendations,  # Alias for compatibility
+            "user_id": recommendations.user_id,
+            "source": recommendations.source,
+            "context": recommendations.context,
+            "count": recommendations.total_count,
+            "timestamp": recommendations.timestamp
+        }
+        
+    except Exception as e:
+        print(f"Error in get_user_recommendations: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching recommendations: {str(e)}")
+
+@app.get("/api/recommendations/trending")
+async def get_trending_products(
+    limit: int = Query(10, ge=1, le=50, description="Number of trending products to return"),
+    days_back: int = Query(7, ge=1, le=30, description="Number of days to look back for trending analysis")
+):
+    """Get trending products based on recent user activity"""
+    try:
+        trending = await recommendation_service.get_trending_recommendations(limit, days_back)
+        
+        return {
+            "products": trending,
+            "source": "trending",
+            "count": len(trending),
+            "days_analyzed": days_back
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching trending products: {str(e)}")
+
+@app.get("/api/users/{user_id}/events")
+async def get_user_events(
+    user_id: str,
+    days_back: int = Query(30, ge=1, le=90, description="Number of days to look back")
+):
+    """Get user events for analysis"""
+    try:
+        events = await recommendation_service.get_user_events(user_id, days_back)
+        
+        return {
+            "events": events,
+            "user_id": user_id,
+            "count": len(events),
+            "days_analyzed": days_back
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching user events: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
