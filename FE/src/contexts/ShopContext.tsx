@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { eventTrackingService } from '../services/eventTrackingService';
+import { cartService } from '../services/cartService';
 
 export interface Product {
   id: number;
@@ -21,6 +22,7 @@ export interface CartItem extends Product {
 interface ShopState {
   cart: CartItem[];
   wishlist: Product[];
+  isLoading: boolean;
 }
 
 type ShopAction =
@@ -30,11 +32,14 @@ type ShopAction =
   | { type: 'CLEAR_CART' }
   | { type: 'ADD_TO_WISHLIST'; payload: Product }
   | { type: 'REMOVE_FROM_WISHLIST'; payload: number }
-  | { type: 'LOAD_USER_DATA'; payload: ShopState };
+  | { type: 'LOAD_USER_DATA'; payload: ShopState }
+  | { type: 'LOAD_CART_FROM_FIREBASE'; payload: CartItem[] }
+  | { type: 'SET_LOADING'; payload: boolean };
 
 const initialState: ShopState = {
   cart: [],
-  wishlist: []
+  wishlist: [],
+  isLoading: false
 };
 
 const shopReducer = (state: ShopState, action: ShopAction): ShopState => {
@@ -97,6 +102,19 @@ const shopReducer = (state: ShopState, action: ShopAction): ShopState => {
     case 'LOAD_USER_DATA':
       return action.payload;
     
+    case 'LOAD_CART_FROM_FIREBASE':
+      return {
+        ...state,
+        cart: action.payload,
+        isLoading: false
+      };
+    
+    case 'SET_LOADING':
+      return {
+        ...state,
+        isLoading: action.payload
+      };
+    
     default:
       return state;
   }
@@ -134,44 +152,117 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const { currentUser } = useAuth();
 
-  // Load user data from localStorage when user changes
+  // Load cart from Firebase when user changes
   useEffect(() => {
-    if (currentUser) {
-      const userDataKey = `shop_data_${currentUser.uid}`;
-      const savedData = localStorage.getItem(userDataKey);
-      console.log('Loading user data for:', currentUser.uid, 'Data:', savedData);
-      if (savedData) {
+    const loadCartFromFirebase = async () => {
+      if (currentUser) {
         try {
-          const parsedData = JSON.parse(savedData);
-          console.log('Parsed data:', parsedData);
-          dispatch({ type: 'LOAD_USER_DATA', payload: parsedData });
+          dispatch({ type: 'SET_LOADING', payload: true });
+          
+          // First, try to sync any localStorage cart data to Firebase
+          const userDataKey = `shop_data_${currentUser.uid}`;
+          const savedData = localStorage.getItem(userDataKey);
+          
+          if (savedData) {
+            try {
+              const parsedData = JSON.parse(savedData);
+              if (parsedData.cart && parsedData.cart.length > 0) {
+                console.log('Syncing localStorage cart to Firebase:', parsedData.cart);
+                await cartService.syncCartFromLocalStorage(currentUser.uid, parsedData.cart);
+                // Clear localStorage after sync
+                localStorage.removeItem(userDataKey);
+              }
+            } catch (error) {
+              console.error('Error syncing localStorage cart:', error);
+            }
+          }
+          
+          // Load cart from Firebase
+          console.log('Loading cart from Firebase for user:', currentUser.uid);
+          const firebaseCart = await cartService.getCart(currentUser.uid);
+          
+          // Convert Firebase cart to frontend format
+          const cartItems: CartItem[] = firebaseCart.items.map((item: any) => ({
+            id: item.product_details.id,
+            name: item.product_details.name,
+            price: item.product_details.price,
+            original_price: item.product_details.original_price,
+            imageUrl: item.product_details.imageUrl,
+            category: item.product_details.category,
+            description: item.product_details.description,
+            rating: item.product_details.rating,
+            discount: item.product_details.discount,
+            quantity: item.quantity
+          }));
+          
+          dispatch({ type: 'LOAD_CART_FROM_FIREBASE', payload: cartItems });
+          
+          // Load wishlist from localStorage (keeping existing functionality)
+          const wishlistData = localStorage.getItem(`wishlist_${currentUser.uid}`);
+          if (wishlistData) {
+            try {
+              const parsedWishlist = JSON.parse(wishlistData);
+              dispatch({ type: 'LOAD_USER_DATA', payload: { cart: cartItems, wishlist: parsedWishlist, isLoading: false } });
+            } catch (error) {
+              console.error('Error loading wishlist:', error);
+            }
+          }
+          
+          setIsInitialized(true);
         } catch (error) {
-          console.error('Error loading user shop data:', error);
+          console.error('Error loading cart from Firebase:', error);
+          dispatch({ type: 'SET_LOADING', payload: false });
+          setIsInitialized(true);
         }
+      } else {
+        // Clear state when user logs out
+        console.log('User logged out, clearing state');
+        dispatch({ type: 'LOAD_USER_DATA', payload: initialState });
+        setIsInitialized(false);
       }
-      setIsInitialized(true);
-    } else {
-      // Clear state when user logs out
-      console.log('User logged out, clearing state');
-      dispatch({ type: 'LOAD_USER_DATA', payload: initialState });
-      setIsInitialized(false);
-    }
-  }, [currentUser]);
+    };
 
-  // Save user data to localStorage whenever state changes (but not during initial load)
+    loadCartFromFirebase();
+  }, [currentUser]); // Remove state from dependencies
+
+  // Save wishlist to localStorage whenever it changes
   useEffect(() => {
-    if (currentUser && isInitialized) {
-      const userDataKey = `shop_data_${currentUser.uid}`;
-      console.log('Saving user data for:', currentUser.uid, 'State:', state);
-      localStorage.setItem(userDataKey, JSON.stringify(state));
+    if (currentUser && isInitialized && state.wishlist) {
+      const wishlistKey = `wishlist_${currentUser.uid}`;
+      localStorage.setItem(wishlistKey, JSON.stringify(state.wishlist));
     }
-  }, [state, currentUser, isInitialized]);
+  }, [state.wishlist, currentUser, isInitialized]);
 
-  const addToCart = (product: Product) => {
-    dispatch({ type: 'ADD_TO_CART', payload: product });
-    
-    // Track add to cart event
-    if (currentUser) {
+  const addToCart = async (product: Product) => {
+    if (!currentUser) {
+      // If not logged in, use local state
+      dispatch({ type: 'ADD_TO_CART', payload: product });
+      return;
+    }
+
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      // Add to Firebase
+      const updatedCart = await cartService.addItemToCart(currentUser.uid, product.id);
+      
+      // Convert to frontend format and update state
+      const cartItems: CartItem[] = updatedCart.items.map((item: any) => ({
+        id: item.product_details.id,
+        name: item.product_details.name,
+        price: item.product_details.price,
+        original_price: item.product_details.original_price,
+        imageUrl: item.product_details.imageUrl,
+        category: item.product_details.category,
+        description: item.product_details.description,
+        rating: item.product_details.rating,
+        discount: item.product_details.discount,
+        quantity: item.quantity
+      }));
+      
+      dispatch({ type: 'LOAD_CART_FROM_FIREBASE', payload: cartItems });
+      
+      // Track add to cart event
       eventTrackingService.trackAddToCart(currentUser.uid, product.id.toString(), {
         product_name: product.name,
         product_category: product.category,
@@ -180,38 +271,127 @@ export const ShopProvider = ({ children }: ShopProviderProps) => {
       }).catch(error => {
         console.error('Failed to track add to cart event:', error);
       });
+    } catch (error) {
+      console.error('Error adding item to cart:', error);
+      dispatch({ type: 'SET_LOADING', payload: false });
+      // Fallback to local state if Firebase fails
+      dispatch({ type: 'ADD_TO_CART', payload: product });
     }
   };
 
-  const removeFromCart = (productId: number) => {
-    // Find the product before removing for event tracking
-    const product = state.cart.find(item => item.id === productId);
-    
-    dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
-    
-    // Track remove from cart event
-    if (currentUser && product) {
-      eventTrackingService.trackRemoveFromCart(currentUser.uid, productId.toString(), {
-        product_name: product.name,
-        product_category: product.category,
-        product_brand: 'Unknown',
-        product_price: product.price,
-      }).catch(error => {
-        console.error('Failed to track remove from cart event:', error);
-      });
+  const removeFromCart = async (productId: number) => {
+    if (!currentUser) {
+      // If not logged in, use local state
+      dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
+      return;
+    }
+
+    try {
+      // Find the product before removing for event tracking
+      const product = state.cart.find(item => item.id === productId);
+      
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      // Remove from Firebase
+      const updatedCart = await cartService.removeItemFromCart(currentUser.uid, productId);
+      
+      // Convert to frontend format and update state
+      const cartItems: CartItem[] = updatedCart.items.map((item: any) => ({
+        id: item.product_details.id,
+        name: item.product_details.name,
+        price: item.product_details.price,
+        original_price: item.product_details.original_price,
+        imageUrl: item.product_details.imageUrl,
+        category: item.product_details.category,
+        description: item.product_details.description,
+        rating: item.product_details.rating,
+        discount: item.product_details.discount,
+        quantity: item.quantity
+      }));
+      
+      dispatch({ type: 'LOAD_CART_FROM_FIREBASE', payload: cartItems });
+      
+      // Track remove from cart event
+      if (product) {
+        eventTrackingService.trackRemoveFromCart(currentUser.uid, productId.toString(), {
+          product_name: product.name,
+          product_category: product.category,
+          product_brand: 'Unknown',
+          product_price: product.price,
+        }).catch(error => {
+          console.error('Failed to track remove from cart event:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Error removing item from cart:', error);
+      dispatch({ type: 'SET_LOADING', payload: false });
+      // Fallback to local state if Firebase fails
+      dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
     }
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = async (productId: number, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
-    } else {
+      await removeFromCart(productId);
+      return;
+    }
+
+    if (!currentUser) {
+      // If not logged in, use local state
+      dispatch({ type: 'UPDATE_QUANTITY', payload: { id: productId, quantity } });
+      return;
+    }
+
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      // Update in Firebase
+      const updatedCart = await cartService.updateItemQuantity(currentUser.uid, productId, quantity);
+      
+      // Convert to frontend format and update state
+      const cartItems: CartItem[] = updatedCart.items.map((item: any) => ({
+        id: item.product_details.id,
+        name: item.product_details.name,
+        price: item.product_details.price,
+        original_price: item.product_details.original_price,
+        imageUrl: item.product_details.imageUrl,
+        category: item.product_details.category,
+        description: item.product_details.description,
+        rating: item.product_details.rating,
+        discount: item.product_details.discount,
+        quantity: item.quantity
+      }));
+      
+      dispatch({ type: 'LOAD_CART_FROM_FIREBASE', payload: cartItems });
+    } catch (error) {
+      console.error('Error updating cart item quantity:', error);
+      dispatch({ type: 'SET_LOADING', payload: false });
+      // Fallback to local state if Firebase fails
       dispatch({ type: 'UPDATE_QUANTITY', payload: { id: productId, quantity } });
     }
   };
 
-  const clearCart = () => {
-    dispatch({ type: 'CLEAR_CART' });
+  const clearCart = async () => {
+    if (!currentUser) {
+      // If not logged in, use local state
+      dispatch({ type: 'CLEAR_CART' });
+      return;
+    }
+
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      // Clear in Firebase
+      await cartService.clearCart(currentUser.uid);
+      
+      // Update state
+      dispatch({ type: 'LOAD_CART_FROM_FIREBASE', payload: [] });
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      dispatch({ type: 'SET_LOADING', payload: false });
+      // Fallback to local state if Firebase fails
+      dispatch({ type: 'CLEAR_CART' });
+    }
   };
 
   const addToWishlist = (product: Product) => {
