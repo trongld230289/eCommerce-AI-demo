@@ -372,6 +372,32 @@
   position: absolute;
   top: 10px;
   right: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.view-product-btn {
+  background: #2ecc71;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.view-product-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  color: white;
+  background: #27ae60;
 }
 
 .remove-item-btn {
@@ -420,6 +446,22 @@
   font-weight: bold;
   color: #e74c3c;
   margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.current-price {
+  color: #e74c3c;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.original-price {
+  color: #999;
+  font-size: 14px;
+  text-decoration: line-through;
+  font-weight: normal;
 }
 
 .item-description {
@@ -431,11 +473,18 @@
 
 .item-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-top: 15px;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.item-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .saved-date {
@@ -456,10 +505,33 @@
   font-size: 14px;
   transition: background-color 0.2s ease;
   font-family: 'Open Sans', Arial, sans-serif;
+  flex: 1;
+  justify-content: center;
 }
 
 .add-to-cart-btn:hover {
   background: #218838;
+}
+
+.buy-now-btn {
+  background: #ff6b35;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+  font-family: 'Open Sans', Arial, sans-serif;
+  flex: 1;
+  justify-content: center;
+}
+
+.buy-now-btn:hover {
+  background: #e55a2b;
 }
 
 /* Responsive Design */
@@ -517,8 +589,19 @@
   
   .item-footer {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 10px;
+  }
+  
+  .item-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .add-to-cart-btn,
+  .buy-now-btn {
+    width: 100%;
+    justify-content: center;
   }
   
   .wishlist-header h1 {

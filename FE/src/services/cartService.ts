@@ -1,5 +1,5 @@
 class CartService {
-  private baseURL = 'http://localhost:8000/api/cart';
+  private baseURL = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/cart`;
 
   private async makeRequest(url: string, options: RequestInit = {}): Promise<any> {
     try {
@@ -28,14 +28,32 @@ class CartService {
     return this.makeRequest(url);
   }
 
-  async addItemToCart(userId: string, productId: number, quantity: number = 1) {
+  async addItemToCart(userId: string, productId: number, quantity: number = 1, productDetails?: any) {
     const url = `${this.baseURL}/add?user_id=${encodeURIComponent(userId)}`;
+    
+    // If we have product details, send them, otherwise just send product_id
+    const payload = productDetails ? {
+      product_id: productId,
+      quantity: quantity,
+      product_details: {
+        id: productDetails.id || productId,
+        name: productDetails.name,
+        price: productDetails.price,
+        original_price: productDetails.original_price,
+        imageUrl: productDetails.imageUrl,
+        category: productDetails.category,
+        description: productDetails.description,
+        rating: productDetails.rating,
+        discount: productDetails.discount
+      }
+    } : {
+      product_id: productId,
+      quantity: quantity,
+    };
+    
     return this.makeRequest(url, {
       method: 'POST',
-      body: JSON.stringify({
-        product_id: productId,
-        quantity: quantity,
-      }),
+      body: JSON.stringify(payload),
     });
   }
 

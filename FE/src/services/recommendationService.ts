@@ -31,7 +31,8 @@ export interface SmartSearchResponse {
   timestamp: string;
 }
 
-const API_BASE_URL = 'http://localhost:8000';
+// API Base URL
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export const recommendationService = {
   // Get personalized recommendations from the new integrated system
