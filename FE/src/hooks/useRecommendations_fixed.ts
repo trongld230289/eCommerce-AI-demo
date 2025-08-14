@@ -22,12 +22,12 @@ interface UserEvent {
   metadata?: Record<string, any>;
 }
 
-// API functions
+// Simple recommendation service functions
 const getRecommendations = async (userId?: string, limit: number = 10): Promise<RecommendationResponse> => {
   try {
     const url = userId 
-      ? `${API_BASE_URL}/api/recommendations/${userId}?limit=${limit}&context=homepage`
-      : `${API_BASE_URL}/api/recommendations?limit=${limit}&context=homepage`;
+      ? `${API_BASE_URL}/api/recommendations/${userId}?limit=${limit}`
+      : `${API_BASE_URL}/api/recommendations?limit=${limit}`;
     
     const response = await fetch(url);
     if (!response.ok) {
@@ -42,12 +42,12 @@ const getRecommendations = async (userId?: string, limit: number = 10): Promise<
 
 const getAllProducts = async (): Promise<Product[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/products`);
+    const response = await fetch(`${API_BASE_URL}/api/products`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    return data || [];
+    return data.products || [];
   } catch (error) {
     console.error('Error fetching products:', error);
     throw error;
@@ -72,7 +72,7 @@ const trackUserEvent = async (eventData: UserEvent): Promise<boolean> => {
 };
 
 // Main hook function
-export function useRecommendations(limit: number = 10) {
+function useRecommendations(limit: number = 10) {
   const [recommendations, setRecommendations] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function useRecommendations(limit: number = 10) {
     
     try {
       const userId = currentUser?.uid;
-      console.log('🔍 Fetching recommendations for userId:', userId);
+      console.log('Fetching recommendations for userId:', userId);
       
       const result = await getRecommendations(userId, limit);
       
@@ -95,30 +95,27 @@ export function useRecommendations(limit: number = 10) {
       setRecommendations(products);
       
       // Determine if personalized based on response data
-      const personalized = Boolean(userId && result.source && ['personalized', 'category_based'].includes(result.source));
+      const personalized = Boolean(userId && result.source === 'recommendation_system');
       setIsPersonalized(personalized);
       setSource(result.source || 'unknown');
       
-      console.log('✅ Recommendations loaded:', {
+      console.log('Recommendations loaded:', {
         count: products.length,
         isPersonalized: personalized,
-        source: result.source,
-        userId: userId
+        source: result.source
       });
     } catch (err) {
-      console.error('❌ Failed to fetch recommendations:', err);
+      console.error('Failed to fetch recommendations:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch recommendations');
       
       // Fallback to get some products
       try {
-        console.log('🔄 Trying fallback products...');
         const fallbackProducts = await getAllProducts();
         setRecommendations(fallbackProducts.slice(0, limit));
         setIsPersonalized(false);
         setSource('fallback');
-        console.log('✅ Fallback products loaded:', fallbackProducts.length);
       } catch (fallbackErr) {
-        console.error('❌ Fallback also failed:', fallbackErr);
+        console.error('Fallback also failed:', fallbackErr);
       }
     } finally {
       setLoading(false);
@@ -127,10 +124,7 @@ export function useRecommendations(limit: number = 10) {
 
   // Event tracking function
   const trackEvent = useCallback(async (eventType: UserEvent['event_type'], productId: string | number): Promise<boolean> => {
-    if (!currentUser?.uid) {
-      console.log('⚠️ No user ID, skipping event tracking');
-      return false;
-    }
+    if (!currentUser?.uid) return false;
     
     try {
       const eventData: UserEvent = {
@@ -144,22 +138,17 @@ export function useRecommendations(limit: number = 10) {
         }
       };
       
-      console.log('📊 Tracking event:', eventData);
       const success = await trackUserEvent(eventData);
-      
       if (success) {
         console.log(`✅ Tracked ${eventType} event for product ${productId}`);
         // Optionally refresh recommendations after certain events
         if (eventType === 'add_to_cart' || eventType === 'add_to_wishlist') {
-          setTimeout(() => {
-            console.log('🔄 Refreshing recommendations after user action...');
-            fetchRecommendations();
-          }, 1000);
+          setTimeout(() => fetchRecommendations(), 1000);
         }
       }
       return success;
     } catch (error) {
-      console.error('❌ Error tracking user event:', error);
+      console.error('Error tracking user event:', error);
       return false;
     }
   }, [currentUser?.uid, fetchRecommendations]);
@@ -180,7 +169,7 @@ export function useRecommendations(limit: number = 10) {
 }
 
 // Alternative hook
-export function useAllProducts() {
+function useAllProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,5 +200,6 @@ export function useAllProducts() {
   };
 }
 
-// Default export
+// Export using both methods to ensure compatibility
+export { useRecommendations, useAllProducts };
 export default useRecommendations;
