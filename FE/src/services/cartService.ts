@@ -1,5 +1,5 @@
 class CartService {
-  private baseURL = 'http://localhost:8000/api/cart';
+  private baseURL = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/cart`;
 
   private async makeRequest(url: string, options: RequestInit = {}): Promise<any> {
     try {

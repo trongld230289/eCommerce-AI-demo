@@ -124,7 +124,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
       formData.append('audio', file);            // <--- IMPORTANT: 'audio' to match backend
       formData.append('language', 'vi');        // optional but helpful
 
-      const response = await fetch('http://localhost:8000/api/ai/search-by-voice', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/ai/search-by-voice`, {
         method: 'POST',
         body: formData
       });
