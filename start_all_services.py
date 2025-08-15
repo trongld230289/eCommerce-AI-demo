@@ -4,6 +4,7 @@ Start All Services Script
 =========================
 This script starts all eCommerce-AI services with one command:
 - Backend (Flask) - Port 8000
+- Whisper API (Transcription) - Port 5005
 - Frontend (React) - Port 3000  
 - Recommendation System (Flask) - Port 8001
 
@@ -38,40 +39,32 @@ class ServiceStarter:
     def start_backend(self) -> bool:
         """Start the Backend Flask service"""
         print("🚀 Starting Backend (Flask) on port 8000...")
-        
+
         be_path = os.path.join(self.project_root, "BE")
-        
         if not self.check_directory_exists(be_path):
             print(f"❌ Backend directory not found: {be_path}")
             return False
-        
+
         # Check for main files
         main_files = ["flask_server.py"]
         main_file = None
-        
         for file in main_files:
             file_path = os.path.join(be_path, file)
             if self.check_file_exists(file_path):
                 main_file = file
                 break
-        
         if not main_file:
             print(f"❌ No main file found in {be_path}")
             print(f"   Looking for: {', '.join(main_files)}")
             return False
-        
         try:
             if self.os_type == "windows":
                 cmd = f'cd /d "{be_path}" && python {main_file}'
                 process = subprocess.Popen(cmd, shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
             else:
-                process = subprocess.Popen(
-                    ["python", main_file],
-                    cwd=be_path,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE
-                )
-            
+                process = subprocess.Popen([
+                    "python", main_file
+                ], cwd=be_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self.processes.append({
                 'name': 'Backend',
                 'process': process,
@@ -79,12 +72,32 @@ class ServiceStarter:
                 'path': be_path,
                 'file': main_file
             })
-            
             print(f"✅ Backend started with {main_file}")
+            # Start transcribing service (Whisper API)
+            whisper_file = "whisper_api.py"
+            whisper_path = os.path.join(be_path, whisper_file)
+            if self.check_file_exists(whisper_path):
+                print("🚀 Starting Transcribing Service (Whisper API) on port 5005...")
+                if self.os_type == "windows":
+                    cmd = f'cd /d "{be_path}" && python {whisper_file}'
+                    whisper_proc = subprocess.Popen(cmd, shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                else:
+                    whisper_proc = subprocess.Popen([
+                        "python", whisper_file
+                    ], cwd=be_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                self.processes.append({
+                    'name': 'Transcribing Service',
+                    'process': whisper_proc,
+                    'port': 5005,
+                    'path': be_path,
+                    'file': whisper_file
+                })
+                print(f"✅ Transcribing Service started with {whisper_file}")
+            else:
+                print(f"❌ whisper_api.py not found in {be_path}")
             return True
-            
         except Exception as e:
-            print(f"❌ Failed to start Backend: {e}")
+            print(f"❌ Failed to start Backend or Transcribing Service: {e}")
             return False
     
     def start_frontend(self) -> bool:
@@ -201,6 +214,7 @@ class ServiceStarter:
         print("=" * 30)
         print("🖥️  Frontend:     http://localhost:3000")
         print("🔧 Backend:      http://localhost:8000")
+        print("🎤 Whisper API:  http://localhost:5005")
         print("🤖 Recommendations: http://localhost:8001")
         if any(s['name'] == 'AI Service' for s in self.processes):
             print("🧠 AI Service:   http://localhost:8002")
@@ -275,6 +289,7 @@ def main():
     print("=" * 40)
     print("This will start:")
     print("• Backend (Flask) - Port 8000")
+    print("• Whisper API (Transcription) - Port 5005")
     print("• Frontend (React) - Port 3000")
     print("• Recommendation System - Port 8001")
     

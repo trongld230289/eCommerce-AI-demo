@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { transcribeAudio, transcribeAudioWithTranslation } from '../../services/whisperService';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faMicrophoneSlash } from '@fortawesome/free-solid-svg-icons';
@@ -41,39 +42,93 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [lastSearchResults, setLastSearchResults] = useState<Product[]>([]);
   const [lastSearchQuery, setLastSearchQuery] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize speech recognition
+  // Hybrid: Use Web Speech API for voice activity detection, MediaRecorder for audio capture
   useEffect(() => {
+    let recorder: MediaRecorder | null = null;
+    let speechRecognition: any = null;
+    let stream: MediaStream | null = null;
+    let chunks: Blob[] = [];
+
+    const startRecording = async () => {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Use the best supported format for MediaRecorder
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      }
+      
+      recorder = new MediaRecorder(stream, { mimeType });
+      setMediaRecorder(recorder);
+      chunks = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      recorder.onstop = async () => {
+        setIsListening(false);
+        const audioBlob = new Blob(chunks, { type: mimeType });
+        setAudioChunks([]);
+        try {
+          setInputValue('...transcribing');
+          const result = await transcribeAudioWithTranslation(audioBlob);
+          
+          // Show the original Vietnamese text to user
+          setInputValue(result.displayText);
+          
+          // Send the English text to chatbot for processing
+          if (result.chatbotText && result.chatbotText.trim()) {
+            sendMessage(result.chatbotText);
+          }
+        } catch (err) {
+          setInputValue('');
+          alert('Transcription failed');
+        }
+        chunks = [];
+      };
+      recorder.start();
+      setIsListening(true);
+    };
+
+    const stopRecording = async () => {
+      if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+      setIsListening(false);
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+
+    // Setup SpeechRecognition for voice activity detection
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-      recognitionInstance.lang = 'en-US';
+      speechRecognition = new SpeechRecognition();
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+      speechRecognition.lang = 'vi-VN'; // Vietnamese
 
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputValue(transcript);
-        setIsListening(false);
-        // Automatically send the message after finishing talking
-        if (transcript && transcript.trim()) {
-          sendMessage(transcript);
-        }
+      speechRecognition.onstart = () => {
+        startRecording();
       };
-
-      recognitionInstance.onerror = () => {
-        setIsListening(false);
+      speechRecognition.onend = async () => {
+        await stopRecording();
       };
-
-      recognitionInstance.onend = () => {
-        setIsListening(false);
+      speechRecognition.onerror = async () => {
+        await stopRecording();
       };
-
-      setRecognition(recognitionInstance);
+      setRecognition(speechRecognition);
     }
+    // eslint-disable-next-line
   }, []);
 
   const scrollToBottom = () => {
@@ -232,18 +287,17 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     }
   };
 
-  const toggleVoiceRecording = () => {
+  // Start/stop voice chat naturally
+  const toggleVoiceRecording = async () => {
     if (!recognition) {
-      alert('Speech recognition is not supported in your browser.');
+      alert('Speech recognition not supported in your browser.');
       return;
     }
-
     if (isListening) {
       recognition.stop();
-      setIsListening(false);
     } else {
+      setAudioChunks([]);
       recognition.start();
-      setIsListening(true);
     }
   };
 

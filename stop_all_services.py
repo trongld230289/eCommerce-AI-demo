@@ -21,8 +21,9 @@ from typing import List, Dict, Tuple
 KNOWN_PORTS = {
     3000: "Frontend (React)",
     8000: "Backend (Flask)",
-    8001: "Recommendation System (Flask)", 
+    8001: "Recommendation System (Flask)",
     8002: "AI Service",
+    5005: "Transcribing Service (Whisper API)",
     5000: "Flask (default)",
     5173: "Vite Dev Server",
     4000: "Alternative Frontend"

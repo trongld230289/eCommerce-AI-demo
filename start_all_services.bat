@@ -24,8 +24,12 @@ if not exist "Recommendation_System" (
     exit /b 1
 )
 
+
 echo 🚀 Starting Backend (Flask) on port 8000...
-start "Backend Server" cmd /k "cd BE ; python flask_server.py"
+start "Backend Server" cmd /k "cd BE && python flask_server.py"
+
+echo 🚀 Starting Transcribing Service (Whisper API) on port 5005...
+start "Transcribing Service" cmd /k "cd BE && python whisper_api.py"
 
 echo 🚀 Starting Frontend (React) on port 3000...
 start "Frontend Server" cmd /k "cd FE ; npm start"
@@ -42,6 +46,7 @@ echo 🌐 Access URLs:
 echo   Frontend:     http://localhost:3000
 echo   Backend:      http://localhost:8000
 echo   Recommendations: http://localhost:8001
+echo   Whisper API:  http://localhost:5005
 echo.
 echo 💡 Each service runs in its own window
 echo 💡 Close the windows to stop services
