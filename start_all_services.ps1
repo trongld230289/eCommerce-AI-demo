@@ -57,8 +57,14 @@ Write-Host ""
 $services = @()
 
 # Backend
-if (Start-ServiceWindow "BE" "python app.py" "Backend (Flask)" 8000) {
+if (Start-ServiceWindow "BE" "python flask_server.py" "Backend (Flask)" 8000) {
     $services += "Backend"
+    Start-Sleep 2
+}
+
+# Whisper API Service
+if (Start-ServiceWindow "BE" "python whisper_api.py" "Whisper API (Transcription)" 5005) {
+    $services += "Whisper API"
     Start-Sleep 2
 }
 
@@ -85,6 +91,7 @@ if ($services.Count -gt 0) {
     Write-Host "  Frontend:        http://localhost:3000" -ForegroundColor White
     Write-Host "  Backend:         http://localhost:8000" -ForegroundColor White
     Write-Host "  Recommendations: http://localhost:8001" -ForegroundColor White
+    Write-Host "  Whisper API:     http://localhost:5005" -ForegroundColor White
     if ($services -contains "AI Service") {
         Write-Host "  AI Service:      http://localhost:8002" -ForegroundColor White
     }

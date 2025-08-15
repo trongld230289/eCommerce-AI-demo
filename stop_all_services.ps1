@@ -53,6 +53,7 @@ Stop-ProcessOnPort -Port 3000 -ServiceName "Frontend (React)"
 Stop-ProcessOnPort -Port 8000 -ServiceName "Backend (Flask)"
 Stop-ProcessOnPort -Port 8001 -ServiceName "Recommendation System"
 Stop-ProcessOnPort -Port 8002 -ServiceName "AI Service"
+Stop-ProcessOnPort -Port 5005 -ServiceName "Whisper API (Transcription)"
 Stop-ProcessOnPort -Port 5000 -ServiceName "Flask Default"
 Stop-ProcessOnPort -Port 5173 -ServiceName "Vite Dev Server"
 
