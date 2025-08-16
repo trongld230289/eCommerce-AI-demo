@@ -34,7 +34,7 @@ class VoiceSearchResponse(BaseModel):
     original_query_type: Optional[str] = None
     message: Optional[str] = None
 
-@router.post("/ai/embed-products", response_model=EmbedProductsResponse)
+@router.get("/ai/embed-products", response_model=EmbedProductsResponse)
 async def embed_all_products():
     """
     Embed all products in the database and store in ChromaDB.
