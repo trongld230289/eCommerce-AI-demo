@@ -5,11 +5,27 @@ import sys
 import tempfile
 import io
 from typing import List, Dict, Any, Optional
-import openai
-import chromadb
-from chromadb.config import Settings
 import numpy as np
 from dotenv import load_dotenv
+
+# Handle OpenAI import with proper error handling
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: OpenAI not available: {e}")
+    OPENAI_AVAILABLE = False
+    openai = None
+
+# Handle ChromaDB import with proper error handling
+try:
+    import chromadb
+    from chromadb.config import Settings
+    CHROMADB_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: ChromaDB not available: {e}")
+    CHROMADB_AVAILABLE = False
+    chromadb = None
 
 try:
     from pydub import AudioSegment
@@ -32,23 +48,35 @@ load_dotenv(dotenv_path=env_path)
 
 class AIService:
     def __init__(self):
-        api_key = os.getenv("OPENAI_API_KEY")
-        print(f"OpenAI API Keyaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: {api_key}")
+        # Check if required dependencies are available
+        if not CHROMADB_AVAILABLE:
+            raise ImportError("ChromaDB is required but not available. Please install with: pip install chromadb")
         
-        # Initialize OpenAI client only if API key is available
-        if api_key and api_key != "None":
+        api_key = os.getenv("OPENAI_API_KEY")
+        print(f"OpenAI API Key: {api_key[:10] if api_key else 'None'}...")
+        
+        # Initialize OpenAI client only if API key and library are available
+        if api_key and api_key != "None" and OPENAI_AVAILABLE:
             self.openai_client = openai.OpenAI(api_key=api_key)
             self.openai_available = True
         else:
-            print("Warning: OpenAI API key not found. AI features will be limited.")
+            if not OPENAI_AVAILABLE:
+                print("Warning: OpenAI library not available.")
+            else:
+                print("Warning: OpenAI API key not found.")
+            print("AI features will be limited.")
             self.openai_client = None
             self.openai_available = False
         
         # Initialize ChromaDB client
-        self.chroma_client = chromadb.PersistentClient(
-            path="./chroma_db",
-            settings=Settings(anonymized_telemetry=False)
-        )
+        try:
+            self.chroma_client = chromadb.PersistentClient(
+                path="./chroma_db",
+                settings=Settings(anonymized_telemetry=False)
+            )
+        except Exception as e:
+            print(f"Error initializing ChromaDB: {e}")
+            raise
         
         # Collection name for products
         self.collection_name = "products_embeddings"
