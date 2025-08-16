@@ -1016,7 +1016,7 @@ const Home = () => {
       </section>
       {/* Top Products Section */}
       <TopProductsThisWeek 
-        limit={6}
+        limit={8}
         onAddToCart={handleAddToCart}
       />
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Product } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
+import { productApi } from '../services/apiService';
 
 // API endpoints
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -42,12 +43,7 @@ const getRecommendations = async (userId?: string, limit: number = 10): Promise<
 
 const getAllProducts = async (): Promise<Product[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/products`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data || [];
+    return await productApi.getAllProducts();
   } catch (error) {
     console.error('Error fetching products:', error);
     throw error;
