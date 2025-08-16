@@ -249,9 +249,22 @@ class RecommendationService:
             # Strategy 3: Trending recommendations
             if not recommendations:
                 trending = await self.get_trending_recommendations(request.limit)
-                if trending:
+                if trending and len(trending) >= request.limit:
                     recommendations = trending
                     source = "trending"
+                elif trending:  # If we have some but not enough, mix with other products
+                    recommendations = trending
+                    source = "trending_mixed"
+                    
+                    # Fill remaining with top-rated products
+                    needed = request.limit - len(trending)
+                    all_products = product_service.get_all_products()
+                    all_products.sort(key=lambda x: x.get('rating', 0), reverse=True)
+                    
+                    # Exclude products already in trending
+                    trending_ids = {p['id'] for p in trending}
+                    additional_products = [p for p in all_products if p['id'] not in trending_ids][:needed]
+                    recommendations.extend(additional_products)
             
             # Strategy 4: Fallback to top-rated products
             if not recommendations:
