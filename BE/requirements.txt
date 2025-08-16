@@ -1,12 +1,27 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-firebase-admin==6.2.0
-pydantic==2.5.0
-python-dotenv==1.0.0
-httpx==0.25.2
-python-multipart==0.0.6
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-openai==1.35.15
-chromadb==0.4.24
+openai>=1.0.0
+chromadb>=0.4.0
+python-dotenv>=1.0.0
 numpy==1.24.3
+pydub>=0.25.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+setuptools>=68.0.0
+wheel>=0.40.0
+firebase-admin>=6.0.0
+requests>=2.28.0
+
+
+# # Upgrade pip trước
+# pip install --upgrade pip
+
+# # Cài các package cơ bản trước (ít lỗi nhất)
+# pip install --no-cache-dir requests
+# pip install --no-cache-dir "numpy==1.24.3"
+# pip install --no-cache-dir "openai>=1.0.0"
+# pip install --no-cache-dir "firebase-admin>=6.0.0"
+
+# # Cài packages phức tạp hơn
+# pip install --no-cache-dir "pydub>=0.25.0"
+
+# # Cuối cùng cài chromadb (thường lỗi nhất)
+# pip install --no-cache-dir "chromadb>=0.4.0"
