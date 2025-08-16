@@ -33,6 +33,7 @@ load_dotenv(dotenv_path=env_path)
 class AIService:
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY")
+        print(f"OpenAI API Keyaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: {api_key}")
         
         # Initialize OpenAI client only if API key is available
         if api_key and api_key != "None":
