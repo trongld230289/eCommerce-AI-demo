@@ -248,8 +248,12 @@ class AIService:
             keywords.extend(['keyboard', 'mechanical keyboard', 'gaming keyboard', 'typing'])
         
         # Speaker keywords
-        if 'speaker' in name_lower:
-            keywords.extend(['speaker', 'audio', 'sound', 'music', 'bluetooth speaker'])
+        if 'speaker' in name_lower or product.category.lower() == 'speaker':
+            keywords.extend(['speaker', 'audio', 'sound', 'music', 'bluetooth speaker', 'wireless speaker', 'portable speaker', 'sound system', 'audio system'])
+        
+        # Lamp keywords
+        if 'lamp' in name_lower or product.category.lower() == 'lamp':
+            keywords.extend(['lamp', 'light', 'lighting', 'illumination', 'table lamp', 'desk lamp', 'floor lamp', 'ceiling lamp', 'bulb', 'brightness', 'led lamp', 'smart lamp', 'work lamp', 'reading lamp', 'ambient light'])
         
         # Tablet keywords
         if 'tablet' in name_lower:
@@ -376,13 +380,15 @@ class AIService:
             }
             
         try:
+            categories = self.product_service.get_categories()
+            categories_str = ', '.join(categories)
             prompt = f"""
             Extract product search information from the following user input. 
             Return a JSON object with the following structure:
             {{
                 "search_query": "main search terms for semantic search",
                 "filters": {{
-                    "category": "category if mentioned (Camera, Laptop, Phone, Watch) or null",
+                    "category": "category if mentioned ({categories_str}) or null",
                     "min_price": number or null,
                     "max_price": number or null,
                     "min_rating": number or null,

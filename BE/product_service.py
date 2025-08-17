@@ -67,6 +67,8 @@ class ProductService:
             doc_ref = self.db.collection(self.collection_name).document(str(next_id))
             doc_ref.set(product_dict)
             
+            # Write latest categories to JSON file
+            self._dump_categories_to_json()
             return {"success": True, "product_id": next_id, "data": product_dict}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -118,6 +120,8 @@ class ProductService:
             
             # Get updated product
             updated_product = doc_ref.get().to_dict()
+            # Write latest categories to JSON file
+            self._dump_categories_to_json()
             return {"success": True, "data": updated_product}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -132,9 +136,20 @@ class ProductService:
                 return {"success": False, "error": "Product not found"}
             
             doc_ref.delete()
+            # Write latest categories to JSON file
+            self._dump_categories_to_json()
             return {"success": True, "message": "Product deleted successfully"}
         except Exception as e:
             return {"success": False, "error": str(e)}
+    def _dump_categories_to_json(self):
+        """Write latest categories to a JSON file"""
+        try:
+            import json
+            categories = self.get_categories()
+            with open("latest_categories.json", "w", encoding="utf-8") as f:
+                json.dump(categories, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Error dumping categories to JSON: {e}")
     
     def search_products(self, filters: SearchFilters) -> List[Dict[str, Any]]:
         """Search products with filters"""
