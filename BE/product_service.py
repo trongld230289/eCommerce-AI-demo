@@ -141,15 +141,40 @@ class ProductService:
             return {"success": True, "message": "Product deleted successfully"}
         except Exception as e:
             return {"success": False, "error": str(e)}
-    def _dump_categories_to_json(self):
-        """Write latest categories to a JSON file"""
+    def _dump_categories_to_json(self, generate_keywords: bool = True):
+        """Write latest categories to a JSON file and optionally generate category keywords"""
         try:
             import json
             categories = self.get_categories()
+            
+            # Save categories to file
             with open("latest_categories.json", "w", encoding="utf-8") as f:
                 json.dump(categories, f, ensure_ascii=False, indent=2)
+            print(f"✅ Categories saved to latest_categories.json: {categories}")
+            
+            # Generate category keywords using AI service
+            if generate_keywords and categories:
+                try:
+                    # Import here to avoid circular imports
+                    from services.ai_service import AIService
+                    
+                    print("🤖 Generating category keywords using LLM...")
+                    ai_service = AIService()
+                    
+                    # Use the new combined method that generates and saves in one call
+                    success = ai_service.generate_and_save_category_keywords(categories)
+                    
+                    if success:
+                        print(f"✅ Successfully generated and saved keywords for categories")
+                    else:
+                        print("⚠️ Failed to generate or save category keywords")
+                        
+                except Exception as e:
+                    print(f"⚠️ Error generating category keywords: {str(e)}")
+                    # Don't fail the whole operation if keyword generation fails
+            
         except Exception as e:
-            print(f"Error dumping categories to JSON: {e}")
+            print(f"❌ Error dumping categories to JSON: {e}")
     
     def search_products(self, filters: SearchFilters) -> List[Dict[str, Any]]:
         """Search products with filters"""
