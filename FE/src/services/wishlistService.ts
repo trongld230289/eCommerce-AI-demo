@@ -1,4 +1,4 @@
-import { apiService } from './apiService';
+import { getAuth } from 'firebase/auth';
 
 export interface Product {
   id: number;
@@ -25,12 +25,21 @@ export interface WishlistItem {
   product_details?: Product;
 }
 
+export enum ShareType {
+  PRIVATE = 'private',
+  PUBLIC = 'public',
+  ANONYMOUS = 'anonymous'
+}
+
 export interface Wishlist {
   id: string;
   user_id: string;
+  user_email?: string;
+  user_name?: string;
   name: string;
   products: WishlistItem[];
   item_count: number;
+  share_status: ShareType;
   created_at: string;
   updated_at: string;
 }
@@ -41,19 +50,73 @@ export interface WishlistCreate {
 
 export interface WishlistUpdate {
   name?: string;
+  share_status?: ShareType;
 }
 
 export interface WishlistAddProduct {
   product_id: number;
 }
 
+export interface WishlistShareUpdate {
+  share_status: ShareType;
+}
+
+export interface WishlistShareResponse {
+  success: boolean;
+  message: string;
+  share_status: ShareType;
+  share_url?: string;
+}
+
+export interface WishlistSearchRequest {
+  email: string;
+}
+
+export interface WishlistSearchResult {
+  id: string;
+  name: string;
+  user_email?: string;
+  user_name?: string;
+  share_status: ShareType;
+  item_count: number;
+  created_at: number;
+}
+
+export interface WishlistSearchResponse {
+  success: boolean;
+  message: string;
+  wishlists: WishlistSearchResult[];
+}
+
 class WishlistService {
   private baseURL = `${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/wishlist`;
 
+  private async getAuthHeaders(): Promise<{ [key: string]: string }> {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (user) {
+        const token = await user.getIdToken();
+        return {
+          'Authorization': `Bearer ${token}`
+        };
+      }
+      
+      return {};
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return {};
+    }
+  }
+
   async getUserWishlists(userId: string): Promise<Wishlist[]> {
+    const headers = await this.getAuthHeaders();
+    
     const response = await fetch(`${this.baseURL}?user_id=${encodeURIComponent(userId)}`, {
       method: 'GET',
       headers: {
+        ...headers,
         'Content-Type': 'application/json'
       }
     });
@@ -82,10 +145,12 @@ class WishlistService {
   }
 
   async addProductToWishlist(wishlistId: string, productId: number, userId: string): Promise<Wishlist> {
+    const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}/${wishlistId}/products?user_id=${encodeURIComponent(userId)}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...headers
       },
       body: JSON.stringify({ product_id: productId })
     });
@@ -102,10 +167,12 @@ class WishlistService {
     const url = `${this.baseURL}/${wishlistId}/products/${productId}?user_id=${encodeURIComponent(userId)}`;
     console.log('[DEBUG] Removing product from wishlist:', { wishlistId, productId, userId, url });
     
+    const headers = await this.getAuthHeaders();
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...headers
       }
     });
     
@@ -127,9 +194,12 @@ class WishlistService {
     const url = `${this.baseURL}/${wishlistId}?user_id=${encodeURIComponent(userId)}`;
     console.log('[DEBUG] Deleting wishlist:', { wishlistId, userId, url });
     
+    const headers = await this.getAuthHeaders();
+    
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
+        ...headers,
         'Content-Type': 'application/json'
       }
     });
@@ -145,6 +215,79 @@ class WishlistService {
     
     const result = await response.json();
     console.log('[DEBUG] Delete wishlist success result:', result);
+  }
+
+  async updateShareStatus(wishlistId: string, userId: string, shareUpdate: WishlistShareUpdate): Promise<WishlistShareResponse> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}/${wishlistId}/share?user_id=${encodeURIComponent(userId)}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      body: JSON.stringify(shareUpdate)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update share status');
+    }
+    
+    return response.json();
+  }
+
+  async getSharedWishlist(wishlistId: string): Promise<Wishlist> {
+    const response = await fetch(`${this.baseURL}/shared/${wishlistId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch shared wishlist');
+    }
+    
+    return response.json();
+  }
+
+  async searchWishlists(email: string): Promise<WishlistSearchResponse> {
+    const response = await fetch(`${this.baseURL}/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email: email.toLowerCase() })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to search wishlists');
+    }
+    
+    return response.json();
+  }
+
+  async addFromSharedWishlist(
+    sharedWishlistId: string, 
+    productId: number, 
+    targetWishlistId: string,
+    userId: string
+  ): Promise<void> {
+    const response = await fetch(
+      `${this.baseURL}/shared/${sharedWishlistId}/add-to-my-wishlist/${productId}?target_wishlist_id=${encodeURIComponent(targetWishlistId)}&user_id=${encodeURIComponent(userId)}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(await this.getAuthHeaders())
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to add product from shared wishlist');
+    }
+    
+    return response.json();
   }
 }
 

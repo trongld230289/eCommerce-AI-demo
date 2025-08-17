@@ -10,6 +10,9 @@ from services.wishlist_service import wishlist_service
 from services.cart_service import cart_service
 from services.recommendation_service import recommendation_service
 from routers.ai_router import router as ai_router
+from routers.wishlist_router import router as wishlist_router
+from routers.auth_router import router as auth_router
+from routers.product_router import router as product_router
 import uvicorn
 import httpx
 import json
@@ -36,8 +39,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include AI router
+# Include routers
 app.include_router(ai_router, prefix="/api", tags=["AI"])
+app.include_router(wishlist_router, tags=["Wishlist"])
+app.include_router(auth_router, tags=["Auth"])
+app.include_router(product_router, tags=["Products"])
 
 @app.get("/")
 async def root():

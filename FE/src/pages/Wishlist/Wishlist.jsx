@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faShoppingCart, faHeart, faPlus, faShare, faBolt, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faShoppingCart, faHeart, faPlus, faShare, faBolt, faGlobe, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { wishlistService } from '../../services/wishlistService';
 import { cartService } from '../../services/cartService';
 import { eventTrackingService } from '../../services/eventTrackingService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useShop } from '../../contexts/ShopContext';
+import AuthDialog from '../../components/AuthDialog';
+import WishlistSearch from '../../components/WishlistSearch/WishlistSearch';
 import './Wishlist.css';
 
 const Wishlist = () => {
@@ -16,6 +18,8 @@ const Wishlist = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newWishlistName, setNewWishlistName] = useState('');
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [showShareDropdown, setShowShareDropdown] = useState(false);
   const { currentUser } = useAuth();
   const { addToCart } = useShop();
 
@@ -55,7 +59,7 @@ const Wishlist = () => {
       await eventTrackingService.trackEvent({
         event_type: 'add_to_cart',
         user_id: currentUser.uid,
-        product_id: wishlistItem.product_id, // Send as integer, not string
+        product_id: wishlistItem.product_id.toString(),
         metadata: {
           product_name: productForCart.name,
           product_category: productForCart.category,
@@ -90,38 +94,63 @@ const Wishlist = () => {
     }
 
     try {
-      // Create proper product object for tracking
-      const productForTracking = {
+      // Debug logging for buy now
+      console.log('Buy now - Wishlist item structure:', wishlistItem);
+      console.log('Buy now - Wishlist item.product:', wishlistItem.product);
+      
+      // Create proper product object
+      const productForCart = {
         id: wishlistItem.product_id,
         name: wishlistItem.product?.name || `Product #${wishlistItem.product_id}`,
         price: wishlistItem.product?.price || 0,
+        original_price: wishlistItem.product?.original_price,
+        imageUrl: wishlistItem.product?.imageUrl || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center',
         category: wishlistItem.product?.category || 'General',
+        description: wishlistItem.product?.description || '',
+        rating: wishlistItem.product?.rating
       };
+      
+      console.log('Buy now - Product for cart:', productForCart);
 
       // Track user event for buy now
       await eventTrackingService.trackEvent({
-        event_type: 'purchase',
+        event_type: 'add_to_cart',
         user_id: currentUser.uid,
-        product_id: wishlistItem.product_id, // Send as integer, not string
+        product_id: wishlistItem.product_id.toString(),
         metadata: {
-          product_name: productForTracking.name,
-          product_category: productForTracking.category,
-          product_price: productForTracking.price,
+          product_name: productForCart.name,
+          product_category: productForCart.category,
+          product_price: productForCart.price,
           source: 'wishlist_buy_now',
           device: navigator.userAgent
         }
       });
       
-      // Show success message
-      toast.success(`⚡ Successfully purchased "${productForTracking.name}"!`, {
+      // Add to cart with product details
+      await cartService.addItemToCart(
+        currentUser.uid, 
+        wishlistItem.product_id, 
+        1,
+        productForCart // Pass the product details to the cart service
+      );
+      addToCart(productForCart);
+      
+      // Dispatch event to refresh cart count in header
+      window.dispatchEvent(new Event('cartUpdated'));
+      
+      toast.success(`⚡ "${productForCart.name}" added to cart! Redirecting to checkout...`, {
         position: "top-right",
-        autoClose: 3000,
+        autoClose: 2000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
       });
       
+      // Navigate to cart page for checkout
+      setTimeout(() => {
+        window.location.href = '/cart';
+      }, 1500);
     } catch (error) {
       console.error('Error processing buy now:', error);
       toast.error('Failed to process purchase');
@@ -129,14 +158,21 @@ const Wishlist = () => {
   };
 
   const loadWishlists = useCallback(async (preserveCurrentId = null) => {
+    console.log('loadWishlists called, currentUser:', currentUser?.uid);
+    
     if (!currentUser) {
+      console.log('No current user, setting loading to false');
       setLoading(false);
+      setWishlists([]);
+      setCurrentWishlist(null);
       return;
     }
 
     try {
       setLoading(true);
+      console.log('Fetching wishlists for user:', currentUser.uid);
       const wishlistsData = await wishlistService.getUserWishlists(currentUser.uid);
+      console.log('Wishlists loaded:', wishlistsData);
       setWishlists(wishlistsData);
       
       // Set current wishlist (maintain current selection or use first)
@@ -146,6 +182,8 @@ const Wishlist = () => {
         setCurrentWishlist(updatedCurrent || (wishlistsData.length > 0 ? wishlistsData[0] : null));
       } else if (wishlistsData.length > 0) {
         setCurrentWishlist(wishlistsData[0]);
+      } else {
+        setCurrentWishlist(null);
       }
     } catch (error) {
       console.error('Error loading wishlists:', error);
@@ -156,9 +194,12 @@ const Wishlist = () => {
   }, [currentUser]); // Include currentUser as dependency
 
   useEffect(() => {
-    // Initial load
+    // Load wishlists when user changes (login/logout)
+    console.log('useEffect triggered by loadWishlists change');
     loadWishlists();
-    
+  }, [loadWishlists]);
+
+  useEffect(() => {
     // Listen for wishlist updates from other components
     const handleWishlistUpdate = () => {
       console.log('Wishlist updated event received');
@@ -167,13 +208,21 @@ const Wishlist = () => {
       loadWishlists(currentId);
     };
     
+    // Click outside handler for share dropdown
+    const handleClickOutside = (event) => {
+      if (showShareDropdown && !event.target.closest('.share-wishlist-container')) {
+        setShowShareDropdown(false);
+      }
+    };
+    
     window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    document.addEventListener('mousedown', handleClickOutside);
     
     return () => {
       window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array to run only once - we handle updates via event listeners
+  }, [loadWishlists, currentWishlist?.id, showShareDropdown]);
 
   const createWishlist = async () => {
     if (!currentUser) {
@@ -301,11 +350,6 @@ const Wishlist = () => {
       return;
     }
 
-    if (wishlists.length <= 1) {
-      toast.error('Cannot delete the last remaining wishlist');
-      return;
-    }
-
     if (!window.confirm('Are you sure you want to delete this wishlist?')) {
       return;
     }
@@ -339,26 +383,67 @@ const Wishlist = () => {
     }
   };
 
+  const handleShareOption = async (shareType) => {
+    if (!currentWishlist || !currentUser) return;
+    
+    try {
+      const result = await wishlistService.updateShareStatus(currentWishlist.id, currentUser.uid, { share_status: shareType });
+      
+      if (result.success) {
+        // Update local wishlist state
+        setCurrentWishlist(prev => ({ ...prev, share_status: shareType }));
+        setWishlists(prev => prev.map(wl => 
+          wl.id === currentWishlist.id 
+            ? { ...wl, share_status: shareType }
+            : wl
+        ));
+        
+        // Show success toast with share URL if available
+        if (result.share_url && shareType !== 'private') {
+          // Copy share URL to clipboard
+          navigator.clipboard.writeText(result.share_url).then(() => {
+            toast.success(`🔗 ${result.message} Link copied to clipboard!`, {
+              position: "top-right",
+              autoClose: 4000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+            });
+          }).catch(() => {
+            toast.success(`✅ ${result.message}`, {
+              position: "top-right",
+              autoClose: 3000,
+            });
+          });
+        } else {
+          toast.success(`🔒 ${result.message}`, {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating share status:', error);
+      toast.error('Failed to update share settings');
+    } finally {
+      setShowShareDropdown(false);
+    }
+  };
+
   const shareWishlist = () => {
     if (!currentWishlist) return;
     
-    const shareText = `Check out my "${currentWishlist.name}" wishlist with ${wishlistItems.length} items!`;
-    const shareUrl = window.location.href;
-    
-    if (navigator.share) {
-      // Use native share API if available
-      navigator.share({
-        title: `My Wishlist: ${currentWishlist.name}`,
-        text: shareText,
-        url: shareUrl
-      }).catch(err => console.log('Error sharing:', err));
+    // If already shared, make it private
+    if (currentWishlist.share_status && currentWishlist.share_status !== 'private') {
+      handleShareOption('private');
     } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(`${shareText} ${shareUrl}`).then(() => {
-        toast.success('Wishlist link copied to clipboard!');
-      }).catch(() => {
-        toast.error('Could not copy to clipboard');
-      });
+      // Show dropdown to select share type
+      setShowShareDropdown(!showShareDropdown);
     }
   };
 
@@ -386,11 +471,19 @@ const Wishlist = () => {
             <FontAwesomeIcon icon={faHeart} className="auth-icon" />
             <h2>Login Required</h2>
             <p>Please login to view and manage your wishlists</p>
-            <Link to="/login" className="auth-login-btn">
+            <button 
+              onClick={() => setShowAuthDialog(true)}
+              className="auth-login-btn"
+            >
               Login Now
-            </Link>
+            </button>
           </div>
         </div>
+        <AuthDialog 
+          isOpen={showAuthDialog}
+          onClose={() => setShowAuthDialog(false)}
+          initialMode="login"
+        />
       </div>
     );
   }
@@ -438,6 +531,15 @@ const Wishlist = () => {
           <FontAwesomeIcon icon={faHeart} className="wishlist-icon" />
           My Wishlists
         </h1>
+        <div className="header-search">
+          <WishlistSearch 
+            userWishlists={wishlists}
+            onAddProductToWishlist={(productId, targetWishlistId) => {
+              // Refresh wishlists after adding product
+              loadWishlists(currentWishlist?.id);
+            }}
+          />
+        </div>
       </div>
 
       {/* Wishlist Tabs */}
@@ -453,7 +555,7 @@ const Wishlist = () => {
               <span className="item-count">({(wishlist.products || []).length})</span>
             </button>
             {/* Show delete button for custom wishlists (allow deleting user-created wishlists) */}
-            {wishlists.length > 1 && wishlist.name !== 'My Wishlist' && wishlist.name !== 'Favorites' && (
+            {wishlist.name !== 'My Wishlist' && wishlist.name !== 'Favorites' && (
               <button
                 className="delete-wishlist-btn"
                 onClick={() => deleteWishlist(wishlist.id)}
@@ -494,9 +596,34 @@ const Wishlist = () => {
             <h2>{currentWishlist.name}</h2>
             {wishlistItems.length > 0 && (
               <div className="wishlist-actions">
-                <button className="share-wishlist-btn" onClick={shareWishlist}>
-                  <FontAwesomeIcon icon={faShare} /> Share
-                </button>
+                <div className="share-wishlist-container">
+                  <button 
+                    className={`share-wishlist-btn ${currentWishlist.share_status && currentWishlist.share_status !== 'private' ? 'shared' : ''}`}
+                    onClick={shareWishlist}
+                  >
+                    <FontAwesomeIcon icon={faShare} /> 
+                    {currentWishlist.share_status && currentWishlist.share_status !== 'private' ? 'Shared' : 'Share'}
+                  </button>
+                  
+                  {showShareDropdown && (
+                    <div className="share-dropdown">
+                      <div className="share-option" onClick={() => handleShareOption('public')}>
+                        <FontAwesomeIcon icon={faGlobe} />
+                        <div>
+                          <div className="option-title">Public</div>
+                          <div className="option-desc">Anyone can search and find your name when searching wishlists</div>
+                        </div>
+                      </div>
+                      <div className="share-option" onClick={() => handleShareOption('anonymous')}>
+                        <FontAwesomeIcon icon={faEyeSlash} />
+                        <div>
+                          <div className="option-title">Anonymous</div>
+                          <div className="option-desc">Anyone can search and find your wishlist but your name stays hidden</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button className="clear-wishlist-btn" onClick={clearWishlist}>
                   <FontAwesomeIcon icon={faTrash} /> Clear All
                 </button>
@@ -525,7 +652,7 @@ const Wishlist = () => {
               <div className="wishlist-grid">
                 {wishlistItems.map((item) => (
                   <div key={item.id} className="wishlist-item">
-                      <div className="item-image">
+                    <div className="item-image">
                       <img 
                         src={item.product?.imageUrl || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center'} 
                         alt={item.product?.name}
@@ -534,13 +661,6 @@ const Wishlist = () => {
                         }}
                       />
                       <div className="item-actions">
-                        <Link
-                          to={`/product/${item.product_id}`}
-                          className="view-product-btn"
-                          title="View product details"
-                        >
-                          <FontAwesomeIcon icon={faEye} />
-                        </Link>
                         <button
                           className="remove-item-btn"
                           onClick={() => removeFromWishlist(item.product_id)}
@@ -549,7 +669,9 @@ const Wishlist = () => {
                           <FontAwesomeIcon icon={faTrash} />
                         </button>
                       </div>
-                    </div>                    <div className="item-details">
+                    </div>
+
+                    <div className="item-details">
                       <h3 className="item-name">
                         <Link to={`/product/${item.product_id}`}>
                           {item.product?.name}
