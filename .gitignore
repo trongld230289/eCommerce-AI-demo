@@ -1,1 +1,5 @@
-node_modules
+FE/node_modules
+FE/package-lock.json
+FE/package.json
+FE/venv312
+venv312

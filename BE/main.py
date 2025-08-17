@@ -36,6 +36,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Startup event to initialize categories JSON file
+@app.on_event("startup")
+async def startup_event():
+    """Initialize categories JSON file on server startup"""
+    try:
+        print("🚀 Starting eCommerce Backend API...")
+        
+        # Create latest_categories.json file
+        print("📁 Initializing categories file...")
+        categories = product_service.get_categories()
+        
+        if categories:
+            # Use the existing _dump_categories_to_json method
+            product_service._dump_categories_to_json()
+            print(f"✅ Categories file created with {len(categories)} categories: {categories}")
+        else:
+            print("⚠️  No categories found in database")
+            
+        print("🎉 Backend startup completed successfully!")
+        
+    except Exception as e:
+        print(f"❌ Error during startup: {e}")
+
 # Include AI router
 app.include_router(ai_router, prefix="/api", tags=["AI"])
 

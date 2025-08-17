@@ -1,0 +1,6 @@
+create_product_script.py
+latest_categories.json
+chroma_db
+venv312
+__pycache__
+services/__pycache__

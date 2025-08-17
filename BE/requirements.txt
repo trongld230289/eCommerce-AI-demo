@@ -9,4 +9,4 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 openai==1.35.15
 chromadb==0.4.24
-numpy==1.24.3
+numpy==1.26.4
