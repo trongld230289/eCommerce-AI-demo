@@ -1,7 +1,11 @@
 import time
 from typing import List, Optional
 from firebase_config import get_firestore_db
-from models import Wishlist, WishlistCreate, WishlistUpdate, WishlistItem
+from models import (
+    Wishlist, WishlistCreate, WishlistUpdate, WishlistItem, ShareType, 
+    WishlistShareUpdate, WishlistShareResponse, WishlistSearchResult, 
+    WishlistSearchResponse
+)
 from product_service import product_service
 
 class WishlistService:
@@ -40,11 +44,11 @@ class WishlistService:
             print(f"Warning: Error populating product details: {e}")
             return wishlist_data
 
-    def create_default_wishlists(self, user_id: str) -> List[Wishlist]:
+    def create_default_wishlists(self, user_id: str, user_email: str = None, user_name: str = None) -> List[Wishlist]:
         """Create default wishlists for a new user"""
         default_wishlists = [
-            {"name": "My Favorites ❤️", "user_id": user_id},
-            {"name": "Gift Ideas 🎁", "user_id": user_id}
+            {"name": "My Favorites ❤️", "user_id": user_id, "user_email": user_email, "user_name": user_name},
+            {"name": "Gift Ideas 🎁", "user_id": user_id, "user_email": user_email, "user_name": user_name}
         ]
         
         created_wishlists = []
@@ -60,23 +64,51 @@ class WishlistService:
             # Generate new document reference
             doc_ref = self.db.collection(self.collection_name).document()
             
+            # Debug logging
+            print(f"Creating wishlist with data:")
+            print(f"  user_id: {wishlist_data.user_id}")
+            print(f"  user_email: {wishlist_data.user_email}")
+            print(f"  user_name: {wishlist_data.user_name}")
+            print(f"  name: {wishlist_data.name}")
+            
+            # Force populate user info from Firebase Auth if null
+            user_email = wishlist_data.user_email
+            user_name = wishlist_data.user_name
+            
+            if not user_email or not user_name:
+                try:
+                    from firebase_admin import auth as firebase_auth
+                    print(f"SERVICE: user_email or user_name is null, fetching from Firebase Auth...")
+                    user_record = firebase_auth.get_user(wishlist_data.user_id)
+                    user_email = user_record.email or user_email
+                    user_name = user_record.display_name or (user_record.email.split('@')[0] if user_record.email else user_name)
+                    print(f"SERVICE: Got user info from Firebase Auth:")
+                    print(f"  user_email: {user_email}")
+                    print(f"  user_name: {user_name}")
+                except Exception as e:
+                    print(f"SERVICE: Could not get user info from Firebase Auth: {e}")
+            
             wishlist_dict = {
                 "id": doc_ref.id,
                 "user_id": wishlist_data.user_id,
+                "user_email": user_email,
+                "user_name": user_name,
                 "name": wishlist_data.name,
                 "products": [],
                 "item_count": 0,
+                "share_status": ShareType.PRIVATE.value,  # Default to private
                 "created_at": time.time(),
                 "updated_at": time.time()
             }
             
+            print(f"Saving wishlist to Firestore with dict: {wishlist_dict}")
             doc_ref.set(wishlist_dict)
             return Wishlist(**wishlist_dict)
             
         except Exception as e:
             raise Exception(f"Error creating wishlist: {str(e)}")
 
-    def get_user_wishlists(self, user_id: str) -> List[Wishlist]:
+    def get_user_wishlists(self, user_id: str, user_email: str = None, user_name: str = None) -> List[Wishlist]:
         """Get all wishlists for a user"""
         try:
             docs = self.db.collection(self.collection_name)\
@@ -275,6 +307,74 @@ class WishlistService:
         except Exception as e:
             raise Exception(f"Error adding product to wishlist: {str(e)}")
 
+    def add_product_to_shared_wishlist(self, shared_wishlist_id: str, product_id: int, target_wishlist_id: str, user_id: str) -> bool:
+        """Add a product from a shared wishlist to user's own wishlist"""
+        try:
+            # First, verify the shared wishlist exists and is actually shared
+            shared_doc_ref = self.db.collection(self.collection_name).document(shared_wishlist_id)
+            shared_doc = shared_doc_ref.get()
+            
+            if not shared_doc.exists:
+                return False
+            
+            shared_data = shared_doc.to_dict()
+            if not shared_data:
+                return False
+            
+            # Check if the wishlist is publicly shared
+            share_status = shared_data.get("share_status", ShareType.PRIVATE.value)
+            if share_status not in [ShareType.PUBLIC.value, ShareType.ANONYMOUS.value]:
+                return False
+            
+            # Verify the product exists in the shared wishlist
+            shared_products = shared_data.get("products", [])
+            product_found = False
+            for item in shared_products:
+                if item.get("product_id") == product_id:
+                    product_found = True
+                    break
+            
+            if not product_found:
+                return False
+            
+            # Now add the product to the user's target wishlist
+            target_doc_ref = self.db.collection(self.collection_name).document(target_wishlist_id)
+            target_doc = target_doc_ref.get()
+            
+            if not target_doc.exists:
+                return False
+                
+            target_data = target_doc.to_dict()
+            if not target_data or target_data.get("user_id") != user_id:
+                return False
+            
+            # Check if product already in target wishlist
+            target_products = target_data.get("products", [])
+            for item in target_products:
+                if item.get("product_id") == product_id:
+                    # Product already exists, return True (success)
+                    return True
+            
+            # Add product to target wishlist
+            new_item = {
+                "product_id": product_id,
+                "added_at": time.time()
+            }
+            target_products.append(new_item)
+            
+            update_dict = {
+                "products": target_products,
+                "item_count": len(target_products),
+                "updated_at": time.time()
+            }
+            
+            target_doc_ref.update(update_dict)
+            return True
+            
+        except Exception as e:
+            print(f"Error adding product from shared wishlist: {str(e)}")
+            return False
+
     def remove_product_from_wishlist(self, wishlist_id: str, user_id: str, product_id: int) -> Optional[Wishlist]:
         """Remove a product from wishlist"""
         try:
@@ -368,6 +468,137 @@ class WishlistService:
             
         except Exception as e:
             raise Exception(f"Error clearing wishlist: {str(e)}")
+
+    def update_share_status(self, wishlist_id: str, user_id: str, share_update: WishlistShareUpdate) -> WishlistShareResponse:
+        """Update wishlist share status"""
+        try:
+            doc_ref = self.db.collection(self.collection_name).document(wishlist_id)
+            doc = doc_ref.get()
+            
+            if not doc.exists:
+                return WishlistShareResponse(
+                    success=False,
+                    message="Wishlist not found",
+                    share_status=ShareType.PRIVATE
+                )
+            
+            data = doc.to_dict()
+            if data['user_id'] != user_id:
+                return WishlistShareResponse(
+                    success=False,
+                    message="Unauthorized access to wishlist",
+                    share_status=ShareType.PRIVATE
+                )
+            
+            # Update share status
+            update_dict = {
+                "share_status": share_update.share_status.value,
+                "updated_at": time.time()
+            }
+            
+            doc_ref.update(update_dict)
+            
+            # Generate share URL if not private
+            share_url = None
+            if share_update.share_status != ShareType.PRIVATE:
+                base_url = "http://localhost:3000"  # This should be configurable
+                share_url = f"{base_url}/shared-wishlist/{wishlist_id}"
+            
+            success_messages = {
+                ShareType.PUBLIC: f"Wishlist '{data['name']}' is now public! Anyone with the link can view it.",
+                ShareType.ANONYMOUS: f"Wishlist '{data['name']}' is now shared anonymously! Anyone with the link can view it without seeing your name.",
+                ShareType.PRIVATE: f"Wishlist '{data['name']}' is now private."
+            }
+            
+            return WishlistShareResponse(
+                success=True,
+                message=success_messages[share_update.share_status],
+                share_status=share_update.share_status,
+                share_url=share_url
+            )
+            
+        except Exception as e:
+            return WishlistShareResponse(
+                success=False,
+                message=f"Error updating share status: {str(e)}",
+                share_status=ShareType.PRIVATE
+            )
+
+    def get_shared_wishlist(self, wishlist_id: str) -> Optional[Wishlist]:
+        """Get a shared wishlist by ID (public access)"""
+        try:
+            doc_ref = self.db.collection(self.collection_name).document(wishlist_id)
+            doc = doc_ref.get()
+            
+            if not doc.exists:
+                return None
+            
+            data = doc.to_dict()
+            
+            # Only return if wishlist is shared (not private)
+            if data.get('share_status', ShareType.PRIVATE.value) == ShareType.PRIVATE.value:
+                return None
+            
+            # If anonymous sharing, remove user identification
+            if data.get('share_status') == ShareType.ANONYMOUS.value:
+                data['user_id'] = "anonymous"
+            
+            # Populate product details
+            data = self._populate_product_details(data)
+            
+            return Wishlist(**data)
+            
+        except Exception as e:
+            print(f"Error fetching shared wishlist: {str(e)}")
+            return None
+
+    def search_wishlists_by_email(self, email: str) -> WishlistSearchResponse:
+        """Search for shared wishlists by user email"""
+        try:
+            # Query wishlists where user_email matches and share_status is not private
+            docs = self.db.collection(self.collection_name)\
+                          .where("user_email", "==", email)\
+                          .where("share_status", "in", [ShareType.PUBLIC.value, ShareType.ANONYMOUS.value])\
+                          .stream()
+            
+            search_results = []
+            for doc in docs:
+                data = doc.to_dict()
+                if data:
+                    # Create search result
+                    result = WishlistSearchResult(
+                        id=data.get("id", doc.id),
+                        user_id=data.get("user_id", ""),
+                        user_email=data.get("user_email", email),
+                        user_name=data.get("user_name", ""),
+                        name=data.get("name", ""),
+                        item_count=data.get("item_count", 0),
+                        share_status=ShareType(data.get("share_status", ShareType.PRIVATE.value)),
+                        created_at=data.get("created_at", 0),
+                        updated_at=data.get("updated_at", 0)
+                    )
+                    
+                    # If anonymous sharing, hide user identification
+                    if result.share_status == ShareType.ANONYMOUS:
+                        result.user_id = "anonymous"
+                        result.user_email = "anonymous@example.com"
+                        result.user_name = "Anonymous User"
+                    
+                    search_results.append(result)
+            
+            return WishlistSearchResponse(
+                success=True,
+                message=f"Found {len(search_results)} shared wishlists for {email}",
+                wishlists=search_results
+            )
+            
+        except Exception as e:
+            print(f"Error searching wishlists by email: {str(e)}")
+            return WishlistSearchResponse(
+                success=False,
+                message=f"Error searching wishlists: {str(e)}",
+                wishlists=[]
+            )
 
 # Create global instance
 wishlist_service = WishlistService()

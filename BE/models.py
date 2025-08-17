@@ -11,6 +11,11 @@ class EventType(str, Enum):
     REMOVE_FROM_WISHLIST = "remove_from_wishlist"
     PURCHASE = "purchase"
 
+class ShareType(str, Enum):
+    PRIVATE = "private"
+    PUBLIC = "public"
+    ANONYMOUS = "anonymous"
+
 class Product(BaseModel):
     id: Optional[int] = None
     name: str
@@ -112,24 +117,58 @@ class WishlistItemWithDetails(BaseModel):
 class Wishlist(BaseModel):
     id: str
     user_id: str
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
     name: str
     products: List[WishlistItemWithDetails] = Field(default_factory=list)
     item_count: int = 0
+    share_status: ShareType = ShareType.PRIVATE
     created_at: float
     updated_at: float
 
 class WishlistCreate(BaseModel):
     name: str
     user_id: str
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
 
 class WishlistUpdate(BaseModel):
     name: Optional[str] = None
+    share_status: Optional[ShareType] = None
 
 class WishlistAddProduct(BaseModel):
     product_id: int
 
 class WishlistRemoveProduct(BaseModel):
     product_id: int
+
+class WishlistShareUpdate(BaseModel):
+    share_status: ShareType
+
+class WishlistShareResponse(BaseModel):
+    success: bool
+    message: str
+    share_status: ShareType
+    share_url: Optional[str] = None
+
+class WishlistSearchRequest(BaseModel):
+    email: str
+
+class WishlistSearchResult(BaseModel):
+    id: str
+    user_id: str
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    name: str
+    item_count: int
+    share_status: ShareType
+    created_at: float
+    updated_at: float
+
+class WishlistSearchResponse(BaseModel):
+    success: bool
+    message: str
+    wishlists: List[WishlistSearchResult] = Field(default_factory=list)
 
 # Cart Models
 class CartItem(BaseModel):

@@ -2,12 +2,16 @@ import React from 'react';
 import { useShop } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import Recommendations from '../components/Recommendations';
+import AuthDialog from '../components/AuthDialog';
 
 const Cart = () => {
   const { state, removeFromCart, updateQuantity, clearCart, getCartTotal } = useShop();
   const { currentUser } = useAuth();
   const [couponCode, setCouponCode] = React.useState('');
+  const [showAuthDialog, setShowAuthDialog] = React.useState(false);
 
   const cartStyles = {
     container: {
@@ -209,6 +213,93 @@ const Cart = () => {
     }
   };
 
+  // Check if user is logged in first
+  if (!currentUser) {
+    return (
+      <div style={cartStyles.container}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          marginBottom: '2rem',
+          fontSize: '0.875rem',
+          color: '#6b7280'
+        }}>
+          <Link to="/" style={{color: '#3b82f6', textDecoration: 'none'}}>Home</Link>
+          <span>›</span>
+          <span>Cart</span>
+        </div>
+        
+        <div style={{marginBottom: '2rem'}}>
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: 'bold',
+            color: '#1f2937',
+            marginBottom: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <FontAwesomeIcon icon={faShoppingCart} style={{color: '#3b82f6'}} />
+            Shopping Cart
+          </h1>
+        </div>
+        
+        <div style={{
+          textAlign: 'center' as const,
+          padding: '4rem 2rem',
+          backgroundColor: '#f7fafc',
+          borderRadius: '12px',
+          margin: '2rem 0'
+        }}>
+          <FontAwesomeIcon 
+            icon={faShoppingCart} 
+            style={{
+              fontSize: '4rem',
+              marginBottom: '1rem',
+              color: '#3b82f6'
+            }}
+          />
+          <h2 style={{
+            fontSize: '1.5rem',
+            fontWeight: 'bold',
+            marginBottom: '0.5rem',
+            color: '#1f2937'
+          }}>Login Required</h2>
+          <p style={{
+            fontSize: '1.125rem',
+            color: '#718096',
+            marginBottom: '2rem'
+          }}>Please login to view and manage your shopping cart</p>
+          <button 
+            onClick={() => setShowAuthDialog(true)}
+            style={{
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '6px',
+              border: 'none',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+          >
+            Login Now
+          </button>
+        </div>
+        
+        <AuthDialog 
+          isOpen={showAuthDialog}
+          onClose={() => setShowAuthDialog(false)}
+          initialMode="login"
+        />
+      </div>
+    );
+  }
+
   if (state.cart.length === 0) {
     return (
       <div style={cartStyles.container}>
@@ -230,12 +321,25 @@ const Cart = () => {
             fontSize: '2rem',
             fontWeight: 'bold',
             color: '#1f2937',
-            marginBottom: '0.5rem'
-          }}>Shopping Cart</h1>
+            marginBottom: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <FontAwesomeIcon icon={faShoppingCart} style={{color: '#3b82f6'}} />
+            Shopping Cart
+          </h1>
         </div>
         
         <div style={cartStyles.emptyCart}>
-          <div style={cartStyles.emptyIcon}>🛒</div>
+          <FontAwesomeIcon 
+            icon={faShoppingCart} 
+            style={{
+              fontSize: '4rem',
+              marginBottom: '1rem',
+              color: '#3b82f6'
+            }}
+          />
           <p style={cartStyles.emptyText}>Your cart is empty</p>
           <Link 
             to="/" 
@@ -300,31 +404,15 @@ const Cart = () => {
           fontSize: '2rem',
           fontWeight: 'bold',
           color: '#1f2937',
-          marginBottom: '0.5rem'
-        }}>Shopping Cart</h1>
-      </div>
-
-      {!currentUser && (
-        <div style={{
-          backgroundColor: '#fef3c7',
-          border: '1px solid #f59e0b',
-          borderRadius: '8px',
-          padding: '1rem',
-          marginBottom: '1.5rem',
-          textAlign: 'center' as const
+          marginBottom: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
         }}>
-          <p style={{color: '#92400e', marginBottom: '0.5rem'}}>
-            ⚠️ Login to save your cart and enjoy more benefits!
-          </p>
-          <Link to="/login" style={{
-            color: '#3b82f6',
-            textDecoration: 'none',
-            fontWeight: '500'
-          }}>
-            Login now
-          </Link>
-        </div>
-      )}
+          <FontAwesomeIcon icon={faShoppingCart} style={{color: '#3b82f6'}} />
+          Shopping Cart
+        </h1>
+      </div>
 
       <div style={{
         display: 'grid',
