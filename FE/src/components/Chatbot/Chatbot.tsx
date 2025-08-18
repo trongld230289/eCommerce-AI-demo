@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faStop, faUpload, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import { aiService } from '../../services/aiService';
+import { aiService, ConversationMessage } from '../../services/aiService';
 import { Product } from '../../contexts/ShopContext';
 import './Chatbot.css';
 
@@ -12,6 +12,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   products?: Product[];
+  isHtml?: boolean;
 }
 
 interface ChatbotProps {
@@ -37,6 +38,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [showVoiceOptions, setShowVoiceOptions] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
+  const [lastFunctionUsed, setLastFunctionUsed] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -156,28 +159,71 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
 
           setLastSearchResults(products);
           setLastSearchQuery(voiceResponse.transcribed_text || '');
-
-          let responseText = `🎤 Voice search completed! I found ${voiceResponse.total_results} products`;
-          if (voiceResponse.transcribed_text) {
-            responseText += ` for "${voiceResponse.transcribed_text}"`;
+          
+          // Update function used tracking
+          if (voiceResponse.function_used) {
+            setLastFunctionUsed(voiceResponse.function_used);
           }
-          responseText += '.\n\nHere are the top results:';
+
+          // Build response text based on whether we have products (same logic as text search)
+          let responseText = '';
+          
+          if (voiceResponse.products && voiceResponse.products.length > 0) {
+            // If we have products, only show intro + header
+            if (voiceResponse.intro) {
+              responseText += voiceResponse.intro.replace(/\n/g, '<br>');
+            }
+            
+            if (voiceResponse.header) {
+              if (responseText) responseText += '<br><br>';
+              responseText += voiceResponse.header.replace(/\n/g, '<br>');
+            }
+          } else {
+            // If no products, get assistant message content (no intro/header)
+            if (voiceResponse.messages && voiceResponse.messages.length > 0) {
+              const latestAssistantMessage = [...voiceResponse.messages]
+                .reverse()
+                .find(msg => msg.role === 'assistant');
+              
+              if (latestAssistantMessage && latestAssistantMessage.content) {
+                responseText = latestAssistantMessage.content.replace(/\n/g, '<br>');
+              }
+            }
+          }
 
           const voiceSearchMessage: Message = {
             id: Date.now() + 1,
             text: responseText,
             isUser: false,
             timestamp: new Date(),
-            products: products.slice(0, 3)
+            products: products.slice(0, 3),
+            isHtml: true
           };
 
           setMessages(prev => [...prev, voiceSearchMessage]);
 
+          // Update conversation history from voice response
+          if (voiceResponse.messages && voiceResponse.messages.length > 0) {
+            const backendConversationHistory: ConversationMessage[] = voiceResponse.messages.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content
+            }));
+            setConversationHistory(backendConversationHistory);
+          }
+
           if (products.length > 3) {
             setTimeout(() => {
+              // Create language-appropriate message for voice search too
+              let moreResultsText = `Would you like to see all ${products.length} results on the products page?`;
+              
+              // If language detected is Vietnamese, use Vietnamese message
+              if (voiceResponse.language_detected === 'vi') {
+                moreResultsText = `Bạn có muốn tôi hiển thị tất cả ${products.length} kết quả trên trang sản phẩm không?`;
+              }
+              
               const showAllMessage: Message = {
                 id: Date.now() + 2,
-                text: `Would you like to see all ${products.length} results on the products page?`,
+                text: moreResultsText,
                 isUser: false,
                 timestamp: new Date()
               };
@@ -185,7 +231,30 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
             }, 1000);
           }
         } else {
-          addMessage('🎤 I heard you, but couldn\'t find any products matching your voice search. Please try again.', false);
+          // Handle no products case for voice search  
+          let errorMessage = '';
+          if (voiceResponse.messages && voiceResponse.messages.length > 0) {
+            // Find the latest assistant message
+            const latestAssistantMessage = [...voiceResponse.messages]
+              .reverse()
+              .find((msg: any) => msg.role === 'assistant');
+            
+            if (latestAssistantMessage && latestAssistantMessage.content) {
+              errorMessage = latestAssistantMessage.content.replace(/\n/g, '<br>');
+            }
+          }
+          
+          // Fallback to intro if no messages available
+          if (!errorMessage && voiceResponse.intro) {
+            errorMessage = voiceResponse.intro.replace(/\n/g, '<br>');
+          }
+          
+          // Final fallback
+          if (!errorMessage) {
+            errorMessage = '🎤 I heard you, but couldn\'t find any products matching your voice search. Please try again.';
+          }
+          
+          addMessage(errorMessage, false);
         }
       } else {
         addMessage('🎤 Sorry, I had trouble processing your voice search. Please try again.', false);
@@ -290,15 +359,22 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         sessionStorage.setItem('chatbotSearchResults', JSON.stringify(lastSearchResults));
         sessionStorage.setItem('chatbotSearchQuery', lastSearchQuery);
         
+        // Store the function type for dynamic title
+        if (lastFunctionUsed === 'find_gifts') {
+          sessionStorage.setItem('searchResultTitle', 'Search Gift Result');
+        } else {
+          sessionStorage.setItem('searchResultTitle', 'Search Product Result');
+        }
+        
         setTimeout(() => {
-          navigate('/search-results');
+          navigate(`/search-results?t=${Date.now()}`);
         }, 1500);
         
         return;
       }
 
       const aiResponse = await aiService.searchProducts({
-        query: messageText,
+        messages: [...conversationHistory, { role: "user", content: messageText }],
         limit: 10
       });
 
@@ -309,38 +385,73 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         setLastSearchResults(products);
         setLastSearchQuery(messageText);
         
-        let responseText = `I found ${aiResponse.total_results} products for "${messageText}".`;
-        if (aiResponse.search_intent) {
-          const intent = aiResponse.search_intent;
-          const appliedFilters: string[] = [];
-          if (intent.filters.category) appliedFilters.push(`Category: ${intent.filters.category}`);
-          if (intent.filters.min_price || intent.filters.max_price) {
-            const priceRange: string[] = [];
-            if (intent.filters.min_price) priceRange.push(`min $${intent.filters.min_price}`);
-            if (intent.filters.max_price) priceRange.push(`max $${intent.filters.max_price}`);
-            appliedFilters.push(`Price: ${priceRange.join(', ')}`);
-          }
-          if (intent.filters.min_rating) appliedFilters.push(`Min rating: ${intent.filters.min_rating} stars`);
-          if (intent.filters.min_discount) appliedFilters.push(`Min discount: ${intent.filters.min_discount}%`);
-          if (appliedFilters.length > 0) responseText += `\n\nI detected these filters: ${appliedFilters.join(', ')}`;
+        // Check if function switched and clear conversation history if needed
+        if (aiResponse.function_used && lastFunctionUsed && aiResponse.function_used !== lastFunctionUsed) {
+          setConversationHistory([]);
+          console.log(`🔄 Function switched from ${lastFunctionUsed} to ${aiResponse.function_used}. Conversation history cleared.`);
         }
-        responseText += `\n\nHere are the top results:`;
+        setLastFunctionUsed(aiResponse.function_used || '');
+        
+        // Build response text based on whether we have products
+        let responseText = '';
+        
+        if (aiResponse.products && aiResponse.products.length > 0) {
+          // If we have products, only show intro + header
+          if (aiResponse.intro) {
+            responseText += aiResponse.intro.replace(/\n/g, '<br>');
+          }
+          
+          if (aiResponse.header) {
+            if (responseText) responseText += '<br><br>';
+            responseText += aiResponse.header.replace(/\n/g, '<br>');
+          }
+        } else {
+          // If no products, get assistant message content (no intro/header)
+          if (aiResponse.messages && aiResponse.messages.length > 0) {
+            const latestAssistantMessage = [...aiResponse.messages]
+              .reverse()
+              .find(msg => msg.role === 'assistant');
+            
+            if (latestAssistantMessage && latestAssistantMessage.content) {
+              responseText = latestAssistantMessage.content.replace(/\n/g, '<br>');
+            }
+          }
+        }
         
         const aiSearchMessage: Message = {
           id: Date.now() + 1,
           text: responseText,
           isUser: false,
           timestamp: new Date(),
-          products: products.slice(0, 3)
+          products: products.slice(0, 3),
+          isHtml: true
         };
         
         setMessages(prev => [...prev, aiSearchMessage]);
 
+        // Update conversation history from backend messages
+        if (aiResponse.messages && aiResponse.messages.length > 0) {
+          // Use the complete conversation history from backend
+          const backendConversationHistory: ConversationMessage[] = aiResponse.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+          setConversationHistory(backendConversationHistory);
+        }
+
         if (products.length > 3) {
           setTimeout(() => {
+            // Create language-appropriate message
+            let moreResultsText = `I found ${products.length} total results. Would you like me to show you all of them on the products page?`;
+            
+            // If language detected is Vietnamese, use Vietnamese message
+            if (aiResponse.language_detected === 'vi') {
+              moreResultsText = `Tôi đã tìm thấy tổng cộng ${products.length} kết quả. Bạn có muốn tôi hiển thị tất cả chúng trên trang sản phẩm không?`;
+            }
+            
             const moreResultsMessage: Message = {
               id: Date.now() + 2,
-              text: `I found ${products.length} total results. Would you like me to show you all of them on the products page?`,
+              text: moreResultsText,
               isUser: false,
               timestamp: new Date()
             };
@@ -348,58 +459,52 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
           }, 1000);
         }
       } else {
-        const errorMessage = aiResponse.message || 'I couldn\'t find any products matching your request. Could you try rephrasing your search?';
+        // For no-products case: get assistant message content (no intro/header)
+        let errorMessage = '';
+        if (aiResponse.messages && aiResponse.messages.length > 0) {
+          // Find the latest assistant message
+          const latestAssistantMessage = [...aiResponse.messages]
+            .reverse()
+            .find(msg => msg.role === 'assistant');
+          
+          if (latestAssistantMessage && latestAssistantMessage.content) {
+            errorMessage = latestAssistantMessage.content.replace(/\n/g, '<br>');
+          }
+        }
+        
         const botResponse: Message = {
           id: Date.now() + 1,
           text: errorMessage,
           isUser: false,
-          timestamp: new Date()
+          timestamp: new Date(),
+          isHtml: true
         };
         setMessages(prev => [...prev, botResponse]);
+        
+        // Update conversation history for error case too
+        if (aiResponse.messages && aiResponse.messages.length > 0) {
+          // Use the complete conversation history from backend
+          const backendConversationHistory: ConversationMessage[] = aiResponse.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+          setConversationHistory(backendConversationHistory);
+        }
       }
     } catch (error) {
       console.error('Error with AI search:', error);
+      
+      const errorMessage = 'I encountered an issue while searching. Let me try to help you in another way. Could you please rephrase your question or try asking about specific products?';
+      
       const botResponse: Message = {
         id: Date.now() + 1,
-        text: getBotResponse(messageText),
+        text: errorMessage,
         isUser: false,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botResponse]);
     } finally {
       setIsTyping(false);
-    }
-  };
-
-  const getBotResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-    if (input.includes('help') || input.includes('support')) {
-      return "I'm here to help! You can ask me about our products, shipping, returns, or any other questions you have.";
-    } else if (input.includes('product') || input.includes('laptop') || input.includes('phone')) {
-      return "We have a great selection of electronics! Check out our Products page for laptops, smartphones, tablets, and more. Is there a specific product you're looking for?";
-    } else if (input.includes('shipping') || input.includes('delivery')) {
-      return "We offer free shipping on orders over $50! Standard delivery takes 3-5 business days, and express shipping is available for faster delivery.";
-    } else if (input.includes('return') || input.includes('refund')) {
-      return "We have a 30-day return policy. If you're not satisfied with your purchase, you can return it within 30 days for a full refund.";
-    } else if (input.includes('price') || input.includes('cost') || input.includes('discount')) {
-      return "We regularly offer special deals and discounts! Check our homepage for current promotions, or sign up for our newsletter to get exclusive offers.";
-    } else if (input.includes('cart') || input.includes('checkout')) {
-      return "Having trouble with your cart? Make sure you're logged in to save your items. If you need help with checkout, I can guide you through the process!";
-    } else if (input.includes('account') || input.includes('login') || input.includes('register')) {
-      return "You can create an account or login using the account icon in the top right. Having an account allows you to save your cart, track orders, and access exclusive deals!";
-    } else if (input.includes('hi') || input.includes('hello') || input.includes('hey')) {
-      return "Hello there! Thanks for visiting Electro. What can I help you find today?";
-    } else if (input.includes('bye') || input.includes('goodbye') || input.includes('thanks')) {
-      return "You're welcome! Feel free to reach out if you need any more help. Happy shopping at Electro! 😊";
-    } else {
-      const responses = [
-        "That's a great question! Let me help you with that. Could you provide more details?",
-        "I'd be happy to assist you with that! Can you tell me more about what you're looking for?",
-        "Thanks for your question! For more specific information, you can also contact our customer service team.",
-        "I understand your concern. Is there anything specific about our products or services I can help clarify?",
-        "Great question! Feel free to browse our products or let me know if you need recommendations for any specific electronics."
-      ];
-      return responses[Math.floor(Math.random() * responses.length)];
     }
   };
 
@@ -413,19 +518,40 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
             <div className="chatbot-avatar">🤖</div>
             <div className="chatbot-header-text">
               <h4>Electro Assistant</h4>
-              <span className="chatbot-status">Online</span>
+              <span className="chatbot-status">
+                Online {conversationHistory.length > 0 && `• ${Math.floor(conversationHistory.length/2)} exchanges`}
+              </span>
             </div>
           </div>
-          <button className="chatbot-close-btn" onClick={onClose}>
-            ✕
-          </button>
+          <div className="chatbot-header-actions">
+            {conversationHistory.length > 0 && (
+              <button 
+                className="chatbot-clear-btn" 
+                onClick={() => {
+                  setConversationHistory([]);
+                  setLastFunctionUsed('');
+                  addMessage('🔄 Conversation context cleared. Starting fresh!', false);
+                }}
+                title="Clear conversation history"
+              >
+                🔄
+              </button>
+            )}
+            <button className="chatbot-close-btn" onClick={onClose}>
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="chatbot-messages">
           {messages.map((message) => (
             <div key={message.id} className={`chatbot-message ${message.isUser ? 'user' : 'bot'}`}>
               <div className="chatbot-message-content">
-                {message.text}
+                {message.isHtml ? (
+                  <div dangerouslySetInnerHTML={{ __html: message.text }} />
+                ) : (
+                  message.text
+                )}
               </div>
 
               {message.products && message.products.length > 0 && (
@@ -470,12 +596,19 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                           sessionStorage.setItem('chatbotSearchResults', JSON.stringify(message.products));
                           sessionStorage.setItem('chatbotSearchQuery', lastSearchQuery);
                           
+                          // Store the function type for dynamic title
+                          if (lastFunctionUsed === 'find_gifts') {
+                            sessionStorage.setItem('searchResultTitle', 'Search Gift Result');
+                          } else {
+                            sessionStorage.setItem('searchResultTitle', 'Search Product Result');
+                          }
+                          
                           // Verify storage
                           const stored = sessionStorage.getItem('chatbotSearchResults');
                           console.log('✅ Verified storage:', stored ? JSON.parse(stored).length : 'null');
                           
                           // Navigate to dedicated search results page
-                          navigate('/search-results');
+                          navigate(`/search-results?t=${Date.now()}`);
                         }}
                       >
                         View All {message.products.length} Results
