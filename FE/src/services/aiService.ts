@@ -2,13 +2,20 @@ import { Product } from '../contexts/ShopContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
+export interface ConversationMessage {
+  role: string; // "user" or "assistant"
+  content: string;
+}
+
 export interface AISearchRequest {
-  query: string;
+  messages: ConversationMessage[];
   limit?: number;
 }
 
 export interface AISearchResponse {
   status: string;
+  function_used?: string; // "find_products" or "find_gifts"
+  language_detected?: string;
   search_intent?: {
     search_query: string;
     filters: {
@@ -32,6 +39,23 @@ export interface AISearchResponse {
   }[];
   total_results?: number;
   message?: string;
+  // New fields from updated backend
+  intro?: string;
+  header?: string;
+  messages?: Array<{
+    role: string;
+    content: string;
+  }>;
+  // Legacy fields for backward compatibility
+  conversation_context?: {
+    current_function: string;
+    messages: Array<{
+      user_input: string;
+      function_used: string;
+      language: string;
+      agent_output: string;
+    }>;
+  };
 }
 
 export interface VoiceSearchResponse extends AISearchResponse {

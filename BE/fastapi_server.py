@@ -11,12 +11,24 @@ from datetime import datetime
 from google.api_core.retry import Retry
 from firebase_config import get_firestore_db
 
+# Import routers
+from routers.ai_router import router as ai_router
+from routers.auth_router import router as auth_router
+from routers.product_router import router as product_router
+from routers.wishlist_router import router as wishlist_router
+
 # Create FastAPI app
 app = FastAPI(
     title="eCommerce Backend API",
     description="FastAPI backend for eCommerce application with Firebase integration",
     version="1.0.0"
 )
+
+# Include routers
+app.include_router(ai_router, prefix="/api", tags=["AI"])
+app.include_router(auth_router, prefix="/api", tags=["Authentication"])
+app.include_router(product_router, prefix="/api", tags=["Products"])
+app.include_router(wishlist_router, prefix="/api", tags=["Wishlist"])
 
 # CORS middleware
 app.add_middleware(
