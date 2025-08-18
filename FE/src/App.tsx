@@ -246,7 +246,7 @@ const Navbar = () => {
                   // Use AI search if query is complex enough
                   if (query.length > 3) {
                     const aiResponse = await aiService.searchProducts({
-                      query: query,
+                      messages: [{ role: "user", content: query }],
                       limit: 20
                     });
                     

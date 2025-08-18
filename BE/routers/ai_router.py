@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
 
 from services.ai_service import AIService
@@ -9,9 +9,13 @@ router = APIRouter()
 # Initialize AI service
 ai_service = AIService()
 
+class ConversationMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
 class SearchRequest(BaseModel):
-    query: str
     limit: Optional[int] = 10
+    messages: List[Dict[str, str]]
 
 class EmbedProductsResponse(BaseModel):
     status: str
@@ -20,19 +24,27 @@ class EmbedProductsResponse(BaseModel):
 
 class SearchResponse(BaseModel):
     status: str
+    function_used: Optional[str] = None  # "find_products" or "find_gifts"
+    language_detected: Optional[str] = None
     search_intent: Optional[Dict[str, Any]] = None
+    intro: Optional[str] = None  # Added intro field
+    header: Optional[str] = None  # Added header field
     products: Optional[list] = None
     total_results: Optional[int] = None
-    message: Optional[str] = None
+    messages: Optional[List[Dict[str, str]]] = None  # Added messages for conversation
 
 class VoiceSearchResponse(BaseModel):
     status: str
     transcribed_text: Optional[str] = None
+    original_query_type: Optional[str] = None
+    function_used: Optional[str] = None  # "find_products" or "find_gifts"
+    language_detected: Optional[str] = None
     search_intent: Optional[Dict[str, Any]] = None
+    intro: Optional[str] = None  # Added intro field
+    header: Optional[str] = None  # Added header field
     products: Optional[list] = None
     total_results: Optional[int] = None
-    original_query_type: Optional[str] = None
-    message: Optional[str] = None
+    messages: Optional[List[Dict[str, str]]] = None  # Added messages for conversation
 
 @router.get("/ai/embed-products", response_model=EmbedProductsResponse)
 async def embed_all_products():
@@ -49,13 +61,14 @@ async def embed_all_products():
 @router.post("/ai/search", response_model=SearchResponse)
 async def semantic_search(search_request: SearchRequest):
     """
-    Perform semantic search on products using natural language query.
-    The AI will extract search intent and apply appropriate filters.
+    Perform intelligent semantic search using LangChain tools.
+    Automatically determines whether to use find_products or find_gifts based on user intent.
+    Supports conversation context and language detection.
     """
     try:
-        result = await ai_service.semantic_search(
-            user_input=search_request.query,
-            limit=search_request.limit
+        result = await ai_service.semantic_search_middleware(
+            messages=search_request.messages
+            #update limit later
         )
         return SearchResponse(**result)
     except Exception as e:
@@ -67,12 +80,31 @@ async def semantic_search_get(
     limit: int = Query(10, description="Maximum number of results")
 ):
     """
-    Perform semantic search on products using query parameter.
+    Perform intelligent semantic search using query parameter.
     Alternative GET endpoint for easier testing.
     """
     try:
-        result = await ai_service.semantic_search(user_input=q, limit=limit)
+        result = await ai_service.semantic_search_middleware(
+            user_input=q, 
+            conversation_context={"current_function": None, "messages": []}, 
+            limit=limit
+        )
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+@router.post("/ai/legacy-search", response_model=SearchResponse) 
+async def legacy_semantic_search(search_request: SearchRequest):
+    """
+    Legacy semantic search endpoint using the original method.
+    Use /ai/search for the new intelligent routing system.
+    """
+    try:
+        result = await ai_service.semantic_search(
+            user_input=search_request.query,
+            limit=search_request.limit
+        )
+        return SearchResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
@@ -105,8 +137,8 @@ async def voice_search(
                 detail="File too large. Maximum size is 25MB."
             )
         
-        # Perform voice search
-        result = await ai_service.voice_search(audio.file, limit)
+        # Perform voice search (limit not needed anymore since middleware handles it)
+        result = await ai_service.voice_search(audio.file)
         return VoiceSearchResponse(**result)
         
     except HTTPException:

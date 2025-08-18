@@ -51,6 +51,29 @@ body.chatbot-open {
   gap: 0.75rem;
 }
 
+.chatbot-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chatbot-clear-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  opacity: 0.8;
+}
+
+.chatbot-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 1;
+}
+
 .chatbot-avatar {
   width: 40px;
   height: 40px;
