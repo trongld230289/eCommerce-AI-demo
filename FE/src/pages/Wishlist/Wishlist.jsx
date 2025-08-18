@@ -112,45 +112,30 @@ const Wishlist = () => {
       
       console.log('Buy now - Product for cart:', productForCart);
 
-      // Track user event for buy now
+      // Track user event for purchase
       await eventTrackingService.trackEvent({
-        event_type: 'add_to_cart',
+        event_type: 'purchase',
         user_id: currentUser.uid,
         product_id: wishlistItem.product_id.toString(),
         metadata: {
           product_name: productForCart.name,
           product_category: productForCart.category,
           product_price: productForCart.price,
+          quantity: 1,
           source: 'wishlist_buy_now',
           device: navigator.userAgent
         }
       });
       
-      // Add to cart with product details
-      await cartService.addItemToCart(
-        currentUser.uid, 
-        wishlistItem.product_id, 
-        1,
-        productForCart // Pass the product details to the cart service
-      );
-      addToCart(productForCart);
-      
-      // Dispatch event to refresh cart count in header
-      window.dispatchEvent(new Event('cartUpdated'));
-      
-      toast.success(`⚡ "${productForCart.name}" added to cart! Redirecting to checkout...`, {
+      // Show success message immediately
+      toast.success(`⚡ Successfully purchased "${productForCart.name}"!`, {
         position: "top-right",
-        autoClose: 2000,
+        autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
       });
-      
-      // Navigate to cart page for checkout
-      setTimeout(() => {
-        window.location.href = '/cart';
-      }, 1500);
     } catch (error) {
       console.error('Error processing buy now:', error);
       toast.error('Failed to process purchase');
