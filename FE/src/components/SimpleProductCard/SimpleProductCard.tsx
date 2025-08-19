@@ -9,11 +9,13 @@ import WishlistButton from '../WishlistButton/WishlistButton';
 interface SimpleProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
+  functionType?: string;
 }
 
 const SimpleProductCard: React.FC<SimpleProductCardProps> = ({ 
   product, 
-  onAddToCart
+  onAddToCart,
+  functionType
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -22,7 +24,7 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
       backgroundColor: 'white',
       borderRadius: '6px',
       boxShadow: isHovered ? '0 8px 20px rgba(0,0,0,0.12)' : '0 2px 6px rgba(0,0,0,0.08)',
-      overflow: 'hidden',
+      overflow: 'visible', // Fix icon bị đè
       transition: 'transform 0.3s ease, box-shadow 0.3s ease',
       position: 'relative' as const,
       transform: isHovered ? 'translateY(-5px)' : 'translateY(0)'
@@ -180,6 +182,49 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
           </span>
         )}
         
+        {/* Function type icon - chỉ hiện khi có functionType từ chatbot/search */}
+        {functionType && (functionType === 'find_gifts' || functionType === 'find_products') && (
+          <div style={{
+            position: 'absolute',
+            top: '-10px',
+            right: '-10px',
+            zIndex: 99,
+            background: '#fff',
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.18)',
+            border: '2.5px solid #fff',
+            pointerEvents: 'none'
+          }}>
+            {functionType === 'find_gifts' ? (
+              <span 
+                title="Gift Suggestion" 
+                style={{ 
+                  fontSize: '15px', 
+                  display: 'block',
+                  animation: 'giftGlow 2s ease-in-out infinite alternate'
+                }}
+              >
+                🎁
+              </span>
+            ) : (
+              <span 
+                title="Product Search" 
+                style={{ 
+                  fontSize: '15px', 
+                  display: 'block',
+                  animation: 'productPulse 2s ease-in-out infinite'
+                }}
+              >
+                🛍️
+              </span>
+            )}
+          </div>
+        )}
    
         {/* Hover Overlay with Action Buttons */}
         <div style={styles.productOverlay}>

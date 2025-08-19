@@ -11,8 +11,9 @@ from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import BaseMessage
 from dotenv import load_dotenv
+from utils.product_keywords import get_product_keywords_from_dict
 
 # Handle OpenAI import with proper error handling
 try:
@@ -28,6 +29,7 @@ try:
     from langchain.agents import Tool as LC_Tool, create_openai_tools_agent, AgentExecutor
     from langchain.prompts import ChatPromptTemplate
     from langchain.schema import HumanMessage, SystemMessage
+    from langchain_core.messages import ToolMessage
     try:
         from langchain_openai import ChatOpenAI
     except ImportError:
@@ -68,28 +70,53 @@ load_dotenv(dotenv_path=env_path)
 
 # System instructions for the AI agent
 SYSTEM_INSTRUCTIONS = """
-You are a shopping assistant that MUST use tools to find products.
+You are a shopping assistant that helps users find products in 5 categories: phone, camera, laptop, watch, camping gear.
 
-IMPORTANT RULES:
-1. ALWAYS call either `find_products` or `find_gifts` tool for ANY product search request
-2. NEVER give direct answers without using tools first
-3. If user mentions recipients (mom, dad, friend, etc.) or gift occasions, call `find_gifts`
-4. Otherwise, call `find_products` 
-5. Pass the user's query directly to the tool - don't ask for clarification
+CORE BEHAVIOR:
+1. For gift requests without specific category: Ask user to choose a category before calling tools
+2. For gift requests with category: Call find_gifts tool 
+3. For general product searches: Call find_products tool
+4. For invalid categories: Explain limitations and suggest valid alternatives
+
+GIFT HANDLING LOGIC:
+- If user mentions recipients (mom, dad, friend, etc.) or gift occasions BUT doesn't specify a product category:
+  → ASK: "What type of gift are you looking for? I can help with: phone, camera, laptop, watch, or camping gear"
+- If user mentions recipients AND specifies a valid category:
+  → CALL: find_gifts tool with the category
+- If user specifies category after gift context:
+  → CALL: find_gifts tool (maintain gift context)
+
+GENERAL PRODUCT LOGIC:
+- If user asks for products without gift context:
+  → CALL: find_products tool directly
 
 CATEGORY RESTRICTIONS:
-- You can ONLY recommend products in these 4 categories: phone, camera, laptop, watch
-- If user asks for anything outside these categories (clothes, jewelry, furniture, etc.), politely explain that you only help with: phone, camera, laptop, and watch products
-- Always try to suggest alternatives within the allowed categories if possible
+- ONLY these 5 categories: phone, camera, laptop, watch, camping gear
+- For invalid categories (clothes, jewelry, furniture, etc.):
+  → EXPLAIN: "I only help with phone, camera, laptop, watch, and camping gear"
+  → SUGGEST: alternatives within valid categories
 
-Examples:
-- User: "phone" → Call find_products("phone")  
-- User: "laptop for work" → Call find_products("laptop for work")
-- User: "gift for mom" → Call find_gifts("gift for mom")
-- User: "birthday present" → Call find_gifts("birthday present")
-- User: "clothes" → Explain limitations and suggest alternatives like "smartwatch for fitness tracking"
+REPEATED QUERIES:
+- If user repeats same query (e.g., "phone" then "phone" again): ALWAYS call the appropriate tool again
+- Each query should trigger fresh tool execution regardless of conversation history
+- MAINTAIN CONTEXT: If gift context was established earlier, continue using find_gifts for repeated queries
 
-You must call a tool on EVERY valid product search request. Do not provide generic responses.
+EXAMPLES:
+✅ "I want gift for mom" → ASK for category first
+✅ "Gift for mom - phone" → Call find_gifts("phone", recipient="mom")  
+✅ "Phone for mom" → Call find_gifts("phone", recipient="mom")
+✅ "Phone" (no gift context) → Call find_products("phone")
+✅ User: "gift for dad" → You: "What category?" → User: "laptop" → Call find_gifts("laptop", recipient="dad")
+✅ If gift context exists and user says "phone" again → Call find_gifts("phone", maintain context)
+❌ "Clothes for mom" → Explain limitations, suggest "watch for fashion accessory"
+
+CONVERSATION FLOW:
+- Always check if gift context exists in conversation history
+- If gift context exists and user mentions category → use find_gifts (maintain gift context)
+- If gift context exists but no category → ask for category
+- If no gift context → use find_products
+
+Remember: ASK before calling tools when gift context exists but category is unclear.
 """
 
 class AIService:
@@ -135,7 +162,7 @@ class AIService:
             api_key=os.getenv("OPENAI_API_KEY"),
             model=os.getenv("OPENAI_MODEL_ID"),
             temperature=0.7,
-            max_tokens=600,
+            max_tokens=4000,
         )
 
         # ---- Define tools as closures (no exposed self param)
@@ -144,7 +171,7 @@ class AIService:
 
         @tool("find_products", args_schema=FindProductsInput, return_direct=True)
         def find_products(query: str) -> str:
-            """Find and recommend products based on user's shopping needs. Only searches in: phone, camera, laptop, watch categories."""
+            """Find and recommend products based on user's shopping needs. Only searches in: phone, camera, laptop, watch, camping gear categories."""
             
             # Return JSON-encoded string for consistent downstream parsing
             result = self.semantic_search(query, 10, self.USER_LANG_CODE)
@@ -154,23 +181,39 @@ class AIService:
             recipient: str = Field(..., description="e.g., 'my mom'")
             user_input: str = Field(..., description="User's input query for context")
             category: Optional[str] = Field(default=None, description="Gift interest/category, e.g., 'phone'")
-            occasion: Optional[str] = Field(default=None, description="e.g., 'birthday'")
+            occasion: Optional[str] = Field(default="general", description="e.g., 'birthday'")
 
         @tool("find_gifts", args_schema=FindGiftsInput, return_direct=True)
-        def find_gifts(recipient: str,  user_input: str,category: Optional[str], occasion: Optional[str] = "general") -> str:
+        def find_gifts(recipient: str, user_input: str, category: Optional[str] = None, occasion: Optional[str] = "general") -> str:
             """
-            Recommend gifts for a recipient. Category must be one of: phone/camera/laptop/watch.
+            Recommend gifts for a recipient. Category must be one of: phone/camera/laptop/watch/camping gear.
             If category is not provided or invalid, return a clarification message.
             """
             print(f"DEBUG find_gifts - recipient: {recipient}, user_input: {user_input}, category: {category}")
             
-            # If category is provided, use it for search; otherwise use original user_input
-            search_query = category if category else user_input
-            print(f"DEBUG find_gifts - search_query: {search_query}")
+            # If no category is provided, ask for clarification
+            if not category:
+                clarification_message = f"I'd love to help you find the perfect gift for {recipient}! To give you the best recommendations, could you tell me what type of gift you're looking for?\n\nI can help you find:\n• 📱 Phone - smartphones and accessories\n• 📷 Camera - cameras and photography gear\n• 💻 Laptop - computers for work or personal use\n• ⌚ Watch - smartwatches and timepieces\n• 🏕️ Camping gear - outdoor and adventure equipment\n\nWhat category interests you most for {recipient}?"
+                return clarification_message
             
-            result = self.semantic_search(search_query, 5, self.USER_LANG_CODE)
+            # Validate category
+            valid_categories = ["phone", "camera", "laptop", "watch", "camping gear"]
+            if category.lower() not in valid_categories:
+                invalid_message = f"I can only help with these categories: phone, camera, laptop, watch, and camping gear. Could you please choose one of these for your gift for {recipient}?"
+                return invalid_message
+            
+            print(f"DEBUG find_gifts - search_query: {category}")
+            
+            # Use the category for search
+            result = self.semantic_search(category, 5, self.USER_LANG_CODE)
             result["recipient"] = recipient
             result["requested_category"] = category
+            result["occasion"] = occasion
+            
+            # Update the intro message to be gift-specific
+            if "intro" in result:
+                result["intro"] = f"Here are some wonderful {category} gifts for {recipient} - {result['intro']}"
+            
             return json.dumps(result, ensure_ascii=False)
 
         self.available_tools = [find_products, find_gifts]
@@ -276,7 +319,16 @@ class AIService:
 
     # ---------- Product text / metadata ----------
     def _prepare_product_text(self, product: Product) -> str:
-        keywords = self._get_product_keywords(product)
+        # Convert Product object to dict for the shared utility
+        product_dict = {
+            'name': product.name,
+            'category': product.category,
+            'price': product.price,
+            'description': getattr(product, 'description', ''),
+            'rating': getattr(product, 'rating', None),
+        }
+        
+        keywords = get_product_keywords_from_dict(product_dict)
         text_parts = []
         if keywords:
             primary_keywords = keywords[:3]
@@ -286,47 +338,6 @@ class AIService:
         if product.description:
             text_parts.append(product.description)
         return " ".join(text_parts)
-
-    def _get_product_keywords(self, product: Product) -> List[str]:
-        keywords = []
-        name_lower = product.name.lower()
-        if any(word in name_lower for word in ['smartphone', '5g', 'mobile']) or \
-           ('phone' in name_lower and not any(word in name_lower for word in ['headphone', 'earphone'])):
-            keywords.extend(['phone','mobile phone','cell phone','smartphone','mobile device','cellular',
-                             'iphone','android phone','handset','telephone','smart phone','5g phone',
-                             'cellular phone','wireless phone','mobile smartphone'])
-        if any(word in name_lower for word in ['laptop','computer','pc','macbook']):
-            keywords.extend(['computer','laptop','notebook','pc','portable computer','macbook','mac','apple laptop'])
-        if any(word in name_lower for word in ['gaming','game']):
-            keywords.extend(['gaming','gamer','game','esports'])
-        if 'mouse' in name_lower:
-            keywords.extend(['mouse','computer mouse','gaming mouse','optical mouse'])
-        if any(word in name_lower for word in ['headphone','headset','earphone']) and not any(word in name_lower for word in ['smartphone','5g']):
-            keywords.extend(['headphones','headset','earphones','audio','music','wireless headphones'])
-        if any(word in name_lower for word in ['tv','television','smart tv']):
-            keywords.extend(['tv','television','smart tv','display','screen'])
-        if any(word in name_lower for word in ['watch','smartwatch']):
-            keywords.extend(['watch','smartwatch','wearable','fitness tracker'])
-        if 'keyboard' in name_lower:
-            keywords.extend(['keyboard','mechanical keyboard','gaming keyboard','typing'])
-        if 'speaker' in name_lower:
-            keywords.extend(['speaker','audio','sound','music','bluetooth speaker'])
-        if 'tablet' in name_lower:
-            keywords.extend(['tablet','ipad','android tablet','portable device'])
-        if product.category.lower() == 'furniture':
-            if any(word in name_lower for word in ['chair','desk','table']):
-                if 'chair' in name_lower:
-                    keywords.extend(['chair','seat','office chair','gaming chair'])
-                if any(word in name_lower for word in ['desk','table']):
-                    keywords.extend(['desk','table','workstation','office desk'])
-                if 'lamp' in name_lower:
-                    keywords.extend(['lamp','light','lighting','desk lamp'])
-        if product.category.lower() == 'appliances':
-            if 'coffee' in name_lower:
-                keywords.extend(['coffee','coffee maker','espresso','brewing'])
-            if 'blender' in name_lower:
-                keywords.extend(['blender','mixer','smoothie','kitchen appliance'])
-        return keywords
 
     def _prepare_product_metadata(self, product: Product) -> Dict[str, Any]:
         return {
@@ -392,7 +403,7 @@ class AIService:
         try:
             prompt = f"""
             Extract product search information from the following user input. 
-            IMPORTANT: Only recognize these 4 categories: phone, camera, laptop, watch. 
+            IMPORTANT: Only recognize these 5 categories: phone, camera, laptop, watch, camping gear. 
             If the input refers to any other category (clothes, jewelry, furniture, etc.), set category to null.
             
             Return a JSON object with the following structure:
@@ -401,7 +412,7 @@ class AIService:
                 "product_name": "specific product name if mentioned, otherwise null",
                 "product_description": "specific product features, specifications, or descriptions mentioned, otherwise null",
                 "filters": {{
-                    "category": "ONLY one of: phone, camera, laptop, watch - or null if not these categories",
+                    "category": "ONLY one of: phone, camera, laptop, watch, camping gear - or null if not these categories",
                     "min_price": number or null,
                     "max_price": number or null,
                     "min_rating": number or null,
@@ -414,7 +425,7 @@ class AIService:
             response = self.openai_client.chat.completions.create(
                 model=os.getenv("OPENAI_MODEL_ID"),
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that extracts product search intent from user queries. ONLY recognize these 4 product categories: phone, camera, laptop, watch. Ignore any other categories."},
+                    {"role": "system", "content": "You are a helpful assistant that extracts product search intent from user queries. ONLY recognize these 5 product categories: phone, camera, laptop, watch, camping gear. Ignore any other categories."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
@@ -464,7 +475,8 @@ class AIService:
             filters = search_intent.get("filters", {})
             product_category = filters.get("category", None)
             product_description = search_intent.get("product_description", None)
-            embedding_input = f"{product_category} {product_name or ''} {product_description or ''}".strip()
+            # Use the full original query for better semantic search, enhanced with extracted info
+            embedding_input = f"{product_category or ''} {product_name or ''} {product_description or ''}".strip()
 
             print(f"Search intent extracted: {search_intent}")
             print(f"Original query: {user_input}")
@@ -487,7 +499,7 @@ class AIService:
             results = self.collection.query(**search_params)
 
             products = []
-            valid_categories = ["phone", "camera", "laptop", "watch"]
+            valid_categories = ["phone", "camera", "laptop", "watch", "camping gear"]
             
             if results["metadatas"] and results["metadatas"][0]:
                 for i, metadata in enumerate(results["metadatas"][0]):
@@ -495,10 +507,16 @@ class AIService:
                     if metadata["category"].lower() not in valid_categories:
                         continue
                         
-                    similarity_score = 1 - results["distances"][0][i]
-                    if similarity_score > 0.35:
+                    # For cosine distance: distance ranges from 0 (identical) to 2 (opposite)
+                    # Convert to similarity: similarity = 1 - (distance / 2) to get range [0, 1]
+                    distance = results["distances"][0][i]
+                    similarity_score = 1 - (distance / 2)  # Normalize to [0, 1] range
+                    print(f"DEBUG: Product {i} - ID: {metadata['id']}, Name: {metadata['name']}, Distance: {distance}, Similarity Score: {similarity_score}")
+                    
+                    # Lower threshold since we're now getting proper similarity scores
+                    if similarity_score > 0.1:  # Much lower threshold for better results
                         product_data = {
-                            "id": int(metadata["id"]),
+                            "id": metadata["id"],  # Keep as string, don't convert to int
                             "name": metadata["name"],
                             "category": metadata["category"],
                             "price": metadata["price"],
@@ -511,7 +529,7 @@ class AIService:
                         products.append(product_data)
 
             intro = self.make_intro_sentence(
-                f"User is searching for products: {user_input}. Found {len(products)} matching products. Encourage the decision warmly.",
+                f"""User is searching for products: {user_input}. Found {len(products)} matching products. Encourage the decision warmly and funny.""",
                 lang,
             )
             composed_response = self.compose_response(intro, products, lang)
@@ -605,22 +623,56 @@ class AIService:
         header = self.HEADER_BY_LANG.get(lang_code, self.HEADER_BY_LANG["en"])
         return {"intro": intro, "header": header, "products": items}
 
+    def truncate_conversation_history(self, messages: List[Dict[str, str]], max_messages: int = 8) -> List[Dict[str, str]]:
+        """Keep system message + last N conversation messages to prevent token overflow"""
+        
+        if len(messages) <= max_messages + 1:  # +1 for system message
+            return messages
+        
+        # Separate system and conversation messages
+        system_msg = None
+        conversation_msgs = []
+        
+        for msg in messages:
+            if msg["role"] == "system":
+                system_msg = msg
+            else:
+                conversation_msgs.append(msg)
+        
+        # Keep last N conversation messages
+        recent_conversation = conversation_msgs[-max_messages:]
+        
+        # Combine: system + recent conversation
+        result = []
+        if system_msg:
+            result.append(system_msg)
+        result.extend(recent_conversation)
+        
+        print(f"DEBUG: Truncated messages from {len(messages)} to {len(result)} (system + {len(recent_conversation)} conversation)")
+        return result
+
     # ---------- Chat middleware ----------
     async def semantic_search_middleware(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
+        # Truncate conversation history to prevent token overflow
+        messages = self.truncate_conversation_history(messages, max_messages=8)
+        
         # last user input
         user_input = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
 
         # update language ON INSTANCE
         self.USER_LANG_CODE = self.detect_language(user_input)
 
-        # ensure system message (optional since we also pass state_modifier)
+        # ensure system message is always present with updated instructions
         agent_messages = messages.copy()
-        # if not agent_messages or agent_messages[0].get("role") != "system":
-        #     agent_messages.insert(0, {"role": "system", "content": SYSTEM_INSTRUCTIONS})
+        if not agent_messages or agent_messages[0].get("role") != "system":
+            agent_messages.insert(0, {"role": "system", "content": SYSTEM_INSTRUCTIONS})
+        else:
+            # Update existing system message with latest instructions
+            agent_messages[0]["content"] = SYSTEM_INSTRUCTIONS
 
         print(f"DEBUG: User input: {user_input}")
         print(f"DEBUG: Language detected: {self.USER_LANG_CODE}")
-        print(f"DEBUG: Messages before agent: {agent_messages}")
+        print(f"DEBUG: Messages count after truncation: {len(agent_messages)}")
 
         # allow more steps for tool calling
         response = self.agent.invoke({"messages": agent_messages}, config={"recursion_limit": 5})

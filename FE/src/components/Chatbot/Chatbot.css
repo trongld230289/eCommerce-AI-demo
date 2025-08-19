@@ -474,7 +474,7 @@ body.chatbot-open {
 .chatbot-product-item {
   background: white;
   border-radius: 6px;
-  overflow: hidden;
+  overflow: visible !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
 }
@@ -490,6 +490,9 @@ body.chatbot-open {
   gap: 0.75rem;
   transition: all 0.3s ease;
   border-radius: 8px;
+  position: relative;
+  /* Đảm bảo không che icon */
+  overflow: visible;
 }
 
 .chatbot-product-card:hover {
@@ -568,6 +571,56 @@ body.chatbot-open {
   background: linear-gradient(135deg, #0056b3 0%, #004494 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+/* Product function type icon */
+.product-function-icon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 99;
+  background: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  border: 2.5px solid #fff;
+  /* Đảm bảo nổi bật trên mọi nền */
+  pointer-events: none;
+}
+
+.gift-icon, .product-icon {
+  font-size: 12px;
+  display: block;
+}
+
+.gift-icon {
+  animation: giftGlow 2s ease-in-out infinite alternate;
+}
+
+.product-icon {
+  animation: productPulse 2s ease-in-out infinite;
+}
+
+@keyframes giftGlow {
+  from { 
+    filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.6));
+  }
+  to { 
+    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.9));
+  }
+}
+
+@keyframes productPulse {
+  0%, 100% { 
+    transform: scale(1);
+  }
+  50% { 
+    transform: scale(1.05);
+  }
 }
 
 /* Mobile responsiveness for product cards */
