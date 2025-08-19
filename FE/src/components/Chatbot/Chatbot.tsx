@@ -346,14 +346,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                                (inputValue.toLowerCase().includes('yes') && lastSearchResults.length > 0));
       
       if (isShowAllRequest && lastSearchResults.length > 0) {
-        const showAllMessage: Message = {
-          id: Date.now() + 1,
-          text: `Perfect! I'll show you all ${lastSearchResults.length} results on the search results page.`,
-          isUser: false,
-          timestamp: new Date()
-        };
+        // const showAllMessage: Message = {
+        //   id: Date.now() + 1,
+        //   text: `Perfect! I'll show you all ${lastSearchResults.length} results on the search results page.`,
+        //   isUser: false,
+        //   timestamp: new Date()
+        // };
         
-        setMessages(prev => [...prev, showAllMessage]);
+        // setMessages(prev => [...prev, showAllMessage]);
         
         // Store search results in sessionStorage for the SearchResult page
         sessionStorage.setItem('chatbotSearchResults', JSON.stringify(lastSearchResults));
@@ -441,23 +441,38 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
           setConversationHistory(backendConversationHistory);
         }
 
-        if (products.length > 3) {
+        // Use show_all_product message from backend if available
+        console.log('🔍 Checking show_all_product:', {
+          show_all_product: aiResponse.show_all_product,
+          type: typeof aiResponse.show_all_product,
+          length: aiResponse.show_all_product?.length,
+          products_count: products.length,
+          raw_value: JSON.stringify(aiResponse.show_all_product)
+        });
+        
+        // More relaxed check - just need truthy value with content
+        if (aiResponse.show_all_product && String(aiResponse.show_all_product).trim().length > 0) {
+          console.log('✅ Using backend show_all_product message');
           setTimeout(() => {
-            // Create language-appropriate message
-            let moreResultsText = `I found ${products.length} total results. Would you like me to show you all of them on the products page?`;
-            
-            // If language detected is Vietnamese, use Vietnamese message
-            if (aiResponse.language_detected === 'vi') {
-              moreResultsText = `Tôi đã tìm thấy tổng cộng ${products.length} kết quả. Bạn có muốn tôi hiển thị tất cả chúng trên trang sản phẩm không?`;
-            }
-            
             const moreResultsMessage: Message = {
               id: Date.now() + 2,
-              text: moreResultsText,
+              text: String(aiResponse.show_all_product).trim(),
               isUser: false,
               timestamp: new Date()
             };
             setMessages(prev => [...prev, moreResultsMessage]);
+          }, 1000);
+        } else if (products.length > 3) {
+          // Fallback: create our own "show all" message if backend doesn't provide one
+          console.log('⚠️ Backend did not provide show_all_product, creating fallback message');
+          setTimeout(() => {
+            const fallbackMessage: Message = {
+              id: Date.now() + 2,
+              text: `Would you like to see all ${products.length} results on the products page?`,
+              isUser: false,
+              timestamp: new Date()
+            };
+            setMessages(prev => [...prev, fallbackMessage]);
           }, 1000);
         }
       } else {
