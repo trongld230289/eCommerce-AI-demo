@@ -158,6 +158,7 @@ def add_product_to_wishlist(
         wishlist = wishlist_service.add_product_to_wishlist(
             wishlist_id, user_id, product_data.product_id
         )
+        # Thuong implementation - add product to wishlist
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
         
@@ -186,6 +187,7 @@ def remove_product_from_wishlist(
         wishlist = wishlist_service.remove_product_from_wishlist(
             wishlist_id, user_id, product_id
         )
+        # Thuong implementation - remove product from wishlist
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
         
@@ -228,7 +230,7 @@ def update_wishlist_share_status(
             raise HTTPException(status_code=400, detail="User ID is required")
         
         result = wishlist_service.update_share_status(wishlist_id, user_id, share_update)
-        
+        # Thuong implementation - share and unshared wishlist
         if not result.success:
             if "not found" in result.message.lower():
                 raise HTTPException(status_code=404, detail=result.message)

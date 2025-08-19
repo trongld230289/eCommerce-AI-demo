@@ -63,6 +63,7 @@ sys.path.append(parent_dir)
 
 from models import Product
 from product_service import ProductService
+from services.middleware_service import MiddlewareService
 
 # Load environment variables
 env_path = os.path.join(parent_dir, '.env')
@@ -153,6 +154,7 @@ class AIService:
         self.embedding_model = "text-embedding-3-small"
         self._initialize_collection()
         self.product_service = ProductService()
+        self.middleware_service = MiddlewareService()
 
         # ---- App state
         self.USER_LANG_CODE = "en"
@@ -174,7 +176,7 @@ class AIService:
             """Find and recommend products based on user's shopping needs. Only searches in: phone, camera, laptop, watch, camping gear categories."""
             
             # Return JSON-encoded string for consistent downstream parsing
-            result = self.semantic_search(query, 10, self.USER_LANG_CODE)
+            result = self.semantic_search(query, 10, self.USER_LANG_CODE, searchFromTool="find_products")
             return json.dumps(result, ensure_ascii=False)
 
         class FindGiftsInput(BaseModel):
@@ -203,17 +205,39 @@ class AIService:
                 return invalid_message
             
             print(f"DEBUG find_gifts - search_query: {category}")
+
+            # Get external gift products with labels
+            external_products = self._get_external_gift_products()
+
+            composed_response = self.make_response_sentence(user_input, external_products, self.USER_LANG_CODE)
+            print(f"DEBUG: Composed response: {composed_response}")
+
+            result = {
+                "status": "success",
+                "search_intent": {
+                    "search_query": category,
+                    "product_name": None,
+                    "product_description": None,
+                    "filters": {"category": category}
+                },
+                "intro": composed_response["intro"],
+                "header": composed_response["header"],
+                "products": external_products,  # Use the original products list
+                "show_all_product": composed_response["show_all_product"],
+                "total_results": len(external_products)
+            }
             
             # Use the category for search
-            result = self.semantic_search(category, 5, self.USER_LANG_CODE)
-            result["recipient"] = recipient
-            result["requested_category"] = category
-            result["occasion"] = occasion
+            #  result = self.semantic_search(category, 5, self.USER_LANG_CODE, searchFromTool="find_gifts")
+            
+            
+            
+            # result["recipient"] = recipient
+            # result["requested_category"] = category
+            # result["occasion"] = occasion
             
             # Update the intro message to be gift-specific
-            if "intro" in result:
-                result["intro"] = f"Here are some wonderful {category} gifts for {recipient} - {result['intro']}"
-            
+        
             return json.dumps(result, ensure_ascii=False)
 
         self.available_tools = [find_products, find_gifts]
@@ -246,7 +270,8 @@ class AIService:
         except Exception:
             self.collection = self.chroma_client.create_collection(
                 name=self.collection_name,
-                metadata={"hnsw:space": "cosine"}
+                metadata={"hnsw:space": "cosine"},
+                embedding_function=None  # We provide our own embeddings
             )
 
     # ---------- Embeddings / Whisper ----------
@@ -468,7 +493,7 @@ class AIService:
             return clauses[0]
         return {"$and": clauses}
 
-    def semantic_search(self, user_input: str, limit: int = 10, lang: str = "en") -> Dict[str, Any]:
+    def semantic_search(self, user_input: str, limit: int = 10, lang: str = "en", searchFromTool:str = "find_products") -> Dict[str, Any]:
         try:
             search_intent = self.extract_search_intent(user_input)
             product_name = search_intent.get("product_name", None)
@@ -486,16 +511,18 @@ class AIService:
             if not query_embedding:
                 return {"status": "error", "message": "Failed to create query embedding"}
 
-            where_clause = self._apply_metadata_filters(filters)
-
+            # STEP 1: Semantic search first (without price filters) - get more results for better filtering
             search_params = {
                 "query_embeddings": [query_embedding],
-                "n_results": limit,
+                "n_results": min(50, limit * 5),  # Get 5x more results for better filtering
                 "include": ["metadatas", "documents", "distances"]
             }
-            if where_clause:
-                search_params["where"] = where_clause
-
+            # Only apply category filter in ChromaDB, NOT price filters
+            if filters.get("category"):
+                # Title case category to match database format (e.g., "camping gear" -> "Camping Gear")
+                category_value = filters.get("category").title()
+                search_params["where"] = {"category": {"$eq": category_value}}
+                
             results = self.collection.query(**search_params)
 
             products = []
@@ -511,7 +538,6 @@ class AIService:
                     # Convert to similarity: similarity = 1 - (distance / 2) to get range [0, 1]
                     distance = results["distances"][0][i]
                     similarity_score = 1 - (distance / 2)  # Normalize to [0, 1] range
-                    print(f"DEBUG: Product {i} - ID: {metadata['id']}, Name: {metadata['name']}, Distance: {distance}, Similarity Score: {similarity_score}")
                     
                     # Lower threshold since we're now getting proper similarity scores
                     if similarity_score > 0.1:  # Much lower threshold for better results
@@ -524,22 +550,46 @@ class AIService:
                             "rating": metadata["rating"],
                             "discount": metadata["discount"],
                             "imageUrl": metadata["imageUrl"],
-                            "similarity_score": similarity_score
+                            "similarity_score": similarity_score,
+                            "showLabel": "product" if searchFromTool == "find_products" else ("gift" if searchFromTool == "find_gifts" else None)
                         }
                         products.append(product_data)
+                        
+            # STEP 2: Apply additional filters (price, rating, etc.) after semantic search
+            filtered_products = []
+            for product in products:
+                # Apply price filters
+                if filters.get("min_price") and product["price"] < filters["min_price"]:
+                    continue
+                if filters.get("max_price") and product["price"] > filters["max_price"]:
+                    continue
+                # Apply rating filters  
+                if filters.get("min_rating") and product["rating"] < filters["min_rating"]:
+                    continue
+                # Apply discount filters
+                if filters.get("min_discount") and product["discount"] < filters["min_discount"]:
+                    continue
+                    
+                filtered_products.append(product)
+                
+            # Limit results to requested amount
+            products = filtered_products[:limit]
+            
+            print(f"DEBUG: Semantic search found {len(results['metadatas'][0] if results['metadatas'] else [])} total")
+            print(f"DEBUG: After similarity filter: {len(products)} products") 
+            print(f"DEBUG: After price/rating filters: {len(filtered_products)} products")
+            print(f"DEBUG: Final result (limited to {limit}): {len(products)} products")
 
-            intro = self.make_intro_sentence(
-                f"""User is searching for products: {user_input}. Found {len(products)} matching products. Encourage the decision warmly and funny.""",
-                lang,
-            )
-            composed_response = self.compose_response(intro, products, lang)
+            composed_response = self.make_response_sentence(user_input, products, lang)
+            print(f"DEBUG: Composed response: {composed_response}")
 
             return {
                 "status": "success",
                 "search_intent": search_intent,
                 "intro": composed_response["intro"],
                 "header": composed_response["header"],
-                "products": composed_response["products"],
+                "products": products,  # Use the original products list
+                "show_all_product": composed_response["show_all_product"],
                 "total_results": len(products)
             }
         except Exception as e:
@@ -619,9 +669,128 @@ class AIService:
             text = text.split(".")[0].strip() + "."
         return text
 
+    def make_response_sentence(self, user_input: str, products: List[Dict], lang_code: str) -> Dict[str, str]:
+        try:
+            product_count = len(products)
+            
+            # Single comprehensive prompt for all three fields
+            prompt = f"""
+            You are a multilingual e-commerce assistant. Generate a JSON response with exactly these 3 fields for a product search result.
+
+            USER SEARCH: "{user_input}"
+            PRODUCTS FOUND: {product_count}
+            LANGUAGE CODE: {lang_code}
+
+            Generate response in the language indicated by the language code ({lang_code}).
+
+            Return ONLY a valid JSON object with these exact keys:
+            {{
+                "intro": "A warm, encouraging 1-sentence introduction about the search results (max 30 words). Be cheerful and engaging.",
+                "header": "A short subtitle introducing the product list below (max 15 words). Like 'Here are your product suggestions:' but more natural.",
+                "show_all_product": "A message asking if user wants to see all {product_count} results on products page (max 25 words). ONLY include this if product_count > 3, otherwise return empty string."
+            }}
+
+            Context guidelines:
+            - If {product_count} == 0: Make intro encouraging and helpful
+            - If {product_count} > 0: Make intro excited about the findings  
+            - If {product_count} > 3: Include show_all_product message, otherwise empty string ""
+            - Use natural, conversational tone appropriate for the language
+            - Be consistent with the language code throughout
+
+            Return only the JSON object, no other text.
+            """
+            
+            response = self.llm.invoke(prompt).content.strip()
+            
+            # Parse the JSON response
+            try:
+                result = json.loads(response)
+                return {
+                    "intro": result.get("intro", ""),
+                    "header": result.get("header", ""),
+                    "show_all_product": result.get("show_all_product", "")
+                }
+            except json.JSONDecodeError as e:
+                print(f"Failed to parse LLM JSON response: {e}")
+                print(f"Raw response: {response}")
+                raise Exception("LLM returned invalid JSON")
+            
+        except Exception as e:
+            print(f"Error in make_response_sentence: {str(e)}")
+            # Fallback to static messages
+            fallback_intros = {
+                "en": f"I found {len(products)} products for your search!" if products else "Sorry, no products found for your search.",
+                "vi": f"Tôi tìm thấy {len(products)} sản phẩm cho bạn!" if products else "Xin lỗi, không tìm thấy sản phẩm nào.",
+                "ko": f"검색에서 {len(products)}개 제품을 찾았습니다!" if products else "죄송합니다. 제품을 찾을 수 없습니다.",
+                "ja": f"検索で{len(products)}個の商品を見つけました！" if products else "申し訳ございませんが、商品が見つかりませんでした。"
+            }
+            
+            fallback_headers = {
+                "en": "Here are your product suggestions:",
+                "vi": "Đây là những sản phẩm gợi ý cho bạn:",
+                "ko": "제품 추천 목록입니다:",
+                "ja": "おすすめ商品一覧："
+            }
+            
+            fallback_show_all = {
+                "en": f"I found {len(products)} total results. Would you like to see all of them?" if len(products) > 3 else "",
+                "vi": f"Tôi tìm thấy {len(products)} kết quả. Bạn có muốn xem tất cả không?" if len(products) > 3 else "",
+                "ko": f"{len(products)}개의 결과를 찾았습니다. 모두 보시겠습니까?" if len(products) > 3 else "",
+                "ja": f"{len(products)}個の結果が見つかりました。すべて見ますか？" if len(products) > 3 else ""
+            }
+            
+            return {
+                "intro": fallback_intros.get(lang_code, fallback_intros["en"]),
+                "header": fallback_headers.get(lang_code, fallback_headers["en"]),
+                "show_all_product": fallback_show_all.get(lang_code, fallback_show_all["en"])
+            }
+
     def compose_response(self, intro: str, items, lang_code: str):
         header = self.HEADER_BY_LANG.get(lang_code, self.HEADER_BY_LANG["en"])
         return {"intro": intro, "header": header, "products": items}
+
+    def _get_external_gift_products(self) -> List[Dict[str, Any]]:
+        """
+        Get products from external gift recommendations with labels assigned to showLabel.
+        
+        Returns:
+            List of product dictionaries with showLabel field
+        """
+        try:
+            # Get external gift recommendations
+            gift_recommendations = self.middleware_service.find_gifts_external()
+            print(f"DEBUG _get_external_gift_products - external recommendations: {gift_recommendations}")
+            
+            external_products = []
+            for recommendation in gift_recommendations:
+                label = recommendation.get("label")
+                product_ids = recommendation.get("product_ids", [])
+                
+                for product_id in product_ids:
+                    product_data = self.product_service.get_product_by_id(product_id)
+                    if product_data:
+                        # Create product structure similar to semantic_search results
+                        external_product = {
+                            "id": str(product_id),
+                            "name": product_data.get("name", ""),
+                            "category": product_data.get("category", ""),
+                            "price": product_data.get("price", 0),
+                            "original_price": product_data.get("original_price", product_data.get("price", 0)),
+                            "rating": product_data.get("rating", 0),
+                            "discount": product_data.get("discount", 0),
+                            "imageUrl": product_data.get("imageUrl", ""),
+                            "similarity_score": 1.0,  # High score for external recommendations
+                            "showLabel": label  # Assign the label from external recommendations
+                        }
+                        external_products.append(external_product)
+            
+            print(f"DEBUG _get_external_gift_products - external products with labels: {external_products}")
+            return external_products
+            
+        except Exception as e:
+            print(f"Error getting external gift products: {str(e)}")
+            return []
+
 
     def truncate_conversation_history(self, messages: List[Dict[str, str]], max_messages: int = 8) -> List[Dict[str, str]]:
         """Keep system message + last N conversation messages to prevent token overflow"""
@@ -728,6 +897,7 @@ class AIService:
             "intro": ai_response_data.get("intro"),
             "header": ai_response_data.get("header"),
             "products": ai_response_data.get("products", []),
+            "show_all_product": ai_response_data.get("show_all_product"),  # Add missing show_all_product field
             "total_results": ai_response_data.get("total_results", 0),
             "messages": messages,
         }
