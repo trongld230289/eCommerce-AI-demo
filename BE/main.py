@@ -460,6 +460,7 @@ async def add_item_to_cart(cart_item: CartAddItem, user_id: str = Query(...)):
     """Add item to cart"""
     try:
         cart = await cart_service.add_item_to_cart(user_id, cart_item)
+        # Thuong implementation - add product to cart
         return cart
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error adding item to cart: {str(e)}")
@@ -478,6 +479,7 @@ async def remove_item_from_cart(cart_item: CartRemoveItem, user_id: str = Query(
     """Remove item from cart"""
     try:
         cart = await cart_service.remove_item_from_cart(user_id, cart_item)
+        # Thuong implementation - remove product from cart
         return cart
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error removing item from cart: {str(e)}")
@@ -507,6 +509,7 @@ async def track_user_event(event: UserEventCreate):
     """Track user event for recommendation system"""
     try:
         success = await recommendation_service.track_user_event(event)
+        # Thuong implementation - push user event to external service
         if success:
             return {"status": "success", "message": "Event tracked successfully"}
         else:

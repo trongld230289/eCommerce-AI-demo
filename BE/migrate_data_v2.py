@@ -653,7 +653,13 @@ class ChromaDBEmbedder:
             # Create new collection with the correct name expected by AI service
             self.collection = self.chroma_client.create_collection(
                 name="products_embeddings",
-                metadata={"hnsw:space": "cosine", "description": "E-commerce product embeddings"}
+                metadata={
+                    "hnsw:space": "cosine", 
+                    "description": "E-commerce product embeddings",
+                    "embedding_model": "text-embedding-3-small",
+                    "embedding_dimensions": 1536
+                },
+                embedding_function=None  # We provide our own embeddings
             )
             print("[SUCCESS] Created new ChromaDB collection 'products_embeddings'")
             
@@ -718,6 +724,9 @@ class ChromaDBEmbedder:
         
         if product_data.get('imageUrl'):
             metadata["imageUrl"] = product_data['imageUrl']
+        
+        if product_data.get('description'):
+            metadata["description"] = product_data['description']
         
         return metadata
 

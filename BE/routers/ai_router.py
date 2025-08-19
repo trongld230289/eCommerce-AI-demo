@@ -29,6 +29,7 @@ class SearchResponse(BaseModel):
     search_intent: Optional[Dict[str, Any]] = None
     intro: Optional[str] = None  # Added intro field
     header: Optional[str] = None  # Added header field
+    show_all_product: Optional[str] = None  # Added show_all_product field
     products: Optional[list] = None
     total_results: Optional[int] = None
     messages: Optional[List[Dict[str, str]]] = None  # Added messages for conversation
@@ -42,6 +43,7 @@ class VoiceSearchResponse(BaseModel):
     search_intent: Optional[Dict[str, Any]] = None
     intro: Optional[str] = None  # Added intro field
     header: Optional[str] = None  # Added header field
+    show_all_product: Optional[str] = None  # Added show_all_product field
     products: Optional[list] = None
     total_results: Optional[int] = None
     messages: Optional[List[Dict[str, str]]] = None  # Added messages for conversation
@@ -85,9 +87,7 @@ async def semantic_search_get(
     """
     try:
         result = await ai_service.semantic_search_middleware(
-            user_input=q, 
-            conversation_context={"current_function": None, "messages": []}, 
-            limit=limit
+            messages=[{"role": "user", "content": q}]
         )
         return result
     except Exception as e:
