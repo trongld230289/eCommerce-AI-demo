@@ -115,3 +115,7 @@ serviceAccountKey.json
 .coverage
 .pytest_cache/
 .tox/
+
+# Generated files
+BE/category_keywords.json
+BE/latest_categories.json
