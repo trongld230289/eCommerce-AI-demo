@@ -42,6 +42,7 @@ export interface AISearchResponse {
   // New fields from updated backend
   intro?: string;
   header?: string;
+  show_all_product?: string;
   messages?: Array<{
     role: string;
     content: string;
