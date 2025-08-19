@@ -7,12 +7,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from services.ai_service import AIService
 
 class MiddlewareService:
     def __init__(self):
-        self.ai_service = AIService()
-    
+        pass
+
     def simple_semantic_search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
         Simple semantic search that takes a query string and returns a list of products.
