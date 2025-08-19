@@ -13,6 +13,7 @@ from routers.ai_router import router as ai_router
 from routers.wishlist_router import router as wishlist_router
 from routers.auth_router import router as auth_router
 from routers.product_router import router as product_router
+from routers.middleware_service_router import router as middleware_service_router
 import uvicorn
 import httpx
 import json
@@ -44,6 +45,7 @@ app.include_router(ai_router, prefix="/api", tags=["AI"])
 app.include_router(wishlist_router, tags=["Wishlist"])
 app.include_router(auth_router, tags=["Auth"])
 app.include_router(product_router, tags=["Products"])
+app.include_router(middleware_service_router, tags=["Middleware"])
 
 @app.get("/")
 async def root():
