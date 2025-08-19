@@ -359,11 +359,13 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         sessionStorage.setItem('chatbotSearchResults', JSON.stringify(lastSearchResults));
         sessionStorage.setItem('chatbotSearchQuery', lastSearchQuery);
         
-        // Store the function type for dynamic title
+        // Store the function type for dynamic title and icon display
         if (lastFunctionUsed === 'find_gifts') {
           sessionStorage.setItem('searchResultTitle', 'Search Gift Result');
+          sessionStorage.setItem('searchFunctionType', 'find_gifts');
         } else {
           sessionStorage.setItem('searchResultTitle', 'Search Product Result');
+          sessionStorage.setItem('searchFunctionType', 'find_products');
         }
         
         setTimeout(() => {
@@ -564,6 +566,15 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                           onClick={() => navigate(`/product/${product.id}`)}
                           style={{ cursor: 'pointer' }}
                         >
+                          {/* Function type icon */}
+                          <div className="product-function-icon">
+                            {lastFunctionUsed === 'find_gifts' ? (
+                              <span className="gift-icon" title="Gift Suggestion">🎁</span>
+                            ) : (
+                              <span className="product-icon" title="Product Search">🛍️</span>
+                            )}
+                          </div>
+                          
                           <img src={product.imageUrl} alt={product.name} className="chatbot-product-image" />
                           <div className="chatbot-product-info">
                             <h4 className="chatbot-product-name">{product.name}</h4>
@@ -596,11 +607,13 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                           sessionStorage.setItem('chatbotSearchResults', JSON.stringify(message.products));
                           sessionStorage.setItem('chatbotSearchQuery', lastSearchQuery);
                           
-                          // Store the function type for dynamic title
+                          // Store the function type for dynamic title and icon display
                           if (lastFunctionUsed === 'find_gifts') {
                             sessionStorage.setItem('searchResultTitle', 'Search Gift Result');
+                            sessionStorage.setItem('searchFunctionType', 'find_gifts');
                           } else {
                             sessionStorage.setItem('searchResultTitle', 'Search Product Result');
+                            sessionStorage.setItem('searchFunctionType', 'find_products');
                           }
                           
                           // Verify storage
