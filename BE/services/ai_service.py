@@ -63,6 +63,7 @@ sys.path.append(parent_dir)
 
 from models import Product
 from product_service import ProductService
+from services.middleware_service import MiddlewareService
 
 # Load environment variables
 env_path = os.path.join(parent_dir, '.env')
@@ -153,6 +154,7 @@ class AIService:
         self.embedding_model = "text-embedding-3-small"
         self._initialize_collection()
         self.product_service = ProductService()
+        self.middleware_service = MiddlewareService()
 
         # ---- App state
         self.USER_LANG_CODE = "en"
@@ -174,7 +176,7 @@ class AIService:
             """Find and recommend products based on user's shopping needs. Only searches in: phone, camera, laptop, watch, camping gear categories."""
             
             # Return JSON-encoded string for consistent downstream parsing
-            result = self.semantic_search(query, 10, self.USER_LANG_CODE)
+            result = self.semantic_search(query, 10, self.USER_LANG_CODE, searchFromTool="find_products")
             return json.dumps(result, ensure_ascii=False)
 
         class FindGiftsInput(BaseModel):
@@ -203,17 +205,39 @@ class AIService:
                 return invalid_message
             
             print(f"DEBUG find_gifts - search_query: {category}")
+
+            # Get external gift products with labels
+            external_products = self._get_external_gift_products()
+
+            composed_response = self.make_response_sentence(user_input, external_products, self.USER_LANG_CODE)
+            print(f"DEBUG: Composed response: {composed_response}")
+
+            result = {
+                "status": "success",
+                "search_intent": {
+                    "search_query": category,
+                    "product_name": None,
+                    "product_description": None,
+                    "filters": {"category": category}
+                },
+                "intro": composed_response["intro"],
+                "header": composed_response["header"],
+                "products": external_products,  # Use the original products list
+                "show_all_product": composed_response["show_all_product"],
+                "total_results": len(external_products)
+            }
             
             # Use the category for search
-            result = self.semantic_search(category, 5, self.USER_LANG_CODE)
-            result["recipient"] = recipient
-            result["requested_category"] = category
-            result["occasion"] = occasion
+            #  result = self.semantic_search(category, 5, self.USER_LANG_CODE, searchFromTool="find_gifts")
+            
+            
+            
+            # result["recipient"] = recipient
+            # result["requested_category"] = category
+            # result["occasion"] = occasion
             
             # Update the intro message to be gift-specific
-            if "intro" in result:
-                result["intro"] = f"Here are some wonderful {category} gifts for {recipient} - {result['intro']}"
-            
+        
             return json.dumps(result, ensure_ascii=False)
 
         self.available_tools = [find_products, find_gifts]
@@ -469,7 +493,7 @@ class AIService:
             return clauses[0]
         return {"$and": clauses}
 
-    def semantic_search(self, user_input: str, limit: int = 10, lang: str = "en") -> Dict[str, Any]:
+    def semantic_search(self, user_input: str, limit: int = 10, lang: str = "en", searchFromTool:str = "find_products") -> Dict[str, Any]:
         try:
             search_intent = self.extract_search_intent(user_input)
             product_name = search_intent.get("product_name", None)
@@ -526,7 +550,8 @@ class AIService:
                             "rating": metadata["rating"],
                             "discount": metadata["discount"],
                             "imageUrl": metadata["imageUrl"],
-                            "similarity_score": similarity_score
+                            "similarity_score": similarity_score,
+                            "showLabel": "product" if searchFromTool == "find_products" else ("gift" if searchFromTool == "find_gifts" else None)
                         }
                         products.append(product_data)
                         
@@ -723,6 +748,49 @@ class AIService:
     def compose_response(self, intro: str, items, lang_code: str):
         header = self.HEADER_BY_LANG.get(lang_code, self.HEADER_BY_LANG["en"])
         return {"intro": intro, "header": header, "products": items}
+
+    def _get_external_gift_products(self) -> List[Dict[str, Any]]:
+        """
+        Get products from external gift recommendations with labels assigned to showLabel.
+        
+        Returns:
+            List of product dictionaries with showLabel field
+        """
+        try:
+            # Get external gift recommendations
+            gift_recommendations = self.middleware_service.find_gifts_external()
+            print(f"DEBUG _get_external_gift_products - external recommendations: {gift_recommendations}")
+            
+            external_products = []
+            for recommendation in gift_recommendations:
+                label = recommendation.get("label")
+                product_ids = recommendation.get("product_ids", [])
+                
+                for product_id in product_ids:
+                    product_data = self.product_service.get_product_by_id(product_id)
+                    if product_data:
+                        # Create product structure similar to semantic_search results
+                        external_product = {
+                            "id": str(product_id),
+                            "name": product_data.get("name", ""),
+                            "category": product_data.get("category", ""),
+                            "price": product_data.get("price", 0),
+                            "original_price": product_data.get("original_price", product_data.get("price", 0)),
+                            "rating": product_data.get("rating", 0),
+                            "discount": product_data.get("discount", 0),
+                            "imageUrl": product_data.get("imageUrl", ""),
+                            "similarity_score": 1.0,  # High score for external recommendations
+                            "showLabel": label  # Assign the label from external recommendations
+                        }
+                        external_products.append(external_product)
+            
+            print(f"DEBUG _get_external_gift_products - external products with labels: {external_products}")
+            return external_products
+            
+        except Exception as e:
+            print(f"Error getting external gift products: {str(e)}")
+            return []
+
 
     def truncate_conversation_history(self, messages: List[Dict[str, str]], max_messages: int = 8) -> List[Dict[str, str]]:
         """Keep system message + last N conversation messages to prevent token overflow"""
