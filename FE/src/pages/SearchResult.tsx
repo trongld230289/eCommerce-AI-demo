@@ -8,6 +8,7 @@ const SearchResult: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [pageTitle, setPageTitle] = useState('Search Results');
+  const [searchFunctionType, setSearchFunctionType] = useState<string>('find_products');
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useShop();
@@ -26,14 +27,21 @@ const SearchResult: React.FC = () => {
     const storedProducts = sessionStorage.getItem('chatbotSearchResults');
     const storedQuery = sessionStorage.getItem('chatbotSearchQuery');
     const storedTitle = sessionStorage.getItem('searchResultTitle');
+    const storedFunctionType = sessionStorage.getItem('searchFunctionType');
     
     console.log('📦 Stored products:', storedProducts);
     console.log('🔎 Stored query:', storedQuery);
     console.log('🏷️ Stored title:', storedTitle);
+    console.log('🔧 Stored function type:', storedFunctionType);
     
     // Set dynamic title
     if (storedTitle) {
       setPageTitle(storedTitle);
+    }
+    
+    // Set function type for icon display
+    if (storedFunctionType) {
+      setSearchFunctionType(storedFunctionType);
     }
     
     if (storedProducts && storedQuery) {
@@ -63,10 +71,16 @@ const SearchResult: React.FC = () => {
       
       const storedTitle = sessionStorage.getItem('searchResultTitle');
       const storedProducts = sessionStorage.getItem('chatbotSearchResults');
+      const storedFunctionType = sessionStorage.getItem('searchFunctionType');
       
       if (storedTitle && storedTitle !== pageTitle) {
         setPageTitle(storedTitle);
         console.log('🏷️ Updated title to:', storedTitle);
+      }
+      
+      if (storedFunctionType && storedFunctionType !== searchFunctionType) {
+        setSearchFunctionType(storedFunctionType);
+        console.log('🔧 Updated function type to:', storedFunctionType);
       }
       
       if (storedProducts) {
@@ -91,7 +105,7 @@ const SearchResult: React.FC = () => {
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [pageTitle, products]);
+  }, [pageTitle, products, searchFunctionType]);
 
 
   if (loading) {
@@ -135,6 +149,7 @@ const SearchResult: React.FC = () => {
                 key={product.id} 
                 product={product} 
                 onAddToCart={handleAddToCart}
+                functionType={searchFunctionType}
               />
             ))}
           </div>
