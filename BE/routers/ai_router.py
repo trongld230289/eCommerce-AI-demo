@@ -227,3 +227,191 @@ async def health_check():
             "status": "unhealthy",
             "error": str(e)
         }
+
+class CategoryKeywordsResponse(BaseModel):
+    status: str
+    message: str
+    categories: Optional[Dict[str, List[str]]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+@router.get("/ai/category-keywords", response_model=CategoryKeywordsResponse)
+async def get_category_keywords():
+    """
+    Get the currently saved category keywords.
+    
+    Returns the keywords that were previously generated and saved to file.
+    If no keywords file exists, returns empty results.
+    
+    Returns:
+    - Current keywords grouped by category
+    - Metadata about when keywords were generated
+    """
+    try:
+        import json
+        import os
+        
+        if not os.path.exists("category_keywords.json"):
+            return CategoryKeywordsResponse(
+                status="not_found",
+                message="No category keywords file found. Use POST /ai/generate-category-keywords to create one.",
+                categories={},
+                metadata={}
+            )
+        
+        with open("category_keywords.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        keywords_data = data.get("categories", {})
+        metadata = {
+            "generated_at": data.get("generated_at"),
+            "total_categories": data.get("total_categories"),
+            "product_count": data.get("product_count"),
+            "model_used": data.get("model_used"),
+            "version": data.get("version")
+        }
+        
+        return CategoryKeywordsResponse(
+            status="success",
+            message=f"Retrieved keywords for {len(keywords_data)} categories",
+            categories=keywords_data,
+            metadata=metadata
+        )
+        
+    except Exception as e:
+        print(f"❌ Error in get_category_keywords endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve category keywords: {str(e)}")
+
+
+class GenerateCategoryKeywordsResponse(BaseModel):
+    status: str
+    message: str
+    categories_processed: int
+    keywords_generated: Optional[Dict[str, List[str]]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+@router.post("/ai/generate-category-keywords", response_model=GenerateCategoryKeywordsResponse)
+async def generate_category_keywords(force: bool = Query(False, description="Force regeneration even if keywords exist")):
+    """
+    Generate keywords for all product categories using LLM.
+    This endpoint:
+    1. Queries the database for all unique categories (no duplicates)
+    2. Uses LLM to generate relevant search keywords for each category
+    3. Saves the generated keywords to category_keywords.json
+    
+    Args:
+        force: If True, will regenerate keywords even if they already exist and are recent
+    """
+    try:
+        # Import product service to access the database query functionality
+        from product_service import product_service
+        
+        print(f"🚀 Starting category keywords generation (force={force})...")
+        
+        # Get all unique categories from database (this queries DB and removes duplicates)
+        categories = product_service.get_categories()
+        
+        if not categories:
+            return GenerateCategoryKeywordsResponse(
+                status="error",
+                message="No categories found in database",
+                categories_processed=0
+            )
+        
+        print(f"📂 Found {len(categories)} unique categories: {categories}")
+        
+        # Generate keywords using AI service
+        success = ai_service.generate_and_save_category_keywords(categories, force=force)
+        
+        if success:
+            # Read the generated keywords file to return the results
+            import json
+            import os
+            
+            if os.path.exists("category_keywords.json"):
+                with open("category_keywords.json", "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                
+                keywords_data = data.get("categories", {})
+                metadata = {
+                    "generated_at": data.get("generated_at"),
+                    "total_categories": data.get("total_categories"),
+                    "product_count": data.get("product_count"),
+                    "model_used": data.get("model_used"),
+                    "version": data.get("version")
+                }
+                
+                return GenerateCategoryKeywordsResponse(
+                    status="success",
+                    message=f"Successfully generated keywords for {len(categories)} categories",
+                    categories_processed=len(categories),
+                    keywords_generated=keywords_data,
+                    metadata=metadata
+                )
+            else:
+                return GenerateCategoryKeywordsResponse(
+                    status="partial_success",
+                    message="Keywords were generated but file not found",
+                    categories_processed=len(categories)
+                )
+        else:
+            return GenerateCategoryKeywordsResponse(
+                status="error",
+                message="Failed to generate category keywords",
+                categories_processed=len(categories)
+            )
+            
+    except Exception as e:
+        print(f"❌ Error in generate_category_keywords endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate category keywords: {str(e)}")
+
+
+@router.post("/ai/refresh-categories-and-keywords")
+async def refresh_categories_and_keywords():
+    """
+    Refresh categories and generate keywords using the existing _dump_categories_to_json() function.
+    This is a simpler endpoint that directly calls the existing functionality.
+    """
+    try:
+        # Import product service 
+        from product_service import product_service
+        
+        print("🔄 Refreshing categories and generating keywords...")
+        
+        # Call the existing function that queries DB and generates keywords
+        product_service._dump_categories_to_json(generate_keywords=True)
+        
+        # Read the results
+        import json
+        import os
+        
+        categories_data = {}
+        keywords_data = {}
+        
+        # Read categories file
+        if os.path.exists("latest_categories.json"):
+            with open("latest_categories.json", "r", encoding="utf-8") as f:
+                categories_data = json.load(f)
+        
+        # Read keywords file  
+        if os.path.exists("category_keywords.json"):
+            with open("category_keywords.json", "r", encoding="utf-8") as f:
+                keywords_data = json.load(f)
+        
+        return {
+            "status": "success",
+            "message": "Categories refreshed and keywords generated successfully",
+            "categories": categories_data,
+            "keywords_metadata": {
+                "generated_at": keywords_data.get("generated_at"),
+                "total_categories": keywords_data.get("total_categories"),
+                "product_count": keywords_data.get("product_count"),
+                "model_used": keywords_data.get("model_used"),
+                "version": keywords_data.get("version")
+            },
+            "categories_count": len(categories_data) if isinstance(categories_data, list) else 0,
+            "keywords_count": len(keywords_data.get("categories", {}))
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in refresh_categories_and_keywords endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to refresh categories and keywords: {str(e)}")

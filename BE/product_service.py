@@ -67,6 +67,8 @@ class ProductService:
             doc_ref = self.db.collection(self.collection_name).document(str(next_id))
             doc_ref.set(product_dict)
             
+            # Write latest categories to JSON file
+            self._dump_categories_to_json()
             return {"success": True, "product_id": next_id, "data": product_dict}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -118,6 +120,8 @@ class ProductService:
             
             # Get updated product
             updated_product = doc_ref.get().to_dict()
+            # Write latest categories to JSON file
+            self._dump_categories_to_json()
             return {"success": True, "data": updated_product}
         except Exception as e:
             return {"success": False, "error": str(e)}
@@ -132,9 +136,45 @@ class ProductService:
                 return {"success": False, "error": "Product not found"}
             
             doc_ref.delete()
+            # Write latest categories to JSON file
+            self._dump_categories_to_json()
             return {"success": True, "message": "Product deleted successfully"}
         except Exception as e:
             return {"success": False, "error": str(e)}
+    def _dump_categories_to_json(self, generate_keywords: bool = True):
+        """Write latest categories to a JSON file and optionally generate category keywords"""
+        try:
+            import json
+            categories = self.get_categories()
+            
+            # Save categories to file
+            with open("latest_categories.json", "w", encoding="utf-8") as f:
+                json.dump(categories, f, ensure_ascii=False, indent=2)
+            print(f"✅ Categories saved to latest_categories.json: {categories}")
+            
+            # Generate category keywords using AI service
+            if generate_keywords and categories:
+                try:
+                    # Import here to avoid circular imports
+                    from services.ai_service import AIService
+                    
+                    print("🤖 Generating category keywords using LLM...")
+                    ai_service = AIService()
+                    
+                    # Use the new combined method that generates and saves in one call
+                    success = ai_service.generate_and_save_category_keywords(categories)
+                    
+                    if success:
+                        print(f"✅ Successfully generated and saved keywords for categories")
+                    else:
+                        print("⚠️ Failed to generate or save category keywords")
+                        
+                except Exception as e:
+                    print(f"⚠️ Error generating category keywords: {str(e)}")
+                    # Don't fail the whole operation if keyword generation fails
+            
+        except Exception as e:
+            print(f"❌ Error dumping categories to JSON: {e}")
     
     def search_products(self, filters: SearchFilters) -> List[Dict[str, Any]]:
         """Search products with filters"""
