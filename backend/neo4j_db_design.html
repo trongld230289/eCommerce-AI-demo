@@ -1,0 +1,165 @@
+<html>
+<head>
+    <title>Neo4j Database Design</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1 { text-align: center;}
+        h2 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+<h1>Neo4j Database Design</h1>
+
+<h2>Nodes</h2>
+
+<h3>Product</h3>
+<p>Represents a product in the eCommerce system with gifting attributes</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>productId</td><td>Integer</td><td>Unique identifier for the product</td></tr>
+    <tr><td>name</td><td>String</td><td>Name of the product</td></tr>
+    <tr><td>price</td><td>Float</td><td>Current price of the product</td></tr>
+    <tr><td>image</td><td>String</td><td>URL of the product image</td></tr>
+    <tr><td>giftingCategories</td><td>Array</td><td>Categories suitable for gifting</td></tr>
+    <tr><td>description</td><td>String</td><td>Detailed description of the product</td></tr>
+    <tr><td>created_at</td><td>Integer</td><td>Timestamp when product was created (milliseconds)</td></tr>
+    <tr><td>updated_at</td><td>Integer</td><td>Timestamp when product was last updated (milliseconds)</td></tr>
+    <tr><td>tags</td><td>Array</td><td>Tags or keywords associated with the product</td></tr>
+    <tr><td>giftingUtilitarianScore</td><td>Float</td><td>Score indicating utilitarian value for gifting (0-1)</td></tr>
+    <tr><td>giftingNoveltyScore</td><td>Float</td><td>Score indicating novelty value for gifting (0-1)</td></tr>
+    <tr><td>giftingRelationshipTypes</td><td>Array</td><td>Relationship types suitable for this gift (e.g., 'romantic', 'family')</td></tr>
+    <tr><td>giftingSymbolicValue</td><td>String</td><td>Symbolic value level ('high', 'medium', 'low')</td></tr>
+    <tr><td>giftingAltruismSuitability</td><td>String</td><td>Suitability for altruistic gifting ('high', 'medium', 'low')</td></tr>
+    <tr><td>giftingReciprocityFit</td><td>String</td><td>Fit for reciprocity expectations ('high', 'medium', 'low')</td></tr>
+    <tr><td>giftingSelfGiftingSuitability</td><td>String</td><td>Suitability for self-gifting ('high', 'medium', 'low')</td></tr>
+    <tr><td>giftingPowerSignaling</td><td>String</td><td>Power signaling level for gifting ('high', 'medium', 'low')</td></tr>
+</table>
+
+<h3>User</h3>
+<p>Represents a user with inferred gifting preferences</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>userId</td><td>String</td><td>Unique identifier for the user</td></tr>
+    <tr><td>name</td><td>String</td><td>User's name</td></tr>
+    <tr><td>email</td><td>String</td><td>User's email address</td></tr>
+    <tr><td>hedonicBias</td><td>Float</td><td>User's preference bias towards hedonic gifts (0-1)</td></tr>
+    <tr><td>surprisePreference</td><td>Float</td><td>User's preference for surprising gifts (0-1)</td></tr>
+    <tr><td>altruismLevel</td><td>Float</td><td>User's altruism level in gifting (0-1)</td></tr>
+    <tr><td>reciprocityExpectation</td><td>Float</td><td>User's expectation of reciprocity (0-1)</td></tr>
+</table>
+
+<h3>Wishlist</h3>
+<p>Represents a user's wishlist with gifting hints</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>wishlistId</td><td>String</td><td>Unique identifier for the wishlist</td></tr>
+    <tr><td>userId</td><td>String</td><td>ID of the user owning the wishlist</td></tr>
+    <tr><td>name</td><td>String</td><td>Name or note for the wishlist</td></tr>
+    <tr><td>note</td><td>String</td><td>Additional note for the wishlist</td></tr>
+    <tr><td>preferredRelationshipTypes</td><td>Array</td><td>Preferred relationship types for gifting</td></tr>
+    <tr><td>isHedonic</td><td>Boolean</td><td>Indicates if the wishlist is hedonic-oriented</td></tr>
+    <tr><td>isAltruistic</td><td>Boolean</td><td>Indicates if the wishlist is altruistic-oriented</td></tr>
+    <tr><td>expectsReciprocity</td><td>Boolean</td><td>Indicates if reciprocity is expected</td></tr>
+    <tr><td>isSurprising</td><td>Boolean</td><td>Indicates if the wishlist favors surprising items</td></tr>
+    <tr><td>isSelfGifting</td><td>Boolean</td><td>Indicates if the wishlist is for self-gifting</td></tr>
+    <tr><td>createdAt</td><td>Integer</td><td>Timestamp when wishlist was created (milliseconds)</td></tr>
+    <tr><td>updatedAt</td><td>Integer</td><td>Timestamp when wishlist was last updated (milliseconds)</td></tr>
+</table>
+
+<h3>Cart</h3>
+<p>Represents a user's shopping cart</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>cartId</td><td>String</td><td>Unique identifier for the cart</td></tr>
+    <tr><td>userId</td><td>String</td><td>ID of the user owning the cart</td></tr>
+</table>
+
+<h3>InteractionEvent</h3>
+<p>Represents user interactions with products</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>eventId</td><td>String</td><td>Unique identifier for the event</td></tr>
+    <tr><td>eventType</td><td>String</td><td>Type of interaction (e.g., 'view', 'add_to_cart')</td></tr>
+    <tr><td>timestamp</td><td>Integer</td><td>Timestamp of the event (milliseconds)</td></tr>
+    <tr><td>value</td><td>Integer</td><td>Value associated with the event (e.g., quantity)</td></tr>
+    <tr><td>expiresAt</td><td>Integer</td><td>Expiration timestamp for the event</td></tr>
+    <tr><td>noveltyRating</td><td>Float</td><td>Novelty rating (1-5 scale)</td></tr>
+    <tr><td>utilityRating</td><td>Float</td><td>Utility rating (1-5 scale)</td></tr>
+</table>
+
+<h3>SchemaMetadata</h3>
+<p>Metadata for schema descriptions</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>type</td><td>String</td><td>Type of metadata (e.g., 'NodeLabel', 'Property')</td></tr>
+    <tr><td>label</td><td>String</td><td>Node label or relationship type</td></tr>
+    <tr><td>property</td><td>String</td><td>Property name</td></tr>
+    <tr><td>description</td><td>String</td><td>Description of the schema element</td></tr>
+</table>
+
+<h2>Relationships</h2>
+
+<h3>OWNS_WISHLIST</h3>
+<p>User owns a wishlist</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>createdAt</td><td>Integer</td><td>Timestamp when relationship was created</td></tr>
+</table>
+
+<h3>CONTAINS</h3>
+<p>Wishlist or Cart contains a product</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>addedAt</td><td>Float</td><td>Timestamp when product was added</td></tr>
+    <tr><td>quantity</td><td>Integer</td><td>Quantity in cart (for Cart CONTAINS)</td></tr>
+</table>
+
+<h3>HAS_CART</h3>
+<p>User has a cart</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>createdAt</td><td>Integer</td><td>Timestamp when cart was created</td></tr>
+    <tr><td>updatedAt</td><td>Integer</td><td>Timestamp when cart was updated</td></tr>
+</table>
+
+<h3>INTERACTED_WITH</h3>
+<p>User interacted with an event</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>timestamp</td><td>Integer</td><td>Timestamp of interaction</td></tr>
+</table>
+
+<h3>TARGETS</h3>
+<p>Event targets a product</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td colspan="3">No properties</td></tr>
+</table>
+
+<h3>RECOMMENDED_BY_ALS</h3>
+<p>Represents product recommendations generated using Alternating Least Squares (ALS) algorithm. ALS is a matrix factorization technique used in collaborative filtering for recommendation systems. It decomposes the user-item interaction matrix into lower-dimensional user and item latent factors, optimizing them alternately to minimize the reconstruction error. This relationship connects a User to recommended Products based on learned latent factors from user interactions like views, adds to cart, or purchases.</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>score</td><td>Float</td><td>Recommendation score indicating the predicted preference strength (higher is better)</td></tr>
+</table>
+
+<h3>RECOMMENDED_BY_PAGERANK</h3>
+<p>Represents product recommendations using PageRank algorithm. PageRank is a graph-based ranking algorithm that measures the importance of nodes (Products) based on their connections in the interaction graph. It treats user interactions (e.g., purchases, views) as links, computing centrality scores to identify influential or popular products. This relationship connects a User to Products ranked highly in their personalized interaction subgraph or global product graph.</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>score</td><td>Float</td><td>PageRank score indicating the product's importance or relevance (higher is better)</td></tr>
+</table>
+
+<h3>SIMILAR_TO</h3>
+<p>Represents similarity between products based on Item-to-Item Collaborative Filtering. This algorithm computes similarities between items (Products) using metrics like cosine similarity or Jaccard index on user interaction patterns (e.g., co-purchases, co-views). It recommends products similar to those a user has interacted with, focusing on item relationships rather than user similarities. This relationship connects Products that are deemed similar based on collective user behaviors.</p>
+<table>
+    <tr><th>Property Name</th><th>Types</th><th>Description</th></tr>
+    <tr><td>score</td><td>Float</td><td>Similarity score between the products (e.g., from cosine similarity, higher indicates stronger similarity)</td></tr>
+</table>
+
+</body>
+</html>
