@@ -1,15 +1,28 @@
 // Event tracking service for user interactions
+<<<<<<< HEAD
 const API_BASE_URL = 'http://localhost:8000';
 
 export interface UserEvent {
   event_type: 'view' | 'add_to_cart' | 'remove_from_cart' | 'add_to_wishlist' | 'remove_from_wishlist';
   user_id: string;
   product_id: string;
+=======
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+export interface UserEvent {
+  event_type: 'view' | 'add_to_cart' | 'remove_from_cart' | 'add_to_wishlist' | 'remove_from_wishlist' | 'purchase';
+  user_id: string;
+  product_id: string | number; // Allow both string and number
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   metadata?: {
     product_name?: string;
     product_category?: string;
     product_brand?: string;
     product_price?: number;
+<<<<<<< HEAD
+=======
+    quantity?: number;
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
     device?: string;
     source?: string;
     [key: string]: any;
@@ -69,7 +82,11 @@ class EventTrackingService {
         },
       };
 
+<<<<<<< HEAD
       return await this.makeRequest('/events', {
+=======
+      return await this.makeRequest('/api/recommendations/track', {
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         method: 'POST',
         body: JSON.stringify(eventData),
       });

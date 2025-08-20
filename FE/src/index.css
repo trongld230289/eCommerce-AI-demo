@@ -45,3 +45,22 @@ a {
 #root {
   min-height: 100vh;
 }
+
+/* Product function type icon animations */
+@keyframes giftGlow {
+  from { 
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.6));
+  }
+  to { 
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.9));
+  }
+}
+
+@keyframes productPulse {
+  0%, 100% { 
+    transform: scale(1);
+  }
+  50% { 
+    transform: scale(1.08);
+  }
+}

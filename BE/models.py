@@ -9,6 +9,15 @@ class EventType(str, Enum):
     REMOVE_FROM_CART = "remove_from_cart"
     ADD_TO_WISHLIST = "add_to_wishlist"
     REMOVE_FROM_WISHLIST = "remove_from_wishlist"
+<<<<<<< HEAD
+=======
+    PURCHASE = "purchase"
+
+class ShareType(str, Enum):
+    PRIVATE = "private"
+    PUBLIC = "public"
+    ANONYMOUS = "anonymous"
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 class Product(BaseModel):
     id: Optional[int] = None
@@ -106,23 +115,45 @@ class WishlistItem(BaseModel):
 class WishlistItemWithDetails(BaseModel):
     product_id: int
     added_at: float
+<<<<<<< HEAD
     product_details: Optional[Product] = None
+=======
+    product_details: Optional[Dict[str, Any]] = None
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 class Wishlist(BaseModel):
     id: str
     user_id: str
+<<<<<<< HEAD
     name: str
     products: List[WishlistItemWithDetails] = Field(default_factory=list)
     item_count: int = 0
+=======
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    name: str
+    products: List[WishlistItemWithDetails] = Field(default_factory=list)
+    item_count: int = 0
+    share_status: ShareType = ShareType.PRIVATE
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
     created_at: float
     updated_at: float
 
 class WishlistCreate(BaseModel):
     name: str
     user_id: str
+<<<<<<< HEAD
 
 class WishlistUpdate(BaseModel):
     name: Optional[str] = None
+=======
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+
+class WishlistUpdate(BaseModel):
+    name: Optional[str] = None
+    share_status: Optional[ShareType] = None
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 class WishlistAddProduct(BaseModel):
     product_id: int
@@ -130,12 +161,47 @@ class WishlistAddProduct(BaseModel):
 class WishlistRemoveProduct(BaseModel):
     product_id: int
 
+<<<<<<< HEAD
+=======
+class WishlistShareUpdate(BaseModel):
+    share_status: ShareType
+
+class WishlistShareResponse(BaseModel):
+    success: bool
+    message: str
+    share_status: ShareType
+    share_url: Optional[str] = None
+
+class WishlistSearchRequest(BaseModel):
+    email: str
+
+class WishlistSearchResult(BaseModel):
+    id: str
+    user_id: str
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    name: str
+    item_count: int
+    share_status: ShareType
+    created_at: float
+    updated_at: float
+
+class WishlistSearchResponse(BaseModel):
+    success: bool
+    message: str
+    wishlists: List[WishlistSearchResult] = Field(default_factory=list)
+
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 # Cart Models
 class CartItem(BaseModel):
     product_id: int
     quantity: int
     added_at: float
+<<<<<<< HEAD
     product_details: Optional[Product] = None
+=======
+    product_details: Optional[Dict[str, Any]] = None
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 class Cart(BaseModel):
     id: str

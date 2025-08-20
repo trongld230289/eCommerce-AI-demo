@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
+=======
+import { useNavigate, useLocation } from 'react-router-dom';
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 import SimpleProductCard from '../components/SimpleProductCard';
 import { Product, useShop } from '../contexts/ShopContext';
 import { useToast } from '../contexts/ToastContext';
@@ -7,7 +11,14 @@ import { useToast } from '../contexts/ToastContext';
 const SearchResult: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
   const navigate = useNavigate();
+=======
+  const [pageTitle, setPageTitle] = useState('Search Results');
+  const [searchFunctionType, setSearchFunctionType] = useState<string>('find_products');
+  const navigate = useNavigate();
+  const location = useLocation();
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   const { addToCart } = useShop();
   const { showSuccess } = useToast();
 
@@ -23,9 +34,29 @@ const SearchResult: React.FC = () => {
     // Get products from sessionStorage (from chatbot)
     const storedProducts = sessionStorage.getItem('chatbotSearchResults');
     const storedQuery = sessionStorage.getItem('chatbotSearchQuery');
+<<<<<<< HEAD
     
     console.log('📦 Stored products:', storedProducts);
     console.log('🔎 Stored query:', storedQuery);
+=======
+    const storedTitle = sessionStorage.getItem('searchResultTitle');
+    const storedFunctionType = sessionStorage.getItem('searchFunctionType');
+    
+    console.log('📦 Stored products:', storedProducts);
+    console.log('🔎 Stored query:', storedQuery);
+    console.log('🏷️ Stored title:', storedTitle);
+    console.log('🔧 Stored function type:', storedFunctionType);
+    
+    // Set dynamic title
+    if (storedTitle) {
+      setPageTitle(storedTitle);
+    }
+    
+    // Set function type for icon display
+    if (storedFunctionType) {
+      setSearchFunctionType(storedFunctionType);
+    }
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
     
     if (storedProducts && storedQuery) {
       try {
@@ -45,7 +76,54 @@ const SearchResult: React.FC = () => {
     }
     
     setLoading(false);
+<<<<<<< HEAD
   }, [navigate]);
+=======
+  }, [navigate, location.search]); // Add location.search as dependency
+
+  // Add another useEffect to listen for focus events (when user comes back to this tab/page)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('🔄 Page focused, checking for updates...');
+      
+      const storedTitle = sessionStorage.getItem('searchResultTitle');
+      const storedProducts = sessionStorage.getItem('chatbotSearchResults');
+      const storedFunctionType = sessionStorage.getItem('searchFunctionType');
+      
+      if (storedTitle && storedTitle !== pageTitle) {
+        setPageTitle(storedTitle);
+        console.log('🏷️ Updated title to:', storedTitle);
+      }
+      
+      if (storedFunctionType && storedFunctionType !== searchFunctionType) {
+        setSearchFunctionType(storedFunctionType);
+        console.log('🔧 Updated function type to:', storedFunctionType);
+      }
+      
+      if (storedProducts) {
+        try {
+          const parsedProducts = JSON.parse(storedProducts);
+          if (JSON.stringify(parsedProducts) !== JSON.stringify(products)) {
+            setProducts(parsedProducts);
+            console.log('🔄 Updated products:', parsedProducts.length);
+          }
+        } catch (error) {
+          console.error('❌ Error parsing updated products:', error);
+        }
+      }
+    };
+
+    // Listen for when the user comes back to the page
+    window.addEventListener('focus', handleFocus);
+    
+    // Also check when the component mounts again
+    handleFocus();
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [pageTitle, products, searchFunctionType]);
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 
   if (loading) {
@@ -76,7 +154,11 @@ const SearchResult: React.FC = () => {
           marginBottom: '2rem',
           fontFamily: "'Open Sans', Arial, sans-serif"
         }}>
+<<<<<<< HEAD
           All Products
+=======
+          {pageTitle}
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         </h2>
         {products.length > 0 ? (
           <div style={{
@@ -89,6 +171,10 @@ const SearchResult: React.FC = () => {
                 key={product.id} 
                 product={product} 
                 onAddToCart={handleAddToCart}
+<<<<<<< HEAD
+=======
+                functionType={searchFunctionType}
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
               />
             ))}
           </div>

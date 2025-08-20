@@ -3,30 +3,48 @@ import { useParams, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faShoppingCart, 
-  faHeart, 
-  faCompressArrowsAlt,
   faStar,
   faStarHalfAlt,
   faPlus,
   faMinus,
   faCheck,
+<<<<<<< HEAD
   faShareAlt,
   faSpinner
+=======
+  faSpinner,
+  faBolt
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 } from '@fortawesome/free-solid-svg-icons';
 import { useShop } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import SimpleProductCard from '../components/SimpleProductCard';
 import Recommendations from '../components/Recommendations';
+<<<<<<< HEAD
+=======
+import WishlistButton from '../components/WishlistButton/WishlistButton';
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 import { apiService } from '../services/apiService';
 import { eventTrackingService } from '../services/eventTrackingService';
 import type { Product } from '../contexts/ShopContext';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+<<<<<<< HEAD
   const { addToCart, addToWishlist, isInWishlist } = useShop();
   const { currentUser } = useAuth();
   const { showSuccess, showWishlist } = useToast();
+=======
+  const { addToCart } = useShop();
+  const { currentUser } = useAuth();
+  const { showSuccess } = useToast();
+  
+  // Product state
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   
   // Product state
   const [product, setProduct] = useState<Product | null>(null);
@@ -320,6 +338,23 @@ const ProductDetails: React.FC = () => {
     addToCartBtn: {
       backgroundColor: '#fed700',
       color: '#333',
+      border: 'none',
+      padding: '15px 30px',
+      borderRadius: '6px',
+      fontSize: '16px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      flex: 1,
+      justifyContent: 'center',
+      minWidth: isMobile ? '100%' : '180px'
+    },
+    buyNowBtn: {
+      backgroundColor: '#ff6b35',
+      color: 'white',
       border: 'none',
       padding: '15px 30px',
       borderRadius: '6px',
@@ -643,9 +678,35 @@ Built with premium materials and modern technology, this product offers reliable
     showSuccess(`${quantity} ${product.name}${quantity > 1 ? 's' : ''} added to cart!`);
   };
 
-  const handleAddToWishlist = () => {
-    addToWishlist(product);
-    showWishlist(`${product.name} added to wishlist!`);
+  const handleBuyNow = async () => {
+    if (!currentUser) {
+      showSuccess('Please log in to purchase items');
+      return;
+    }
+
+    try {
+      // Track purchase event
+      await eventTrackingService.trackEvent({
+        event_type: 'purchase',
+        user_id: currentUser.uid,
+        product_id: product.id,
+        metadata: {
+          product_name: product.name,
+          product_category: product.category,
+          product_price: product.price,
+          quantity: quantity,
+          source: 'product_detail_buy_now',
+          device: navigator.userAgent
+        }
+      });
+      
+      // Show success message
+      showSuccess(`⚡ Successfully purchased ${quantity} ${product.name}${quantity > 1 ? 's' : ''}!`);
+      
+    } catch (error) {
+      console.error('Error processing buy now:', error);
+      showSuccess('Failed to process purchase');
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -713,7 +774,16 @@ Built with premium materials and modern technology, this product offers reliable
 
         {/* Product Info */}
         <div style={styles.productInfo}>
-          <div style={styles.productCategory}>{product.category}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div style={styles.productCategory}>{product.category}</div>
+            <WishlistButton 
+              productId={product.id}
+              className="product-detail-wishlist"
+              onWishlistChange={(inWishlist: boolean) => {
+                console.log(`Product ${product.id} wishlist status:`, inWishlist);
+              }}
+            />
+          </div>
           <h1 style={styles.productTitle}>{product.name}</h1>
           
           {/* Rating */}
@@ -797,22 +867,19 @@ Built with premium materials and modern technology, this product offers reliable
               Add to Cart
             </button>
             <button 
-              style={{
-                ...styles.actionBtn,
-                ...(isInWishlist(product.id) ? styles.wishlistBtnActive : {})
+              style={styles.buyNowBtn} 
+              onClick={handleBuyNow}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#e55a2b';
+                e.currentTarget.style.transform = 'translateY(-2px)';
               }}
-              onClick={handleAddToWishlist}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = '#ff6b35';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
-              <FontAwesomeIcon icon={faHeart} />
-              Wishlist
-            </button>
-            <button style={styles.actionBtn}>
-              <FontAwesomeIcon icon={faCompressArrowsAlt} />
-              Compare
-            </button>
-            <button style={styles.actionBtn}>
-              <FontAwesomeIcon icon={faShareAlt} />
-              Share
+              <FontAwesomeIcon icon={faBolt} />
+              Buy Now
             </button>
           </div>
         </div>

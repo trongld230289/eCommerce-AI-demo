@@ -25,7 +25,11 @@ class FirebaseConfig:
                     # Use service account file
                     cred = credentials.Certificate(service_account_path)
                     firebase_admin.initialize_app(cred)
+<<<<<<< HEAD
                     print("✅ Firebase initialized with serviceAccountKey.json")
+=======
+                    print("[SUCCESS] Firebase initialized with serviceAccountKey.json")
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
                 else:
                     # Try to get service account path from environment
                     env_service_account_path = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH')
@@ -34,18 +38,31 @@ class FirebaseConfig:
                         # Use service account file from environment
                         cred = credentials.Certificate(env_service_account_path)
                         firebase_admin.initialize_app(cred)
+<<<<<<< HEAD
                         print("✅ Firebase initialized with service account file from environment")
                     else:
                         print(f"❌ Service account key not found at: {service_account_path}")
+=======
+                        print("[SUCCESS] Firebase initialized with service account file from environment")
+                    else:
+                        print(f"[ERROR] Service account key not found at: {service_account_path}")
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
                         print("Please make sure 'serviceAccountKey.json' is in the BE folder")
                         raise FileNotFoundError("Firebase service account key not found")
             
             # Get Firestore client
             self.db = firestore.client()
+<<<<<<< HEAD
             print("✅ Firebase Firestore client initialized")
             
         except Exception as e:
             print(f"❌ Firebase initialization failed: {e}")
+=======
+            print("[SUCCESS] Firebase Firestore client initialized")
+            
+        except Exception as e:
+            print(f"[ERROR] Firebase initialization failed: {e}")
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
             print("   Running in development mode without database")
             # Set db to None so we can handle it gracefully
             self.db = None

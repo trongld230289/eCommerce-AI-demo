@@ -1,5 +1,9 @@
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
+<<<<<<< HEAD
 from typing import Dict, Any, Optional
+=======
+from typing import Dict, Any, Optional, List
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 from pydantic import BaseModel
 
 from services.ai_service import AIService
@@ -9,9 +13,19 @@ router = APIRouter()
 # Initialize AI service
 ai_service = AIService()
 
+<<<<<<< HEAD
 class SearchRequest(BaseModel):
     query: str
     limit: Optional[int] = 10
+=======
+class ConversationMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+class SearchRequest(BaseModel):
+    limit: Optional[int] = 10
+    messages: List[Dict[str, str]]
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 class EmbedProductsResponse(BaseModel):
     status: str
@@ -20,14 +34,27 @@ class EmbedProductsResponse(BaseModel):
 
 class SearchResponse(BaseModel):
     status: str
+<<<<<<< HEAD
     search_intent: Optional[Dict[str, Any]] = None
     products: Optional[list] = None
     total_results: Optional[int] = None
     message: Optional[str] = None
+=======
+    function_used: Optional[str] = None  # "find_products" or "find_gifts"
+    language_detected: Optional[str] = None
+    search_intent: Optional[Dict[str, Any]] = None
+    intro: Optional[str] = None  # Added intro field
+    header: Optional[str] = None  # Added header field
+    show_all_product: Optional[str] = None  # Added show_all_product field
+    products: Optional[list] = None
+    total_results: Optional[int] = None
+    messages: Optional[List[Dict[str, str]]] = None  # Added messages for conversation
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 class VoiceSearchResponse(BaseModel):
     status: str
     transcribed_text: Optional[str] = None
+<<<<<<< HEAD
     search_intent: Optional[Dict[str, Any]] = None
     products: Optional[list] = None
     total_results: Optional[int] = None
@@ -35,6 +62,20 @@ class VoiceSearchResponse(BaseModel):
     message: Optional[str] = None
 
 @router.post("/ai/embed-products", response_model=EmbedProductsResponse)
+=======
+    original_query_type: Optional[str] = None
+    function_used: Optional[str] = None  # "find_products" or "find_gifts"
+    language_detected: Optional[str] = None
+    search_intent: Optional[Dict[str, Any]] = None
+    intro: Optional[str] = None  # Added intro field
+    header: Optional[str] = None  # Added header field
+    show_all_product: Optional[str] = None  # Added show_all_product field
+    products: Optional[list] = None
+    total_results: Optional[int] = None
+    messages: Optional[List[Dict[str, str]]] = None  # Added messages for conversation
+
+@router.get("/ai/embed-products", response_model=EmbedProductsResponse)
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 async def embed_all_products():
     """
     Embed all products in the database and store in ChromaDB.
@@ -49,6 +90,7 @@ async def embed_all_products():
 @router.post("/ai/search", response_model=SearchResponse)
 async def semantic_search(search_request: SearchRequest):
     """
+<<<<<<< HEAD
     Perform semantic search on products using natural language query.
     The AI will extract search intent and apply appropriate filters.
     """
@@ -56,6 +98,16 @@ async def semantic_search(search_request: SearchRequest):
         result = await ai_service.semantic_search(
             user_input=search_request.query,
             limit=search_request.limit
+=======
+    Perform intelligent semantic search using LangChain tools.
+    Automatically determines whether to use find_products or find_gifts based on user intent.
+    Supports conversation context and language detection.
+    """
+    try:
+        result = await ai_service.semantic_search_middleware(
+            messages=search_request.messages
+            #update limit later
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         )
         return SearchResponse(**result)
     except Exception as e:
@@ -67,15 +119,43 @@ async def semantic_search_get(
     limit: int = Query(10, description="Maximum number of results")
 ):
     """
+<<<<<<< HEAD
     Perform semantic search on products using query parameter.
     Alternative GET endpoint for easier testing.
     """
     try:
         result = await ai_service.semantic_search(user_input=q, limit=limit)
+=======
+    Perform intelligent semantic search using query parameter.
+    Alternative GET endpoint for easier testing.
+    """
+    try:
+        result = await ai_service.semantic_search_middleware(
+            messages=[{"role": "user", "content": q}]
+        )
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
+<<<<<<< HEAD
+=======
+@router.post("/ai/legacy-search", response_model=SearchResponse) 
+async def legacy_semantic_search(search_request: SearchRequest):
+    """
+    Legacy semantic search endpoint using the original method.
+    Use /ai/search for the new intelligent routing system.
+    """
+    try:
+        result = await ai_service.semantic_search(
+            user_input=search_request.query,
+            limit=search_request.limit
+        )
+        return SearchResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 @router.post("/ai/search-by-voice", response_model=VoiceSearchResponse)
 async def voice_search(
     audio: UploadFile = File(..., description="Audio file (wav, mp3, m4a, etc.)"),
@@ -105,8 +185,13 @@ async def voice_search(
                 detail="File too large. Maximum size is 25MB."
             )
         
+<<<<<<< HEAD
         # Perform voice search
         result = await ai_service.voice_search(audio.file, limit)
+=======
+        # Perform voice search (limit not needed anymore since middleware handles it)
+        result = await ai_service.voice_search(audio.file)
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         return VoiceSearchResponse(**result)
         
     except HTTPException:

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebookF, faGoogle } from '@fortawesome/free-brands-svg-icons';
 import { faUser, faLock } from '@fortawesome/free-solid-svg-icons';
+import { getAuth } from 'firebase/auth';
 import './AuthDialog.css';
 
 interface AuthDialogProps {
@@ -19,12 +20,45 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Function to call push_user_after_registration API after successful account creation
+  const callUserRegistrationAPI = async (user: any) => {
+    try {
+      const requestData = {
+        userId: user.uid,
+        userEmail: user.email || '',
+        userName: user.displayName || user.email?.split('@')[0] || 'User'
+      };
+
+      console.log('📤 Calling push_user_after_registration API with data:', requestData);
+
+      const response = await fetch('http://localhost:8000/middleware/push_user_after_registration', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ User registration API called successfully:', data);
+      } else {
+        console.error('❌ User registration API call failed:', response.status);
+        const errorData = await response.json();
+        console.error('Error details:', errorData);
+      }
+    } catch (error) {
+      console.error('❌ Error calling user registration API:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +81,22 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
     try {
       if (mode === 'login') {
         await login(email, password);
+<<<<<<< HEAD
       } else {
         await register(email, password, displayName || undefined);
+=======
+        console.log('✅ User logged in successfully');
+      } else {
+        await register(email, password, displayName || undefined);
+        console.log('✅ User registered successfully');
+        
+        // Get current user and call registration API
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await callUserRegistrationAPI(currentUser);
+        }
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
       }
       onClose();
       // Reset form
@@ -93,7 +141,19 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
     setError('');
     
     try {
-      await loginWithGoogle();
+      const result = await loginWithGoogle();
+      console.log('✅ Google sign-in successful');
+      
+      // If this is a new user, call registration API
+      if (result.isNewUser) {
+        console.log('🆕 New user detected, calling registration API');
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await callUserRegistrationAPI(currentUser);
+        }
+      }
+      
       onClose();
     } catch (error: any) {
       console.error('Google sign-in error:', error);
@@ -169,6 +229,22 @@ const AuthDialog: React.FC<AuthDialogProps> = ({ isOpen, onClose, initialMode = 
               />
             </div>
           </div>
+
+          {mode === 'register' && (
+            <div className="auth-dialog-form-group">
+              <div className="auth-dialog-input-wrapper">
+                <FontAwesomeIcon icon={faUser} className="auth-dialog-input-icon" />
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="auth-dialog-input"
+                  placeholder="Display Name (optional)"
+                  autoComplete="name"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="auth-dialog-form-group">
             <div className="auth-dialog-input-wrapper">
