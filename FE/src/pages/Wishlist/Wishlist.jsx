@@ -4,12 +4,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faShoppingCart, faHeart, faPlus, faShare, faBolt, faGlobe, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 import { wishlistService } from '../../services/wishlistService';
+import { wishlistRecommendationsService } from '../../services/wishlistRecommendationsService';
 import { cartService } from '../../services/cartService';
 import { eventTrackingService } from '../../services/eventTrackingService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useShop } from '../../contexts/ShopContext';
 import AuthDialog from '../../components/AuthDialog';
 import WishlistSearch from '../../components/WishlistSearch/WishlistSearch';
+import WishlistRecommendationTooltip from '../../components/WishlistRecommendationTooltip/WishlistRecommendationTooltip';
 import './Wishlist.css';
 
 const Wishlist = () => {
@@ -20,6 +22,8 @@ const Wishlist = () => {
   const [newWishlistName, setNewWishlistName] = useState('');
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
+  const [recommendations, setRecommendations] = useState(new Map()); // Store recommendations by product_id
+  const [productLoadingStates, setProductLoadingStates] = useState(new Map()); // Track loading for each product
   const { currentUser } = useAuth();
   const { addToCart } = useShop();
 
@@ -329,6 +333,60 @@ const Wishlist = () => {
     }
   };
 
+  // Load recommendations for current wishlist
+  const loadRecommendations = useCallback(async () => {
+    if (!currentUser || !currentWishlist || !currentWishlist.products || currentWishlist.products.length === 0) {
+      return;
+    }
+
+    try {
+      const productIds = currentWishlist.products.map(item => item.product_id);
+      console.log('🔍 Loading recommendations for products on page load:', productIds, 'User:', currentUser.uid);
+      
+      // Clear existing states
+      setRecommendations(new Map());
+      setProductLoadingStates(new Map());
+      
+      // Use progressive loading with individual product loading states
+      const recommendationMap = await wishlistRecommendationsService.loadRecommendationsWithProgress(
+        productIds, 
+        currentUser.uid,
+        // Callback when product loading state changes
+        (productId, loading) => {
+          setProductLoadingStates(prev => {
+            const newMap = new Map(prev);
+            if (loading) {
+              newMap.set(productId, true);
+            } else {
+              newMap.delete(productId);
+            }
+            return newMap;
+          });
+        },
+        // Callback when individual recommendation is loaded
+        (productId, recommendation) => {
+          if (recommendation) {
+            setRecommendations(prev => {
+              const newMap = new Map(prev);
+              newMap.set(productId, recommendation);
+              return newMap;
+            });
+          }
+        }
+      );
+      
+      console.log('✅ All recommendations loaded:', recommendationMap.size);
+    } catch (error) {
+      console.error('Error loading recommendations:', error);
+      // Don't show error to user - recommendations are optional
+    }
+  }, [currentUser, currentWishlist]);
+
+  // Load recommendations when wishlist changes
+  useEffect(() => {
+    loadRecommendations();
+  }, [loadRecommendations]);
+
   const deleteWishlist = async (wishlistId) => {
     if (!currentUser) {
       toast.error('Please login to delete wishlists');
@@ -635,68 +693,82 @@ const Wishlist = () => {
               </div>
 
               <div className="wishlist-grid">
-                {wishlistItems.map((item) => (
-                  <div key={item.id} className="wishlist-item">
-                    <div className="item-image">
-                      <img 
-                        src={item.product?.imageUrl || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center'} 
-                        alt={item.product?.name}
-                        onError={(e) => {
-                          e.target.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center';
-                        }}
-                      />
-                      <div className="item-actions">
-                        <button
-                          className="remove-item-btn"
-                          onClick={() => removeFromWishlist(item.product_id)}
-                          title="Remove from wishlist"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="item-details">
-                      <h3 className="item-name">
-                        <Link to={`/product/${item.product_id}`}>
-                          {item.product?.name}
-                        </Link>
-                      </h3>
-                      
-                      <p className="item-price">
-                        <span className="current-price">${item.product?.price?.toFixed(2)}</span>
-                        {item.product?.original_price && item.product?.original_price > item.product?.price && (
-                          <span className="original-price">${item.product?.original_price?.toFixed(2)}</span>
-                        )}
-                      </p>
-                      
-                      <p className="item-description">
-                        {item.product?.description?.substring(0, 100)}
-                        {item.product?.description?.length > 100 && '...'}
-                      </p>
-                      
-                      <div className="item-footer">
-                        <div className="item-buttons">
-                          <button 
-                            className="add-to-cart-btn"
-                            onClick={() => handleAddToCart(item)}
-                            title="Add to cart"
+                {wishlistItems.map((item) => {
+                  const recommendation = recommendations.get(item.product_id);
+                  const isLoadingRecommendation = productLoadingStates.get(item.product_id) || false;
+                  const ItemComponent = (
+                    <div key={item.id} className={`wishlist-item ${isLoadingRecommendation ? 'loading-recommendation' : ''} ${recommendation ? 'has-recommendation' : ''}`}>
+                      <div className="item-image">
+                        <img 
+                          src={item.product?.imageUrl || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center'} 
+                          alt={item.product?.name}
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=300&fit=crop&crop=center';
+                          }}
+                        />
+                        <div className="item-actions">
+                          <button
+                            className="remove-item-btn"
+                            onClick={() => removeFromWishlist(item.product_id)}
+                            title="Remove from wishlist"
                           >
-                            <FontAwesomeIcon icon={faShoppingCart} /> Add to Cart
-                          </button>
-                          
-                          <button 
-                            className="buy-now-btn"
-                            onClick={() => handleBuyNow(item)}
-                            title="Buy now"
-                          >
-                            <FontAwesomeIcon icon={faBolt} /> Buy Now
+                            <FontAwesomeIcon icon={faTrash} />
                           </button>
                         </div>
                       </div>
+
+                      <div className="item-details">
+                        <h3 className="item-name">
+                          <Link to={`/product/${item.product_id}`}>
+                            {item.product?.name}
+                          </Link>
+                        </h3>
+                        
+                        <p className="item-price">
+                          <span className="current-price">${item.product?.price?.toFixed(2)}</span>
+                          {item.product?.original_price && item.product?.original_price > item.product?.price && (
+                            <span className="original-price">${item.product?.original_price?.toFixed(2)}</span>
+                          )}
+                        </p>
+                        
+                        <p className="item-description">
+                          {item.product?.description?.substring(0, 100)}
+                          {item.product?.description?.length > 100 && '...'}
+                        </p>
+                        
+                        <div className="item-footer">
+                          <div className="item-buttons">
+                            <button 
+                              className="add-to-cart-btn"
+                              onClick={() => handleAddToCart(item)}
+                              title="Add to cart"
+                            >
+                              <FontAwesomeIcon icon={faShoppingCart} /> Add to Cart
+                            </button>
+                            
+                            <button 
+                              className="buy-now-btn"
+                              onClick={() => handleBuyNow(item)}
+                              title="Buy now"
+                            >
+                              <FontAwesomeIcon icon={faBolt} /> Buy Now
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+
+                  // Wrap with recommendation tooltip if available
+                  return recommendation ? (
+                    <WishlistRecommendationTooltip 
+                      key={item.id} 
+                      recommendation={recommendation}
+                    >
+                      {ItemComponent}
+                    </WishlistRecommendationTooltip>
+                  ) : ItemComponent;
+                })}
               </div>
             </div>
           )}

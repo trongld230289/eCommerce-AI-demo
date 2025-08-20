@@ -43,6 +43,34 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Function to get icon and title based on rec_source
+  const getRecommendationIcon = (source: string) => {
+    switch (source) {
+      case 'personalized':
+        return { icon: '👤', title: 'Personalized Recommendation' };
+      case 'category':
+        return { icon: '📂', title: 'Category Based' };
+      case 'trending':
+        return { icon: '🔥', title: 'Trending Product' };
+      case 'rating':
+        return { icon: '⭐', title: 'Top Rated' };
+      case 'description':
+        return { icon: '📝', title: 'Description Match' };
+      case 'wishlist':
+        return { icon: '💖', title: 'Wishlist Suggestion' };
+      case 'purchase':
+        return { icon: '🛒', title: 'Purchase History Based' };
+      case 'same_taste':
+        return { icon: '🤝', title: 'Similar Taste' };
+      case 'product':
+        return { icon: '🛍️', title: 'Similarity Search' };
+      case 'gift':
+        return { icon: '🎁', title: 'Gift Suggestion' };
+      default:
+        return null;
+    }
+  };
+
   useEffect(() => {}, []);
 
   const scrollToBottom = () => {
@@ -154,7 +182,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
             original_price: product.original_price,
             category: product.category,
             imageUrl: product.imageUrl || product.image_url,
-            description: product.description
+            description: product.description,
+            rec_source: product.rec_source // Add rec_source field!
           }));
 
           setLastSearchResults(products);
@@ -576,21 +605,59 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                   <div className="chatbot-products-grid">
                     {message.products.slice(0, 3).map((product) => (
                       <div key={product.id} className="chatbot-product-item">
-                        <div 
-                          className="chatbot-product-card"
-                          onClick={() => navigate(`/product/${product.id}`)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {/* Function type icon */}
-                          <div className="product-function-icon">
-                            {lastFunctionUsed === 'find_gifts' ? (
-                              <span className="gift-icon" title="Gift Suggestion">🎁</span>
-                            ) : (
-                              <span className="product-icon" title="Product Search">🛍️</span>
-                            )}
-                          </div>
-                          
-                          <img src={product.imageUrl} alt={product.name} className="chatbot-product-image" />
+                          <div 
+                            className="chatbot-product-card"
+                            onClick={() => navigate(`/product/${product.id}`)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            {/* Recommendation icon based on rec_source */}
+                            <div className="product-function-icon">
+                              {(() => {
+                                const recommendationData = product.rec_source ? getRecommendationIcon(product.rec_source) : null;
+                                if (recommendationData) {
+                                  return (
+                                    <div 
+                                      className="recommendation-icon" 
+                                      title={recommendationData.title}
+                                      style={{
+                                        background: '#fff',
+                                        borderRadius: '50%',
+                                        width: '22px',
+                                        height: '22px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '14px',
+                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.18)',
+                                        border: '2.5px solid #fff',
+                                        cursor: 'help',
+                                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                        position: 'absolute',
+                                        top: '-8px',
+                                        right: '-8px',
+                                        zIndex: 100
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1.2)';
+                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.18)';
+                                      }}
+                                    >
+                                      {recommendationData.icon}
+                                    </div>
+                                  );
+                                }
+                                // Fallback to old function-based icons
+                                return lastFunctionUsed === 'find_gifts' ? (
+                                  <span className="gift-icon" title="Gift Suggestion">🎁</span>
+                                ) : (
+                                  <span className="product-icon" title="Product Search">🛍️</span>
+                                );
+                              })()}
+                            </div>                          <img src={product.imageUrl} alt={product.name} className="chatbot-product-image" />
                           <div className="chatbot-product-info">
                             <h4 className="chatbot-product-name">{product.name}</h4>
                             <p className="chatbot-product-category">{product.category}</p>

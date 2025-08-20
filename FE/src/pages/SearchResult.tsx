@@ -47,6 +47,12 @@ const SearchResult: React.FC = () => {
     if (storedProducts && storedQuery) {
       try {
         const parsedProducts = JSON.parse(storedProducts);
+        
+        // Debug: Check if products have rec_source
+        console.log('🔍 Raw stored data:', storedProducts);
+        console.log('🔍 First product data:', parsedProducts[0]);
+        console.log('🏷️ Products with rec_source:', parsedProducts.filter((p: any) => p.rec_source));
+        
         setProducts(parsedProducts);
   // setSearchQuery(storedQuery); // removed, not needed
         console.log('✅ Successfully loaded chatbot search results:', parsedProducts.length, 'products');
@@ -149,7 +155,6 @@ const SearchResult: React.FC = () => {
                 key={product.id} 
                 product={product} 
                 onAddToCart={handleAddToCart}
-                functionType={searchFunctionType}
               />
             ))}
           </div>

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eCommerce AI Solution - Presentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            position: relative;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: white;
+            text-align: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #1a1a2e;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        .slide h1 {
+            font-size: 3rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .slide h2 {
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            color: #4facfe;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .slide h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .slide p, .slide li {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            max-width: 800px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: auto;
+            max-height: 200px;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.3);
+            border-color: rgba(79, 172, 254, 0.5);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #4facfe;
+        }
+
+        .feature-card p {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #ccc;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .tech-item {
+            background: rgba(79, 172, 254, 0.1);
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            border: 2px solid rgba(79, 172, 254, 0.3);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .tech-item:hover {
+            background: rgba(79, 172, 254, 0.2);
+            transform: scale(1.05);
+            border-color: rgba(79, 172, 254, 0.6);
+        }
+
+        .navigation {
+            position: fixed;
+            top: 80px;
+            left: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(79, 172, 254, 0.3);
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            font-size: 0.8rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background: rgba(79, 172, 254, 0.8);
+            color: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+
+        .pagination-info {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            font-size: 0.85rem;
+        }
+
+        .architecture-diagram {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            margin-top: 30px;
+        }
+
+        .layer {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(79, 172, 254, 0.3);
+            min-width: 180px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .arrow {
+            font-size: 2rem;
+            color: #4facfe;
+            margin: 0 15px;
+        }
+
+        .ai-techniques {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .technique-card {
+            background: rgba(79, 172, 254, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .technique-card:hover {
+            background: rgba(79, 172, 254, 0.15);
+            transform: translateY(-3px);
+            border-color: rgba(79, 172, 254, 0.5);
+        }
+
+        .technique-title {
+            color: #4facfe;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .technique-description {
+            font-size: 0.9rem;
+            color: #ccc;
+            line-height: 1.4;
+        }
+
+        ul {
+            text-align: left;
+            max-width: 800px;
+            padding-left: 20px;
+        }
+
+        ul li {
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            color: #ddd;
+            list-style-type: disc;
+            margin-left: 0;
+            padding-left: 5px;
+        }
+
+        .feature-card ul {
+            margin-top: 10px;
+            padding-left: 15px;
+        }
+
+        .feature-card ul li {
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+
+        .summary-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .summary-section {
+            flex: 1;
+            padding: 0 20px;
+        }
+
+        .summary-section h3 {
+            text-align: left;
+            margin-left: 0;
+            padding-left: 0;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide.active * {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            .slide h1 { font-size: 2.2rem; }
+            .slide h2 { font-size: 1.8rem; }
+            .slide h3 { font-size: 1.2rem; }
+            .slide p, .slide li { font-size: 0.9rem; }
+            .features-grid { grid-template-columns: 1fr; gap: 15px; }
+            .ai-techniques { grid-template-columns: 1fr; }
+            .architecture-diagram { flex-direction: column; }
+            .arrow { transform: rotate(90deg); margin: 10px 0; }
+            .slide { padding: 20px; }
+            .summary-container { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">10</span>
+        </div>
+        
+        <div class="pagination-info">
+            📄 10 items per page
+        </div>
+
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>🛒 eCommerce AI Solution</h1>
+            <h3>Comprehensive E-commerce Platform with AI Integration</h3>
+            <p>Modern full-stack application combining React frontend, FastAPI backend, and advanced AI capabilities</p>
+            <div class="tech-stack">
+                <div class="tech-item">React + TypeScript</div>
+                <div class="tech-item">FastAPI + Python</div>
+                <div class="tech-item">Neo4j Graph DB</div>
+                <div class="tech-item">LangChain + LangGraph</div>
+                <div class="tech-item">OpenAI + ChromaDB</div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Frontend Architecture -->
+        <div class="slide">
+            <h2>🎨 Frontend Architecture</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚛️</div>
+                    <h3>React 18 with TypeScript</h3>
+                    <p>Modern component-based architecture with type safety</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧭</div>
+                    <h3>React Router</h3>
+                    <p>Client-side routing for seamless navigation</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Context API</h3>
+                    <p>Centralized state management for user sessions and cart</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Responsive Design</h3>
+                    <p>CSS3 with mobile-first approach and modern styling</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Core Features -->
+        <div class="slide">
+            <h2>⭐ Core Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🛍️</div>
+                    <h3>Product Catalog</h3>
+                    <p>Browse, search, and filter products with detailed views</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI Chatbot</h3>
+                    <p>Intelligent product recommendations and customer support</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛒</div>
+                    <h3>Shopping Cart</h3>
+                    <p>Add, remove, and manage items with persistent storage</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💖</div>
+                    <h3>Wishlist</h3>
+                    <p>Save favorite products for later purchase</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎤</div>
+                    <h3>Voice Search</h3>
+                    <p>Speech-to-text product search functionality</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <h3>User Authentication</h3>
+                    <p>Firebase-powered secure login and registration</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: UI/UX & User Experience -->
+        <div class="slide">
+            <h2>🎨 UI/UX & User Experience</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🏠</div>
+                    <h3>Homepage Recommendations</h3>
+                    <p>Intelligent product suggestions based on user behavior and preferences</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💖</div>
+                    <h3>Advanced Wishlist</h3>
+                    <p>Multiple wishlists per user, public anonymous sharing, and collaborative features</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛒</div>
+                    <h3>Smart Shopping Cart</h3>
+                    <p>Persistent cart across sessions, quantity management, and price tracking</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Event Tracking</h3>
+                    <p>Real-time user interaction tracking for personalized recommendations</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>NLP-Powered Chatbot</h3>
+                    <p>Natural language processing for product search and gift recommendations</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏷️</div>
+                    <h3>Smart Labeling System</h3>
+                    <p>Visual labels: "WL" for wishlist items, "Product" for searches, "Gift" for recommendations</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💡</div>
+                    <h3>AI-Powered Suggestions</h3>
+                    <p>Wishlist recommendations from shared lists & smart upgrades (iPhone 15 → iPhone 16 Pro Max)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: AI Techniques & Technologies -->
+        <div class="slide">
+            <h2>🤖 AI Techniques & Technologies</h2>
+            <div class="ai-techniques">
+                <div class="technique-card">
+                    <div class="technique-title">🎯 Prompt Engineering</div>
+                    <div class="technique-description">Crafted specialized prompts for product search and chatbot responses</div>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🔍 Semantic Search</div>
+                    <div class="technique-description">Vector-based similarity search for intelligent product matching</div>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🗃️ Vector Database</div>
+                    <div class="technique-description">ChromaDB for storing and querying product embeddings</div>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🦜 LangChain Agent</div>
+                    <div class="technique-description">Intelligent agent for complex query processing and tool usage</div>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🔗 LangGraph Workflows</div>
+                    <div class="technique-description">Multi-step AI workflows for complex reasoning and decision making</div>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🧠 Text Embeddings</div>
+                    <div class="technique-description">OpenAI embeddings for semantic understanding</div>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🌐 Multi-language Support</div>
+                    <div class="technique-description">AI chatbot supports Vietnamese, English, and other languages</div>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🛠️ Tool Integration</div>
+                    <div class="technique-description">Agent can use search tools, filters, and recommendation systems</div>
+                </div>
+                <div class="technique-card">
+                    <div class="technique-title">🔄 Schema Caching</div>
+                    <div class="technique-description">TTL-based caching for Neo4j schema optimization</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Authentication & Security -->
+        <div class="slide">
+            <h2>🔐 Authentication & Security</h2>
+            <ul>
+                <li><strong>Firebase Authentication:</strong> Secure user management with email/password</li>
+                <li><strong>JWT Token Verification:</strong> Backend validates Firebase tokens</li>
+                <li><strong>Protected Routes:</strong> Frontend route guards for authenticated users</li>
+                <li><strong>Session Management:</strong> Persistent login state across browser sessions</li>
+                <li><strong>API Security:</strong> All sensitive endpoints require valid authentication</li>
+                <li><strong>User Registration Flow:</strong> Seamless signup with backend user data sync</li>
+            </ul>
+        </div>
+
+        <!-- Slide 7: Backend Architecture -->
+        <div class="slide">
+            <h2>⚙️ Backend Architecture</h2>
+            <div class="architecture-diagram">
+                <div class="layer">
+                    <h3>API Layer</h3>
+                    <p>FastAPI with Pydantic validation</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="layer">
+                    <h3>LangGraph Workflows</h3>
+                    <p>AI orchestration & decision making</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="layer">
+                    <h3>Data Layer</h3>
+                    <p>Neo4j Graph DB + ChromaDB</p>
+                </div>
+            </div>
+            <div class="features-grid" style="margin-top: 40px;">
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Neo4j Graph Database</h3>
+                    <p>Complex relationships between users, products, and interactions</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>LangGraph Workflows</h3>
+                    <p>Multi-step AI reasoning with conditional branching</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Neo4j & LangGraph Integration -->
+        <div class="slide">
+            <h2>� Neo4j & LangGraph Integration</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Graph Database Schema</h3>
+                    <p>Users, Products, Wishlists, Carts, and complex relationship modeling</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>LangGraph Workflow Steps</h3>
+                    <p>Schema fetching → Query analysis → Cypher generation → Execution</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Smart Query Processing</h3>
+                    <p>Semantic filtering and validation before database execution</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">�</div>
+                    <h3>Containerized Deployment</h3>
+                    <p>Docker Compose with Neo4j, migration service, and FastAPI app</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">�</div>
+                    <h3>Relationship Analytics</h3>
+                    <p>SIMILAR_TO, RECOMMENDED_BY_ALS, and interaction tracking</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎁</div>
+                    <h3>Gifting Workflows</h3>
+                    <p>Specialized LangGraph workflows for gift recommendation logic</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Technology Stack Deep Dive -->
+        <div class="slide">
+            <h2>💻 Technology Stack Deep Dive</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚛️</div>
+                    <h3>Frontend Stack</h3>
+                    <ul>
+                        <li>React 18 with TypeScript</li>
+                        <li>React Router for navigation</li>
+                        <li>Context API for state management</li>
+                        <li>CSS3 with responsive design</li>
+                        <li>FontAwesome icons</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🐍</div>
+                    <h3>Backend Stack</h3>
+                    <ul>
+                        <li>FastAPI with Python 3.9+</li>
+                        <li>Pydantic for data validation</li>
+                        <li>Neo4j Graph Database 5.26</li>
+                        <li>LangChain + LangGraph 0.6.5</li>
+                        <li>ChromaDB for vector storage</li>
+                        <li>OpenAI API integration</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">�</div>
+                    <h3>Graph Database</h3>
+                    <ul>
+                        <li>Neo4j Community 5.26.10</li>
+                        <li>Cypher query language</li>
+                        <li>Complex relationship modeling</li>
+                        <li>Schema metadata caching</li>
+                        <li>Bolt protocol connectivity</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI/ML & Orchestration</h3>
+                    <ul>
+                        <li>LangGraph state management</li>
+                        <li>Multi-step AI workflows</li>
+                        <li>Conditional workflow branching</li>
+                        <li>Semantic similarity matching</li>
+                        <li>Vector embeddings & search</li>
+                        <li>TTL-based result caching</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Summary & Future Enhancements -->
+        <div class="slide">
+            <h2>🎯 Summary & Future Enhancements</h2>
+            <div class="summary-container">
+                <div class="summary-section">
+                    <h3>Current Achievements</h3>
+                    <ul>
+                        <li>Full-stack e-commerce platform</li>
+                        <li>Neo4j graph database integration</li>
+                        <li>LangGraph multi-step AI workflows</li>
+                        <li>Complex relationship modeling</li>
+                        <li>Intelligent query processing</li>
+                        <li>Docker containerized deployment</li>
+                        <li>Real-time recommendation engine</li>
+                        <li>Vector-based semantic search</li>
+                    </ul>
+                </div>
+                <div class="summary-section">
+                    <h3>Future Enhancements</h3>
+                    <ul>
+                        <li>Advanced graph analytics</li>
+                        <li>Real-time recommendation updates</li>
+                        <li>Graph-based fraud detection</li>
+                        <li>Social network integration</li>
+                        <li>Advanced gifting algorithms</li>
+                        <li>Graph visualization dashboard</li>
+                        <li>Multi-tenant graph partitioning</li>
+                        <li>ML-powered graph embeddings</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn active" onclick="goToSlide(0)">1</button>
+        <button class="nav-btn" onclick="goToSlide(1)">2</button>
+        <button class="nav-btn" onclick="goToSlide(2)">3</button>
+        <button class="nav-btn" onclick="goToSlide(3)">4</button>
+        <button class="nav-btn" onclick="goToSlide(4)">5</button>
+        <button class="nav-btn" onclick="goToSlide(5)">6</button>
+        <button class="nav-btn" onclick="goToSlide(6)">7</button>
+        <button class="nav-btn" onclick="goToSlide(7)">8</button>
+        <button class="nav-btn" onclick="goToSlide(8)">9</button>
+        <button class="nav-btn" onclick="goToSlide(9)">10</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            
+            // Update navigation buttons
+            document.querySelectorAll('.nav-btn').forEach((btn, index) => {
+                btn.classList.toggle('active', index === currentSlide);
+            });
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        function goToSlide(n) {
+            showSlide(n);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    prevSlide();
+                    break;
+                case 'Home':
+                    goToSlide(0);
+                    break;
+                case 'End':
+                    goToSlide(totalSlides - 1);
+                    break;
+            }
+        });
+
+        // Auto-advance slides (optional)
+        // setInterval(nextSlide, 10000);
+    </script>
+</body>
+</html>

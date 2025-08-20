@@ -61,9 +61,19 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from models import Product
+from models import Product, RecommendationSourceEnum
 from product_service import ProductService
 from services.middleware_service import MiddlewareService
+
+# Mapping dictionary for algorithm labels to recommendation sources
+ALGORITHM_TO_REC_SOURCE = {
+    "top_item_to_item": RecommendationSourceEnum.PERSONALIZED.value,
+    "top_als": RecommendationSourceEnum.SAME_TASTE.value,
+    "top_pagerank": RecommendationSourceEnum.SAME_TASTE.value,
+    "fit_description": RecommendationSourceEnum.DESCRIPTION.value,
+    "most_added_to_wishlist": RecommendationSourceEnum.WISHLIST.value,
+    "most_purchased": RecommendationSourceEnum.PURCHASE.value,
+}
 
 # Load environment variables
 env_path = os.path.join(parent_dir, '.env')
@@ -73,11 +83,19 @@ load_dotenv(dotenv_path=env_path)
 SYSTEM_INSTRUCTIONS = """
 You are a shopping assistant that helps users find products in 5 categories: phone, camera, laptop, watch, camping gear.
 
+⚠️ IMPORTANT: You MUST ALWAYS use tools (find_products or find_gifts) to search for products. NEVER create product lists or responses yourself.
+
 CORE BEHAVIOR:
 1. For gift requests without specific category: Ask user to choose a category before calling tools
 2. For gift requests with category: Call find_gifts tool 
 3. For general product searches: Call find_products tool
 4. For invalid categories: Explain limitations and suggest valid alternatives
+
+🔧 MANDATORY TOOL USAGE:
+- For ANY product search query → MUST call find_products tool
+- For ANY gift-related query with category → MUST call find_gifts tool  
+- NEVER generate product lists or search results manually
+- ALWAYS let tools handle the actual product search and formatting
 
 GIFT HANDLING LOGIC:
 - If user mentions recipients (mom, dad, friend, etc.) or gift occasions BUT doesn't specify a product category:
@@ -107,6 +125,7 @@ EXAMPLES:
 ✅ "Gift for mom - phone" → Call find_gifts("phone", recipient="mom")  
 ✅ "Phone for mom" → Call find_gifts("phone", recipient="mom")
 ✅ "Phone" (no gift context) → Call find_products("phone")
+✅ "camping" → Call find_products("camping")
 ✅ User: "gift for dad" → You: "What category?" → User: "laptop" → Call find_gifts("laptop", recipient="dad")
 ✅ If gift context exists and user says "phone" again → Call find_gifts("phone", maintain context)
 ❌ "Clothes for mom" → Explain limitations, suggest "watch for fashion accessory"
@@ -117,7 +136,7 @@ CONVERSATION FLOW:
 - If gift context exists but no category → ask for category
 - If no gift context → use find_products
 
-Remember: ASK before calling tools when gift context exists but category is unclear.
+Remember: ALWAYS use tools for product searches. ASK before calling tools when gift context exists but category is unclear.
 """
 
 class AIService:
@@ -209,7 +228,7 @@ class AIService:
             # Get external gift products with labels
             external_products = self._get_external_gift_products()
 
-            composed_response = self.make_response_sentence(user_input, external_products, self.USER_LANG_CODE)
+            composed_response = self.make_intro_sentence(user_input, external_products, self.USER_LANG_CODE)
             print(f"DEBUG: Composed response: {composed_response}")
 
             result = {
@@ -497,6 +516,7 @@ class AIService:
         try:
             search_intent = self.extract_search_intent(user_input)
             product_name = search_intent.get("product_name", None)
+            print(f"Product name: {product_name}")
             filters = search_intent.get("filters", {})
             product_category = filters.get("category", None)
             product_description = search_intent.get("product_description", None)
@@ -540,7 +560,7 @@ class AIService:
                     similarity_score = 1 - (distance / 2)  # Normalize to [0, 1] range
                     
                     # Lower threshold since we're now getting proper similarity scores
-                    if similarity_score > 0.1:  # Much lower threshold for better results
+                    if similarity_score > 0.3:  # Much lower threshold for better results
                         product_data = {
                             "id": metadata["id"],  # Keep as string, don't convert to int
                             "name": metadata["name"],
@@ -551,7 +571,7 @@ class AIService:
                             "discount": metadata["discount"],
                             "imageUrl": metadata["imageUrl"],
                             "similarity_score": similarity_score,
-                            "showLabel": "product" if searchFromTool == "find_products" else ("gift" if searchFromTool == "find_gifts" else None)
+                            "rec_source": RecommendationSourceEnum.PRODUCT if searchFromTool == "find_products" else (RecommendationSourceEnum.GIFT if searchFromTool == "find_gifts" else None)
                         }
                         products.append(product_data)
                         
@@ -580,7 +600,7 @@ class AIService:
             print(f"DEBUG: After price/rating filters: {len(filtered_products)} products")
             print(f"DEBUG: Final result (limited to {limit}): {len(products)} products")
 
-            composed_response = self.make_response_sentence(user_input, products, lang)
+            composed_response = self.make_intro_sentence(user_input, products, lang)
             print(f"DEBUG: Composed response: {composed_response}")
 
             return {
@@ -658,24 +678,14 @@ class AIService:
             return "en"
 
     # ---------- Copy helpers ----------
-    def make_intro_sentence(self, context: str, lang_code: str) -> str:
-        instruction = (
-            f"Write exactly 1 sentence in the language indicated by this ISO 639-1 code: {lang_code}. "
-            "Use a warm and cheerful tone. No bullet points. Max ~30 words."
-        )
-        prompt = f"{instruction}\nContext: {context}"
-        text = self.llm.invoke(prompt).content.strip()
-        if "." in text and lang_code == "en":
-            text = text.split(".")[0].strip() + "."
-        return text
 
-    def make_response_sentence(self, user_input: str, products: List[Dict], lang_code: str) -> Dict[str, str]:
+    def make_intro_sentence(self, user_input: str, products: List[Dict], lang_code: str) -> Dict[str, str]:
         try:
             product_count = len(products)
             
             # Single comprehensive prompt for all three fields
             prompt = f"""
-            You are a multilingual e-commerce assistant. Generate a JSON response with exactly these 3 fields for a product search result.
+            You are a multilingual e-commerce assistant. Generate a JSON response with exactly these 3 fields for a product search result. Please do it in a fun and cheerful style! 🎉
 
             USER SEARCH: "{user_input}"
             PRODUCTS FOUND: {product_count}
@@ -687,7 +697,7 @@ class AIService:
             {{
                 "intro": "A warm, encouraging 1-sentence introduction about the search results (max 30 words). Be cheerful and engaging.",
                 "header": "A short subtitle introducing the product list below (max 15 words). Like 'Here are your product suggestions:' but more natural.",
-                "show_all_product": "A message asking if user wants to see all {product_count} results on products page (max 25 words). ONLY include this if product_count > 3, otherwise return empty string."
+                "show_all_product": f"Show one short sentence asking if the user wants to see {product_count} more related products. Only generate this if product_count > 3, otherwise return an empty string."
             }}
 
             Context guidelines:
@@ -780,7 +790,7 @@ class AIService:
                             "discount": product_data.get("discount", 0),
                             "imageUrl": product_data.get("imageUrl", ""),
                             "similarity_score": 1.0,  # High score for external recommendations
-                            "showLabel": label  # Assign the label from external recommendations
+                            "rec_source": ALGORITHM_TO_REC_SOURCE.get(label, RecommendationSourceEnum.GIFT.value)  # Map algorithm label to rec_source enum
                         }
                         external_products.append(external_product)
             
@@ -792,7 +802,7 @@ class AIService:
             return []
 
 
-    def truncate_conversation_history(self, messages: List[Dict[str, str]], max_messages: int = 8) -> List[Dict[str, str]]:
+    def truncate_conversation_history(self, messages: List[Dict[str, str]], max_messages: int = 10) -> List[Dict[str, str]]:
         """Keep system message + last N conversation messages to prevent token overflow"""
         
         if len(messages) <= max_messages + 1:  # +1 for system message
@@ -808,7 +818,7 @@ class AIService:
             else:
                 conversation_msgs.append(msg)
         
-        # Keep last N conversation messages
+        # Keep more recent conversation messages for better context
         recent_conversation = conversation_msgs[-max_messages:]
         
         # Combine: system + recent conversation
@@ -822,8 +832,8 @@ class AIService:
 
     # ---------- Chat middleware ----------
     async def semantic_search_middleware(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
-        # Truncate conversation history to prevent token overflow
-        messages = self.truncate_conversation_history(messages, max_messages=8)
+        # Truncate conversation history to prevent token overflow (keep more context)
+        messages = self.truncate_conversation_history(messages, max_messages=10)
         
         # last user input
         user_input = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")

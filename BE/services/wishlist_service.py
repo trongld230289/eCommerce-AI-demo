@@ -600,5 +600,47 @@ class WishlistService:
                 wishlists=[]
             )
 
+    def get_shared_wishlists(self, exclude_user_id: str = None) -> List[Wishlist]:
+        """Get all shared wishlists (public or anonymous) for recommendation purposes"""
+        try:
+            # Query wishlists where share_status is not private
+            docs = self.db.collection(self.collection_name)\
+                          .where("share_status", "in", [ShareType.PUBLIC.value, ShareType.ANONYMOUS.value])\
+                          .stream()
+            
+            shared_wishlists = []
+            for doc in docs:
+                data = doc.to_dict()
+                if data:
+                    data["id"] = doc.id
+                    
+                    # Filter out wishlists from excluded user BEFORE expensive operations
+                    if exclude_user_id:
+                        wishlist_user_id = data.get('user_id', '')
+                        if str(wishlist_user_id) == str(exclude_user_id):
+                            print(f"🚫 FILTERING: Excluding wishlist '{data.get('name', 'Unknown')}' from user {wishlist_user_id}")
+                            continue
+                        else:
+                            print(f"✅ INCLUDING: Wishlist '{data.get('name', 'Unknown')}' from user {wishlist_user_id}")
+                    
+                    # If anonymous sharing, hide user identification
+                    if data.get('share_status') == ShareType.ANONYMOUS.value:
+                        data['user_id'] = "anonymous"
+                        data['user_email'] = "anonymous@example.com" 
+                        data['user_name'] = "Anonymous User"
+                    
+                    # Populate product details - NOTE: This might be expensive for many wishlists
+                    # Consider removing this if performance becomes an issue
+                    data = self._populate_product_details(data)
+                    
+                    shared_wishlists.append(Wishlist(**data))
+            
+            print(f"📊 FILTERING RESULT: Included {len(shared_wishlists)} shared wishlists after filtering")
+            return shared_wishlists
+            
+        except Exception as e:
+            print(f"Error fetching shared wishlists: {str(e)}")
+            return []
+
 # Create global instance
 wishlist_service = WishlistService()

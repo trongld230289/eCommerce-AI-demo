@@ -180,6 +180,7 @@ export const aiService = {
       description: '', // Not provided by AI search
       rating: aiProduct.rating,
       discount: aiProduct.discount,
+      rec_source: (aiProduct as any).rec_source, // Add rec_source field!
       created_at: undefined,
       updated_at: undefined
     }));

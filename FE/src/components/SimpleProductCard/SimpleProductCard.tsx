@@ -9,15 +9,47 @@ import WishlistButton from '../WishlistButton/WishlistButton';
 interface SimpleProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
-  functionType?: string;
 }
 
 const SimpleProductCard: React.FC<SimpleProductCardProps> = ({ 
   product, 
-  onAddToCart,
-  functionType
+  onAddToCart
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+
+  // Function to get icon and title based on rec_source
+  const getRecommendationIcon = (source: string) => {
+    switch (source) {
+      case 'personalized':
+        return { icon: '👤', title: 'Personalized Recommendation', animation: 'personalizedPulse' };
+      case 'category':
+        return { icon: '📂', title: 'Category Based', animation: 'categoryBounce' };
+      case 'trending':
+        return { icon: '🔥', title: 'Trending Product', animation: 'trendingFlame' };
+      case 'rating':
+        return { icon: '⭐', title: 'Top Rated', animation: 'ratingSpark' };
+      case 'description':
+        return { icon: '📝', title: 'Description Match', animation: 'descriptionWrite' };
+      case 'wishlist':
+        return { icon: '💖', title: 'Wishlist Suggestion', animation: 'wishlistHeart' };
+      case 'purchase':
+        return { icon: '🛒', title: 'Purchase History Based', animation: 'purchaseShake' };
+      case 'same_taste':
+        return { icon: '🤝', title: 'Similar Taste', animation: 'tasteMate' };
+      case 'product':
+        return { icon: '🛍️', title: 'Similarity Search', animation: 'productPulse' };
+      case 'gift':
+        return { icon: '🎁', title: 'Gift Suggestion', animation: 'giftGlow' };
+      default:
+        return null;
+    }
+  };
+
+    // Get recommendation data if rec_source exists
+  const recommendationData = product.rec_source ? getRecommendationIcon(product.rec_source) : null;
+  
+  // Debug log
+  console.log('Product rec_source:', product.rec_source, 'recommendationData:', recommendationData);
 
   const styles = {
     simpleProductCard: {
@@ -182,47 +214,46 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
           </span>
         )}
         
-        {/* Function type icon - chỉ hiện khi có functionType từ chatbot/search */}
-        {functionType && (functionType === 'find_gifts' || functionType === 'find_products') && (
-          <div style={{
-            position: 'absolute',
-            top: '-10px',
-            right: '-10px',
-            zIndex: 99,
-            background: '#fff',
-            borderRadius: '50%',
-            width: '28px',
-            height: '28px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.18)',
-            border: '2.5px solid #fff',
-            pointerEvents: 'none'
-          }}>
-            {functionType === 'find_gifts' ? (
-              <span 
-                title="Gift Suggestion" 
-                style={{ 
-                  fontSize: '15px', 
-                  display: 'block',
-                  animation: 'giftGlow 2s ease-in-out infinite alternate'
-                }}
-              >
-                🎁
-              </span>
-            ) : (
-              <span 
-                title="Product Search" 
-                style={{ 
-                  fontSize: '15px', 
-                  display: 'block',
-                  animation: 'productPulse 2s ease-in-out infinite'
-                }}
-              >
-                🛍️
-              </span>
-            )}
+        {/* Recommendation icon based on rec_source */}
+        {recommendationData && (
+          <div 
+            title={recommendationData.title}
+            style={{
+              position: 'absolute',
+              top: '-10px',
+              right: '-10px',
+              zIndex: 99,
+              background: '#fff',
+              borderRadius: '50%',
+              width: '28px',
+              height: '28px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.18)',
+              border: '2.5px solid #fff',
+              cursor: 'help',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.18)';
+            }}
+          >
+            <span 
+              style={{ 
+                fontSize: '15px', 
+                display: 'block',
+                animation: `${recommendationData.animation} 2s ease-in-out infinite alternate`,
+                pointerEvents: 'none'
+              }}
+            >
+              {recommendationData.icon}
+            </span>
           </div>
         )}
    
@@ -318,6 +349,54 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Add CSS animations */}
+      <style>{`
+        @keyframes personalizedPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.2); }
+        }
+        @keyframes categoryBounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-3px); }
+          60% { transform: translateY(-1px); }
+        }
+        @keyframes trendingFlame {
+          0% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.1) rotate(2deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+        @keyframes ratingStar {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.2) rotate(180deg); }
+        }
+        @keyframes descriptionFloat {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-2px); }
+        }
+        @keyframes wishlistHeart {
+          0%, 100% { transform: scale(1); color: #e74c3c; }
+          50% { transform: scale(1.3); color: #c0392b; }
+        }
+        @keyframes purchaseShake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-1px); }
+          75% { transform: translateX(1px); }
+        }
+        @keyframes sameTasteWave {
+          0% { transform: translateX(0px); }
+          50% { transform: translateX(2px); }
+          100% { transform: translateX(0px); }
+        }
+        @keyframes productPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        @keyframes giftGlow {
+          0% { filter: brightness(1); }
+          100% { filter: brightness(1.5) drop-shadow(0 0 5px gold); }
+        }
+      `}</style>
     </div>
   );
 };

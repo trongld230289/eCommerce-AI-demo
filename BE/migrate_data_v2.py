@@ -343,7 +343,7 @@ PRODUCTS_DATA = [
         "name": "Sony Alpha 7 IV",
         "price": 2499.99,
         "original_price": 2799.99,
-        "imageUrl": "https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=500&h=500&fit=crop&crop=center",
+        "imageUrl": "https://mayanhshop.com/wp-content/uploads/2024/04/techradar_1280x720-800-resize.png",
         "category": "Camera",
         "description": "Versatile full-frame camera perfect for photo and video with excellent image quality.",
         "rating": 4.7,
@@ -558,6 +558,56 @@ async def clear_existing_products():
         await asyncio.to_thread(batch.commit)
     
     print(f"[SUCCESS] Cleared {count} existing products")
+
+
+async def clear_additional_collections():
+    """Clear carts, wishlists, and user_events collections from Firestore"""
+    db = get_firestore_db()
+    collections_to_clear = ['carts', 'wishlists', 'user_events']
+    
+    print("[INFO] Clearing additional collections...")
+    
+    total_cleared = 0
+    for collection_name in collections_to_clear:
+        collection_ref = db.collection(collection_name)
+        
+        print(f"[INFO] Clearing {collection_name} collection...")
+        
+        # Get all existing documents
+        docs = collection_ref.stream()
+        batch = db.batch()
+        count = 0
+        
+        for doc in docs:
+            batch.delete(doc.reference)
+            count += 1
+            
+            # Firestore batch limit is 500 operations
+            if count % 500 == 0:
+                await asyncio.to_thread(batch.commit)
+                batch = db.batch()
+        
+        if count % 500 != 0:
+            await asyncio.to_thread(batch.commit)
+        
+        print(f"[SUCCESS] Cleared {count} documents from {collection_name} collection")
+        total_cleared += count
+    
+    print(f"[SUCCESS] Total cleared: {total_cleared} documents from additional collections")
+
+
+def get_openai_embedding(text: str) -> List[float]:
+    """Generate embeddings using OpenAI API"""
+    try:
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.embeddings.create(
+            input=text,
+            model="text-embedding-3-small"
+        )
+        return response.data[0].embedding
+    except Exception as e:
+        print(f"[ERROR] Failed to generate embedding: {e}")
+        return []
 
 async def upload_products():
     """Upload all products to Firestore"""
@@ -865,6 +915,11 @@ async def main():
     print("=" * 65)
     
     try:
+        # Clear additional collections (carts, wishlists, user_events)
+        await clear_additional_collections()
+        
+        print()
+        
         # Clear existing products
         await clear_existing_products()
         
@@ -887,6 +942,7 @@ async def main():
         print("=" * 65)
         print("[SUCCESS] Migration v2 completed successfully!")
         print("[INFO] Completed steps:")
+        print("  - Cleared carts, wishlists, and user_events collections")
         print("  - Uploaded 50 products to Firebase Firestore")
         print("  - Generated embeddings using OpenAI API")
         print("  - Stored embeddings in ChromaDB for vector search")
