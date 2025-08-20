@@ -1,0 +1,32 @@
+[
+    {
+        "cardId": "cart-user1",
+        "userId": "user1",
+        "createdAt": 1693526400000,
+        "updatedAt": 1693526400000
+    },
+    {
+        "cardId": "cart-user3",
+        "userId": "user3",
+        "createdAt": 1693526400000,
+        "updatedAt": 1693526400000
+    },
+    {
+        "cardId": "cart-user5",
+        "userId": "user5",
+        "createdAt": 1693526400000,
+        "updatedAt": 1693526400000
+    },
+    {
+        "cardId": "cart-user7",
+        "userId": "user7",
+        "createdAt": 1693526400000,
+        "updatedAt": 1693526400000
+    },
+    {
+        "cardId": "cart-user9",
+        "userId": "user9",
+        "createdAt": 1693526400000,
+        "updatedAt": 1693526400000
+    }
+]
