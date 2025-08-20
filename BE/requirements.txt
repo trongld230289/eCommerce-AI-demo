@@ -12,6 +12,7 @@ python-multipart>=0.0.6
 langchain>=0.0.1
 langchain-openai>=0.0.1
 langgraph>=0.0.1
+faiss-cpu>=1.7.0
 
 
 #py -3.12 -m venv venv312
@@ -34,6 +35,8 @@ langgraph>=0.0.1
 # pip install --no-cache-dir "langchain>=0.0.1"
 # pip install --no-cache-dir "langchain-openai>=0.0.1"
 # pip install --no-cache-dir "langgraph>=0.0.1"
+# pip install faiss-cpu>=1.7.0
+
 
 # Firebase and OpenAI
 # pip install --no-cache-dir "firebase-admin>=6.0.0"

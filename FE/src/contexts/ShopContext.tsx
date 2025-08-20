@@ -13,6 +13,7 @@ export interface Product {
   description?: string;
   rating?: number;
   discount?: number;
+  rec_source?: string;
 }
 
 export interface CartItem extends Product {

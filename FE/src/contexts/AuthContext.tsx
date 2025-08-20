@@ -92,6 +92,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user: FirebaseUser | null) => {
       if (user) {
+        // Store user ID in localStorage for API calls
+        localStorage.setItem('userId', user.uid);
+        localStorage.setItem('user_id', user.uid); // Also store as user_id for compatibility
+        
         setCurrentUser({
           uid: user.uid,
           email: user.email || '',
@@ -99,6 +103,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           photoURL: user.photoURL || undefined
         });
       } else {
+        // Clear user ID from localStorage on logout
+        localStorage.removeItem('userId');
+        localStorage.removeItem('user_id');
         setCurrentUser(null);
       }
       setLoading(false);

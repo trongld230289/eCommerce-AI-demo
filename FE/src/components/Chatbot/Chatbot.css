@@ -576,9 +576,21 @@ body.chatbot-open {
 /* Product function type icon */
 .product-function-icon {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: -2px;
+  right: -2px;
   z-index: 99;
+  /* Remove background/styling since recommendation icons handle their own styling */
+}
+
+/* Allow hover on recommendation icons specifically */
+.product-function-icon .recommendation-icon {
+  pointer-events: auto;
+  cursor: help;
+}
+
+/* Legacy gift/product icons styling */
+.product-function-icon .gift-icon,
+.product-function-icon .product-icon {
   background: #fff;
   border-radius: 50%;
   width: 20px;
@@ -588,8 +600,8 @@ body.chatbot-open {
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   border: 2.5px solid #fff;
-  /* Đảm bảo nổi bật trên mọi nền */
   pointer-events: none;
+  font-size: 12px;
 }
 
 .gift-icon, .product-icon {

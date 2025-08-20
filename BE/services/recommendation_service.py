@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from firebase_config import get_firestore_db
-from models import UserEvent, UserEventCreate, RecommendationRequest, RecommendationResponse, EventType
+from models import UserEvent, UserEventCreate, RecommendationRequest, RecommendationResponse, EventType, RecommendationSourceEnum
 from product_service import product_service
 import random
 
@@ -230,31 +230,44 @@ class RecommendationService:
         """Main recommendation endpoint"""
         try:
             recommendations = []
-            source = "fallback"
+            source = RecommendationSourceEnum.RATING.value  # Default fallback
             
             # Strategy 1: Personalized recommendations for logged-in users
             if request.user_id:
                 personalized = await self.get_personalized_recommendations(request.user_id, request.limit)
                 if personalized:
                     recommendations = personalized
-                    source = "personalized"
+                    source = RecommendationSourceEnum.PERSONALIZED.value
+                    # Add rec_source to each product
+                    for product in recommendations:
+                        product['rec_source'] = RecommendationSourceEnum.PERSONALIZED.value
             
             # Strategy 2: Category-based recommendations
             if not recommendations and request.category:
                 category_recs = await self.get_category_recommendations(request.category, request.limit)
                 if category_recs:
                     recommendations = category_recs
-                    source = "category_based"
+                    source = RecommendationSourceEnum.CATEGORY.value
+                    # Add rec_source to each product
+                    for product in recommendations:
+                        product['rec_source'] = RecommendationSourceEnum.CATEGORY.value
             
             # Strategy 3: Trending recommendations
             if not recommendations:
                 trending = await self.get_trending_recommendations(request.limit)
                 if trending and len(trending) >= request.limit:
                     recommendations = trending
-                    source = "trending"
+                    source = RecommendationSourceEnum.TRENDING.value
+                    # Add rec_source to each product
+                    for product in recommendations:
+                        product['rec_source'] = RecommendationSourceEnum.TRENDING.value
                 elif trending:  # If we have some but not enough, mix with other products
                     recommendations = trending
-                    source = "trending_mixed"
+                    source = RecommendationSourceEnum.TRENDING.value  # Keep as trending since it's the primary source
+                    
+                    # Add rec_source to trending products
+                    for product in recommendations:
+                        product['rec_source'] = RecommendationSourceEnum.TRENDING.value
                     
                     # Fill remaining with top-rated products
                     needed = request.limit - len(trending)
@@ -264,6 +277,11 @@ class RecommendationService:
                     # Exclude products already in trending
                     trending_ids = {p['id'] for p in trending}
                     additional_products = [p for p in all_products if p['id'] not in trending_ids][:needed]
+                    
+                    # Add rec_source to additional products
+                    for product in additional_products:
+                        product['rec_source'] = RecommendationSourceEnum.RATING.value
+                    
                     recommendations.extend(additional_products)
             
             # Strategy 4: Fallback to top-rated products
@@ -271,7 +289,10 @@ class RecommendationService:
                 all_products = product_service.get_all_products()
                 all_products.sort(key=lambda x: x.get('rating', 0), reverse=True)
                 recommendations = all_products[:request.limit]
-                source = "fallback"
+                source = RecommendationSourceEnum.RATING.value
+                # Add rec_source to each product
+                for product in recommendations:
+                    product['rec_source'] = RecommendationSourceEnum.RATING.value
             
             return RecommendationResponse(
                 recommendations=recommendations,
@@ -289,10 +310,14 @@ class RecommendationService:
                 all_products = product_service.get_all_products()
                 fallback_recs = all_products[:request.limit] if all_products else []
                 
+                # Add rec_source to fallback products
+                for product in fallback_recs:
+                    product['rec_source'] = RecommendationSourceEnum.RATING.value
+                
                 return RecommendationResponse(
                     recommendations=fallback_recs,
                     user_id=request.user_id,
-                    source="error_fallback",
+                    source=RecommendationSourceEnum.RATING.value,  # Use enum for error fallback
                     context=request.context,
                     total_count=len(fallback_recs),
                     timestamp=datetime.now()

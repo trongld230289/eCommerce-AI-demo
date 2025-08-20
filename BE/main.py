@@ -11,6 +11,7 @@ from services.cart_service import cart_service
 from services.recommendation_service import recommendation_service
 from routers.ai_router import router as ai_router
 from routers.wishlist_router import router as wishlist_router
+from routers.wishlist_recommendations_router import router as wishlist_recommendations_router
 from routers.auth_router import router as auth_router
 from routers.product_router import router as product_router
 from routers.middleware_service_router import router as middleware_service_router
@@ -43,6 +44,7 @@ app.add_middleware(
 # Include routers
 app.include_router(ai_router, prefix="/api", tags=["AI"])
 app.include_router(wishlist_router, tags=["Wishlist"])
+app.include_router(wishlist_recommendations_router, tags=["Wishlist Recommendations"])
 app.include_router(auth_router, tags=["Auth"])
 app.include_router(product_router, tags=["Products"])
 app.include_router(middleware_service_router, tags=["Middleware"])

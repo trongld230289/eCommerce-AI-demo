@@ -16,9 +16,22 @@ class ShareType(str, Enum):
     PUBLIC = "public"
     ANONYMOUS = "anonymous"
 
+class RecommendationSourceEnum(str, Enum):
+    PERSONALIZED = "personalized"
+    CATEGORY = "category"
+    TRENDING = "trending"
+    RATING = "rating"
+    DESCRIPTION = "description"
+    WISHLIST = "wishlist"
+    PURCHASE = "purchase"
+    SAME_TASTE = "same_taste"
+    PRODUCT = "product"
+    GIFT = "gift"
+
 class Product(BaseModel):
     id: Optional[int] = None
     name: str
+    title: Optional[str] = None  # Add title field for compatibility
     price: float
     original_price: Optional[float] = None
     imageUrl: str
@@ -26,8 +39,34 @@ class Product(BaseModel):
     description: Optional[str] = None
     rating: Optional[float] = None
     discount: Optional[float] = None
+    brand: Optional[str] = None  # Add brand field
+    tags: Optional[List[str]] = None  # Add tags field
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    
+    def as_text(self) -> str:
+        """Convert product to text representation for embeddings"""
+        # Use title if available, otherwise use name
+        title = self.title or self.name
+        
+        # Build comprehensive text representation
+        parts = [title]
+        
+        if self.brand:
+            parts.append(f"Brand: {self.brand}")
+        
+        if self.category:
+            parts.append(f"Category: {self.category}")
+        
+        if self.description:
+            parts.append(f"Description: {self.description}")
+        
+        if self.tags:
+            parts.append(f"Tags: {', '.join(self.tags)}")
+        
+        parts.append(f"Price: {self.price}")
+        
+        return " | ".join(parts)
 
 class ProductCreate(BaseModel):
     name: str
@@ -230,3 +269,30 @@ class RecommendationResponse(BaseModel):
     context: Optional[str] = None
     total_count: int
     timestamp: datetime
+
+# Wishlist Recommendation Models
+class WishlistRecommendationRequest(BaseModel):
+    product_ids: List[int]
+    user_id: Optional[str] = None  # User ID to exclude their shared wishlists
+
+class ProductSuggestion(BaseModel):
+    id: int
+    name: str
+    price: float
+    original_price: Optional[float] = None
+    category: str
+    imageUrl: str
+    description: Optional[str] = None
+    rating: Optional[float] = None
+    discount: Optional[float] = None
+
+class WishlistRecommendation(BaseModel):
+    query: str
+    product_query_id: int
+    suggestion: str
+    product_suggestion: ProductSuggestion
+
+class WishlistRecommendationResponse(BaseModel):
+    status: str
+    recommendations: List[WishlistRecommendation]
+    total_recommendations: int

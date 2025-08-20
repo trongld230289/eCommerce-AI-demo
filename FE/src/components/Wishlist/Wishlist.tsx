@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useShop } from '../../contexts/ShopContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import SimpleProductCard from '../SimpleProductCard';
+import { wishlistRecommendationsService, WishlistRecommendation } from '../../services/wishlistRecommendationsService';
 
 const Wishlist = () => {
+  const { currentUser } = useAuth();
   const { state, removeFromWishlist, addToCart } = useShop();
   const wishlist = state.wishlist;
   const { showSuccess } = useToast();
+  
+  // Recommendations state
+  const [recommendations, setRecommendations] = useState<WishlistRecommendation[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
   // Responsive state
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -20,6 +27,33 @@ const Wishlist = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Fetch recommendations when wishlist changes and user is available
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (wishlist.length === 0 || !currentUser) return;
+
+      setLoadingRecommendations(true);
+      try {
+        const productIds = wishlist.map(product => product.id);
+        console.log('🔍 Fetching individual recommendations for products:', productIds, 'User:', currentUser.uid);
+        
+        // Use the new single product API method that calls each product individually
+        const recommendationMap = await wishlistRecommendationsService.getSingleProductRecommendations(productIds, currentUser.uid);
+        
+        // Convert map to array for display
+        const recommendationArray = Array.from(recommendationMap.values());
+        setRecommendations(recommendationArray);
+        console.log('✅ Individual recommendations loaded:', recommendationArray.length);
+      } catch (error) {
+        console.error('❌ Failed to fetch individual recommendations:', error);
+      } finally {
+        setLoadingRecommendations(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [wishlist, currentUser]);
 
   // Inline styles
   const styles = {
@@ -130,6 +164,58 @@ const Wishlist = () => {
           />
         ))}
       </div>
+
+      {/* Recommendations Section */}
+      {currentUser && wishlist.length > 0 && (
+        <div style={{ marginTop: '3rem', marginBottom: '2rem' }}>
+          <h3 style={{ 
+            fontSize: '1.5rem', 
+            fontWeight: 'bold', 
+            marginBottom: '1.5rem', 
+            color: '#1f2937',
+            textAlign: 'center'
+          }}>
+            🌟 Recommended for You
+          </h3>
+          
+          {loadingRecommendations ? (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <p style={{ color: '#6b7280', fontSize: '1rem' }}>Loading recommendations...</p>
+            </div>
+          ) : recommendations.length > 0 ? (
+            <div style={styles.wishlistGrid}>
+              {recommendations.slice(0, 6).map((rec) => (
+                <div key={rec.product_suggestion.id} style={{ position: 'relative' }}>
+                  <SimpleProductCard
+                    product={rec.product_suggestion}
+                    onAddToCart={handleAddToCart}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    top: '8px',
+                    left: '8px',
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 'bold',
+                    zIndex: 10
+                  }}>
+                    Recommended
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <p style={{ color: '#6b7280', fontSize: '1rem' }}>
+                No recommendations available at this time.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={styles.wishlistContinueSection}>
         <Link
