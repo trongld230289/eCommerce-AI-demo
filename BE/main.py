@@ -10,6 +10,13 @@ from services.wishlist_service import wishlist_service
 from services.cart_service import cart_service
 from services.recommendation_service import recommendation_service
 from routers.ai_router import router as ai_router
+<<<<<<< HEAD
+=======
+from routers.wishlist_router import router as wishlist_router
+from routers.auth_router import router as auth_router
+from routers.product_router import router as product_router
+from routers.middleware_service_router import router as middleware_service_router
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 import uvicorn
 import httpx
 import json
@@ -36,8 +43,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+<<<<<<< HEAD
 # Include AI router
 app.include_router(ai_router, prefix="/api", tags=["AI"])
+=======
+# Include routers
+app.include_router(ai_router, prefix="/api", tags=["AI"])
+app.include_router(wishlist_router, tags=["Wishlist"])
+app.include_router(auth_router, tags=["Auth"])
+app.include_router(product_router, tags=["Products"])
+app.include_router(middleware_service_router, tags=["Middleware"])
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 @app.get("/")
 async def root():
@@ -452,6 +468,10 @@ async def add_item_to_cart(cart_item: CartAddItem, user_id: str = Query(...)):
     """Add item to cart"""
     try:
         cart = await cart_service.add_item_to_cart(user_id, cart_item)
+<<<<<<< HEAD
+=======
+        # Thuong implementation - add product to cart
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         return cart
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error adding item to cart: {str(e)}")
@@ -470,6 +490,10 @@ async def remove_item_from_cart(cart_item: CartRemoveItem, user_id: str = Query(
     """Remove item from cart"""
     try:
         cart = await cart_service.remove_item_from_cart(user_id, cart_item)
+<<<<<<< HEAD
+=======
+        # Thuong implementation - remove product from cart
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         return cart
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error removing item from cart: {str(e)}")
@@ -499,6 +523,10 @@ async def track_user_event(event: UserEventCreate):
     """Track user event for recommendation system"""
     try:
         success = await recommendation_service.track_user_event(event)
+<<<<<<< HEAD
+=======
+        # Thuong implementation - push user event to external service
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         if success:
             return {"status": "success", "message": "Event tracked successfully"}
         else:

@@ -14,6 +14,53 @@ def get_all_products():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving products: {str(e)}")
 
+<<<<<<< HEAD
+=======
+@router.get("/search/", response_model=List[Product])
+def search_products(
+    query: str = "",
+    category: str = "",
+    min_price: float = None,
+    max_price: float = None,
+    brand: str = ""
+):
+    """Search products with filters"""
+    try:
+        filters = SearchFilters(
+            query=query,
+            category=category,
+            min_price=min_price,
+            max_price=max_price,
+            brand=brand
+        )
+        products = product_service.search_products(filters)
+        return products
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
+
+@router.get("/featured", response_model=List[Product])
+def get_featured_products(limit: int = 6):
+    """Get featured products"""
+    try:
+        # For now, return first 'limit' products from all products
+        # You can implement proper featured logic later
+        products = product_service.get_all_products()
+        return products[:limit]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving featured products: {str(e)}")
+
+@router.get("/top-this-week", response_model=List[Product])
+def get_top_products_this_week(limit: int = 6):
+    """Get top products this week"""
+    try:
+        # For now, return first 'limit' products from all products
+        # You can implement proper top products logic later (e.g., based on sales, ratings)
+        products = product_service.get_all_products()
+        return products[:limit]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving top products: {str(e)}")
+
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 @router.get("/{product_id}")
 def get_product(product_id: int):
     """Get product by ID"""
@@ -65,6 +112,7 @@ def delete_product(product_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting product: {str(e)}")
+<<<<<<< HEAD
 
 @router.get("/search/", response_model=List[Product])
 def search_products(
@@ -87,3 +135,5 @@ def search_products(
         return products
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error searching products: {str(e)}")
+=======
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e

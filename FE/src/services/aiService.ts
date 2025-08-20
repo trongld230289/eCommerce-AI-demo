@@ -1,14 +1,31 @@
 import { Product } from '../contexts/ShopContext';
 
+<<<<<<< HEAD
 const API_BASE_URL = 'http://localhost:8000';
 
 export interface AISearchRequest {
   query: string;
+=======
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+export interface ConversationMessage {
+  role: string; // "user" or "assistant"
+  content: string;
+}
+
+export interface AISearchRequest {
+  messages: ConversationMessage[];
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   limit?: number;
 }
 
 export interface AISearchResponse {
   status: string;
+<<<<<<< HEAD
+=======
+  function_used?: string; // "find_products" or "find_gifts"
+  language_detected?: string;
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   search_intent?: {
     search_query: string;
     filters: {
@@ -32,6 +49,27 @@ export interface AISearchResponse {
   }[];
   total_results?: number;
   message?: string;
+<<<<<<< HEAD
+=======
+  // New fields from updated backend
+  intro?: string;
+  header?: string;
+  show_all_product?: string;
+  messages?: Array<{
+    role: string;
+    content: string;
+  }>;
+  // Legacy fields for backward compatibility
+  conversation_context?: {
+    current_function: string;
+    messages: Array<{
+      user_input: string;
+      function_used: string;
+      language: string;
+      agent_output: string;
+    }>;
+  };
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 }
 
 export interface VoiceSearchResponse extends AISearchResponse {

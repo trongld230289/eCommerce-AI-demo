@@ -2,7 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone, faStop, faUpload, faSpinner } from '@fortawesome/free-solid-svg-icons';
+<<<<<<< HEAD
 import { aiService } from '../../services/aiService';
+=======
+import { aiService, ConversationMessage } from '../../services/aiService';
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 import { Product } from '../../contexts/ShopContext';
 import './Chatbot.css';
 
@@ -12,6 +16,10 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   products?: Product[];
+<<<<<<< HEAD
+=======
+  isHtml?: boolean;
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 }
 
 interface ChatbotProps {
@@ -37,6 +45,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [showVoiceOptions, setShowVoiceOptions] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+<<<<<<< HEAD
+=======
+  const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
+  const [lastFunctionUsed, setLastFunctionUsed] = useState<string>('');
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -124,7 +137,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
       formData.append('audio', file);            // <--- IMPORTANT: 'audio' to match backend
       formData.append('language', 'vi');        // optional but helpful
 
+<<<<<<< HEAD
       const response = await fetch('http://localhost:8000/api/ai/search-by-voice', {
+=======
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/ai/search-by-voice`, {
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         method: 'POST',
         body: formData
       });
@@ -156,28 +173,92 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
 
           setLastSearchResults(products);
           setLastSearchQuery(voiceResponse.transcribed_text || '');
+<<<<<<< HEAD
 
           let responseText = `🎤 Voice search completed! I found ${voiceResponse.total_results} products`;
           if (voiceResponse.transcribed_text) {
             responseText += ` for "${voiceResponse.transcribed_text}"`;
           }
           responseText += '.\n\nHere are the top results:';
+=======
+          
+          // Update function used tracking
+          if (voiceResponse.function_used) {
+            setLastFunctionUsed(voiceResponse.function_used);
+          }
+
+          // Build response text based on whether we have products (same logic as text search)
+          let responseText = '';
+          
+          if (voiceResponse.products && voiceResponse.products.length > 0) {
+            // If we have products, only show intro + header
+            if (voiceResponse.intro) {
+              responseText += voiceResponse.intro.replace(/\n/g, '<br>');
+            }
+            
+            if (voiceResponse.header) {
+              if (responseText) responseText += '<br><br>';
+              responseText += voiceResponse.header.replace(/\n/g, '<br>');
+            }
+          } else {
+            // If no products, get assistant message content (no intro/header)
+            if (voiceResponse.messages && voiceResponse.messages.length > 0) {
+              const latestAssistantMessage = [...voiceResponse.messages]
+                .reverse()
+                .find(msg => msg.role === 'assistant');
+              
+              if (latestAssistantMessage && latestAssistantMessage.content) {
+                responseText = latestAssistantMessage.content.replace(/\n/g, '<br>');
+              }
+            }
+          }
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
           const voiceSearchMessage: Message = {
             id: Date.now() + 1,
             text: responseText,
             isUser: false,
             timestamp: new Date(),
+<<<<<<< HEAD
             products: products.slice(0, 3)
+=======
+            products: products.slice(0, 3),
+            isHtml: true
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
           };
 
           setMessages(prev => [...prev, voiceSearchMessage]);
 
+<<<<<<< HEAD
           if (products.length > 3) {
             setTimeout(() => {
               const showAllMessage: Message = {
                 id: Date.now() + 2,
                 text: `Would you like to see all ${products.length} results on the products page?`,
+=======
+          // Update conversation history from voice response
+          if (voiceResponse.messages && voiceResponse.messages.length > 0) {
+            const backendConversationHistory: ConversationMessage[] = voiceResponse.messages.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content
+            }));
+            setConversationHistory(backendConversationHistory);
+          }
+
+          if (products.length > 3) {
+            setTimeout(() => {
+              // Create language-appropriate message for voice search too
+              let moreResultsText = `Would you like to see all ${products.length} results on the products page?`;
+              
+              // If language detected is Vietnamese, use Vietnamese message
+              if (voiceResponse.language_detected === 'vi') {
+                moreResultsText = `Bạn có muốn tôi hiển thị tất cả ${products.length} kết quả trên trang sản phẩm không?`;
+              }
+              
+              const showAllMessage: Message = {
+                id: Date.now() + 2,
+                text: moreResultsText,
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
                 isUser: false,
                 timestamp: new Date()
               };
@@ -185,7 +266,34 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
             }, 1000);
           }
         } else {
+<<<<<<< HEAD
           addMessage('🎤 I heard you, but couldn\'t find any products matching your voice search. Please try again.', false);
+=======
+          // Handle no products case for voice search  
+          let errorMessage = '';
+          if (voiceResponse.messages && voiceResponse.messages.length > 0) {
+            // Find the latest assistant message
+            const latestAssistantMessage = [...voiceResponse.messages]
+              .reverse()
+              .find((msg: any) => msg.role === 'assistant');
+            
+            if (latestAssistantMessage && latestAssistantMessage.content) {
+              errorMessage = latestAssistantMessage.content.replace(/\n/g, '<br>');
+            }
+          }
+          
+          // Fallback to intro if no messages available
+          if (!errorMessage && voiceResponse.intro) {
+            errorMessage = voiceResponse.intro.replace(/\n/g, '<br>');
+          }
+          
+          // Final fallback
+          if (!errorMessage) {
+            errorMessage = '🎤 I heard you, but couldn\'t find any products matching your voice search. Please try again.';
+          }
+          
+          addMessage(errorMessage, false);
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         }
       } else {
         addMessage('🎤 Sorry, I had trouble processing your voice search. Please try again.', false);
@@ -277,6 +385,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                                (inputValue.toLowerCase().includes('yes') && lastSearchResults.length > 0));
       
       if (isShowAllRequest && lastSearchResults.length > 0) {
+<<<<<<< HEAD
         const showAllMessage: Message = {
           id: Date.now() + 1,
           text: `Perfect! I'll show you all ${lastSearchResults.length} results on the search results page.`,
@@ -285,20 +394,48 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         };
         
         setMessages(prev => [...prev, showAllMessage]);
+=======
+        // const showAllMessage: Message = {
+        //   id: Date.now() + 1,
+        //   text: `Perfect! I'll show you all ${lastSearchResults.length} results on the search results page.`,
+        //   isUser: false,
+        //   timestamp: new Date()
+        // };
+        
+        // setMessages(prev => [...prev, showAllMessage]);
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         
         // Store search results in sessionStorage for the SearchResult page
         sessionStorage.setItem('chatbotSearchResults', JSON.stringify(lastSearchResults));
         sessionStorage.setItem('chatbotSearchQuery', lastSearchQuery);
         
+<<<<<<< HEAD
         setTimeout(() => {
           navigate('/search-results');
+=======
+        // Store the function type for dynamic title and icon display
+        if (lastFunctionUsed === 'find_gifts') {
+          sessionStorage.setItem('searchResultTitle', 'Search Gift Result');
+          sessionStorage.setItem('searchFunctionType', 'find_gifts');
+        } else {
+          sessionStorage.setItem('searchResultTitle', 'Search Product Result');
+          sessionStorage.setItem('searchFunctionType', 'find_products');
+        }
+        
+        setTimeout(() => {
+          navigate(`/search-results?t=${Date.now()}`);
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         }, 1500);
         
         return;
       }
 
       const aiResponse = await aiService.searchProducts({
+<<<<<<< HEAD
         query: messageText,
+=======
+        messages: [...conversationHistory, { role: "user", content: messageText }],
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         limit: 10
       });
 
@@ -309,6 +446,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
         setLastSearchResults(products);
         setLastSearchQuery(messageText);
         
+<<<<<<< HEAD
         let responseText = `I found ${aiResponse.total_results} products for "${messageText}".`;
         if (aiResponse.search_intent) {
           const intent = aiResponse.search_intent;
@@ -325,34 +463,133 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
           if (appliedFilters.length > 0) responseText += `\n\nI detected these filters: ${appliedFilters.join(', ')}`;
         }
         responseText += `\n\nHere are the top results:`;
+=======
+        // Check if function switched and clear conversation history if needed
+        if (aiResponse.function_used && lastFunctionUsed && aiResponse.function_used !== lastFunctionUsed) {
+          setConversationHistory([]);
+          console.log(`🔄 Function switched from ${lastFunctionUsed} to ${aiResponse.function_used}. Conversation history cleared.`);
+        }
+        setLastFunctionUsed(aiResponse.function_used || '');
+        
+        // Build response text based on whether we have products
+        let responseText = '';
+        
+        if (aiResponse.products && aiResponse.products.length > 0) {
+          // If we have products, only show intro + header
+          if (aiResponse.intro) {
+            responseText += aiResponse.intro.replace(/\n/g, '<br>');
+          }
+          
+          if (aiResponse.header) {
+            if (responseText) responseText += '<br><br>';
+            responseText += aiResponse.header.replace(/\n/g, '<br>');
+          }
+        } else {
+          // If no products, get assistant message content (no intro/header)
+          if (aiResponse.messages && aiResponse.messages.length > 0) {
+            const latestAssistantMessage = [...aiResponse.messages]
+              .reverse()
+              .find(msg => msg.role === 'assistant');
+            
+            if (latestAssistantMessage && latestAssistantMessage.content) {
+              responseText = latestAssistantMessage.content.replace(/\n/g, '<br>');
+            }
+          }
+        }
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         
         const aiSearchMessage: Message = {
           id: Date.now() + 1,
           text: responseText,
           isUser: false,
           timestamp: new Date(),
+<<<<<<< HEAD
           products: products.slice(0, 3)
+=======
+          products: products.slice(0, 3),
+          isHtml: true
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         };
         
         setMessages(prev => [...prev, aiSearchMessage]);
 
+<<<<<<< HEAD
         if (products.length > 3) {
           setTimeout(() => {
             const moreResultsMessage: Message = {
               id: Date.now() + 2,
               text: `I found ${products.length} total results. Would you like me to show you all of them on the products page?`,
+=======
+        // Update conversation history from backend messages
+        if (aiResponse.messages && aiResponse.messages.length > 0) {
+          // Use the complete conversation history from backend
+          const backendConversationHistory: ConversationMessage[] = aiResponse.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+          setConversationHistory(backendConversationHistory);
+        }
+
+        // Use show_all_product message from backend if available
+        console.log('🔍 Checking show_all_product:', {
+          show_all_product: aiResponse.show_all_product,
+          type: typeof aiResponse.show_all_product,
+          length: aiResponse.show_all_product?.length,
+          products_count: products.length,
+          raw_value: JSON.stringify(aiResponse.show_all_product)
+        });
+        
+        // More relaxed check - just need truthy value with content
+        if (aiResponse.show_all_product && String(aiResponse.show_all_product).trim().length > 0) {
+          console.log('✅ Using backend show_all_product message');
+          setTimeout(() => {
+            const moreResultsMessage: Message = {
+              id: Date.now() + 2,
+              text: String(aiResponse.show_all_product).trim(),
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
               isUser: false,
               timestamp: new Date()
             };
             setMessages(prev => [...prev, moreResultsMessage]);
           }, 1000);
+<<<<<<< HEAD
         }
       } else {
         const errorMessage = aiResponse.message || 'I couldn\'t find any products matching your request. Could you try rephrasing your search?';
+=======
+        } else if (products.length > 3) {
+          // Fallback: create our own "show all" message if backend doesn't provide one
+          console.log('⚠️ Backend did not provide show_all_product, creating fallback message');
+          setTimeout(() => {
+            const fallbackMessage: Message = {
+              id: Date.now() + 2,
+              text: `Would you like to see all ${products.length} results on the products page?`,
+              isUser: false,
+              timestamp: new Date()
+            };
+            setMessages(prev => [...prev, fallbackMessage]);
+          }, 1000);
+        }
+      } else {
+        // For no-products case: get assistant message content (no intro/header)
+        let errorMessage = '';
+        if (aiResponse.messages && aiResponse.messages.length > 0) {
+          // Find the latest assistant message
+          const latestAssistantMessage = [...aiResponse.messages]
+            .reverse()
+            .find(msg => msg.role === 'assistant');
+          
+          if (latestAssistantMessage && latestAssistantMessage.content) {
+            errorMessage = latestAssistantMessage.content.replace(/\n/g, '<br>');
+          }
+        }
+        
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         const botResponse: Message = {
           id: Date.now() + 1,
           text: errorMessage,
           isUser: false,
+<<<<<<< HEAD
           timestamp: new Date()
         };
         setMessages(prev => [...prev, botResponse]);
@@ -362,6 +599,31 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
       const botResponse: Message = {
         id: Date.now() + 1,
         text: getBotResponse(messageText),
+=======
+          timestamp: new Date(),
+          isHtml: true
+        };
+        setMessages(prev => [...prev, botResponse]);
+        
+        // Update conversation history for error case too
+        if (aiResponse.messages && aiResponse.messages.length > 0) {
+          // Use the complete conversation history from backend
+          const backendConversationHistory: ConversationMessage[] = aiResponse.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+          setConversationHistory(backendConversationHistory);
+        }
+      }
+    } catch (error) {
+      console.error('Error with AI search:', error);
+      
+      const errorMessage = 'I encountered an issue while searching. Let me try to help you in another way. Could you please rephrase your question or try asking about specific products?';
+      
+      const botResponse: Message = {
+        id: Date.now() + 1,
+        text: errorMessage,
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         isUser: false,
         timestamp: new Date()
       };
@@ -371,6 +633,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     }
   };
 
+<<<<<<< HEAD
   const getBotResponse = (userInput: string): string => {
     const input = userInput.toLowerCase();
     if (input.includes('help') || input.includes('support')) {
@@ -403,6 +666,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
     }
   };
 
+=======
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   if (!isVisible) return null;
 
   return (
@@ -413,19 +678,53 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
             <div className="chatbot-avatar">🤖</div>
             <div className="chatbot-header-text">
               <h4>Electro Assistant</h4>
+<<<<<<< HEAD
               <span className="chatbot-status">Online</span>
             </div>
           </div>
           <button className="chatbot-close-btn" onClick={onClose}>
             ✕
           </button>
+=======
+              <span className="chatbot-status">
+                Online {conversationHistory.length > 0 && `• ${Math.floor(conversationHistory.length/2)} exchanges`}
+              </span>
+            </div>
+          </div>
+          <div className="chatbot-header-actions">
+            {conversationHistory.length > 0 && (
+              <button 
+                className="chatbot-clear-btn" 
+                onClick={() => {
+                  setConversationHistory([]);
+                  setLastFunctionUsed('');
+                  addMessage('🔄 Conversation context cleared. Starting fresh!', false);
+                }}
+                title="Clear conversation history"
+              >
+                🔄
+              </button>
+            )}
+            <button className="chatbot-close-btn" onClick={onClose}>
+              ✕
+            </button>
+          </div>
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         </div>
 
         <div className="chatbot-messages">
           {messages.map((message) => (
             <div key={message.id} className={`chatbot-message ${message.isUser ? 'user' : 'bot'}`}>
               <div className="chatbot-message-content">
+<<<<<<< HEAD
                 {message.text}
+=======
+                {message.isHtml ? (
+                  <div dangerouslySetInnerHTML={{ __html: message.text }} />
+                ) : (
+                  message.text
+                )}
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
               </div>
 
               {message.products && message.products.length > 0 && (
@@ -438,6 +737,18 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                           onClick={() => navigate(`/product/${product.id}`)}
                           style={{ cursor: 'pointer' }}
                         >
+<<<<<<< HEAD
+=======
+                          {/* Function type icon */}
+                          <div className="product-function-icon">
+                            {lastFunctionUsed === 'find_gifts' ? (
+                              <span className="gift-icon" title="Gift Suggestion">🎁</span>
+                            ) : (
+                              <span className="product-icon" title="Product Search">🛍️</span>
+                            )}
+                          </div>
+                          
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
                           <img src={product.imageUrl} alt={product.name} className="chatbot-product-image" />
                           <div className="chatbot-product-info">
                             <h4 className="chatbot-product-name">{product.name}</h4>
@@ -470,12 +781,28 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
                           sessionStorage.setItem('chatbotSearchResults', JSON.stringify(message.products));
                           sessionStorage.setItem('chatbotSearchQuery', lastSearchQuery);
                           
+<<<<<<< HEAD
+=======
+                          // Store the function type for dynamic title and icon display
+                          if (lastFunctionUsed === 'find_gifts') {
+                            sessionStorage.setItem('searchResultTitle', 'Search Gift Result');
+                            sessionStorage.setItem('searchFunctionType', 'find_gifts');
+                          } else {
+                            sessionStorage.setItem('searchResultTitle', 'Search Product Result');
+                            sessionStorage.setItem('searchFunctionType', 'find_products');
+                          }
+                          
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
                           // Verify storage
                           const stored = sessionStorage.getItem('chatbotSearchResults');
                           console.log('✅ Verified storage:', stored ? JSON.parse(stored).length : 'null');
                           
                           // Navigate to dedicated search results page
+<<<<<<< HEAD
                           navigate('/search-results');
+=======
+                          navigate(`/search-results?t=${Date.now()}`);
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
                         }}
                       >
                         View All {message.products.length} Results

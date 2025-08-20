@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Product } from '../contexts/ShopContext';
 import { useAuth } from '../contexts/AuthContext';
+<<<<<<< HEAD
 
 // API endpoints
 const API_BASE_URL = 'http://localhost:8000';
+=======
+import { productApi } from '../services/apiService';
+
+// API endpoints
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
 
 interface RecommendationResponse {
   recommendations?: Product[];
@@ -17,7 +24,11 @@ interface RecommendationResponse {
 interface UserEvent {
   user_id: string;
   event_type: 'view' | 'add_to_cart' | 'remove_from_cart' | 'add_to_wishlist' | 'remove_from_wishlist' | 'purchase';
+<<<<<<< HEAD
   product_id: string | number;
+=======
+  product_id: number; // Changed from string | number to number
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   session_id?: string;
   metadata?: Record<string, any>;
 }
@@ -42,12 +53,16 @@ const getRecommendations = async (userId?: string, limit: number = 10): Promise<
 
 const getAllProducts = async (): Promise<Product[]> => {
   try {
+<<<<<<< HEAD
     const response = await fetch(`${API_BASE_URL}/products`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
     return data || [];
+=======
+    return await productApi.getAllProducts();
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   } catch (error) {
     console.error('Error fetching products:', error);
     throw error;
@@ -136,7 +151,11 @@ export function useRecommendations(limit: number = 10) {
       const eventData: UserEvent = {
         user_id: currentUser.uid,
         event_type: eventType,
+<<<<<<< HEAD
         product_id: productId,
+=======
+        product_id: typeof productId === 'string' ? parseInt(productId) : productId, // Convert to number
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
         session_id: `session_${Date.now()}`,
         metadata: {
           timestamp: new Date().toISOString(),

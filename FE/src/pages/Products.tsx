@@ -40,7 +40,11 @@ const Products: React.FC = () => {
       
       try {
         const aiResponse = await aiService.searchProducts({
+<<<<<<< HEAD
           query: searchQuery,
+=======
+          messages: [{ role: "user", content: searchQuery }],
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
           limit: 20
         });
         

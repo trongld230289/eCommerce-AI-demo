@@ -16,7 +16,11 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName?: string) => Promise<void>;
+<<<<<<< HEAD
   loginWithGoogle: () => Promise<void>;
+=======
+  loginWithGoogle: () => Promise<{ isNewUser: boolean }>;
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
   logout: () => Promise<void>;
 }
 
@@ -65,6 +69,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log('Google sign-in successful:', result.user);
+<<<<<<< HEAD
+=======
+      
+      // Check if this is a new user by looking at the user creation time
+      const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime;
+      console.log('Is new user:', isNewUser);
+      
+      return { isNewUser };
+>>>>>>> 152c40476bd97e5141c23051b72efd7a3226cb7e
     } catch (error: any) {
       console.error('Google sign-in error:', error);
       if (error.code === 'auth/configuration-not-found') {
