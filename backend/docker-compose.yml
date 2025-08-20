@@ -1,0 +1,60 @@
+services:
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - NEO4J_URI=neo4j://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+    depends_on:
+      - neo4j
+    networks:
+      - app-network
+    # Run migration once and stop
+    command: ["python", "/app/main_migration.py"]
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      - NEO4J_URI=neo4j://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=password
+      - OPENAI_ENDPOINT=https://aiportalapi.stu-platform.live/jpe
+      - OPENAI_API_KEY=sk-82_4lHOVbs5TtCsLP1ZJOA
+    depends_on:
+      - neo4j
+      - migration
+    networks:
+      - app-network
+
+  neo4j:
+    image: neo4j:5.26.10-community-bullseye
+    ports:
+      - "7474:7474"  # Neo4j Browser
+      - "7687:7687"  # Bolt protocol
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_server_memory_pagecache_size=512M
+      - NEO4J_server_memory_heap_max__size=1G
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - app-network
+
+volumes:
+  neo4j-data:
+  neo4j-logs:
+
+networks:
+  app-network:
+    driver: bridge
