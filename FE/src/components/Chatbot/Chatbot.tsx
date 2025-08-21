@@ -40,6 +40,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
   const [lastFunctionUsed, setLastFunctionUsed] = useState<string>('');
+  const [messageHistory, setMessageHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const [tempInput, setTempInput] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +66,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
       case 'same_taste':
         return { icon: '🤝', title: 'Similar Taste' };
       case 'product':
-        return { icon: '🛍️', title: 'Similarity Search' };
+        return { icon: '🛍️', title: 'Similarity Product' };
       case 'gift':
         return { icon: '🎁', title: 'Gift Suggestion' };
       default:
@@ -72,6 +75,43 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
   };
 
   useEffect(() => {}, []);
+
+  // Handle keyboard navigation for message history
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (messageHistory.length === 0) return;
+      
+      if (historyIndex === -1) {
+        // First time pressing up arrow - save current input and show last message
+        setTempInput(inputValue);
+        setHistoryIndex(messageHistory.length - 1);
+        setInputValue(messageHistory[messageHistory.length - 1]);
+      } else if (historyIndex > 0) {
+        // Navigate to previous message
+        setHistoryIndex(historyIndex - 1);
+        setInputValue(messageHistory[historyIndex - 1]);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex === -1) return;
+      
+      if (historyIndex < messageHistory.length - 1) {
+        // Navigate to next message
+        setHistoryIndex(historyIndex + 1);
+        setInputValue(messageHistory[historyIndex + 1]);
+      } else {
+        // Back to current input
+        setHistoryIndex(-1);
+        setInputValue(tempInput);
+        setTempInput('');
+      }
+    } else if (historyIndex !== -1 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+      // User started typing - reset navigation
+      setHistoryIndex(-1);
+      setTempInput('');
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -365,6 +405,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
 
     setMessages(prev => [...prev, userMessage]);
     const messageText = inputValue;
+    
+    // Add to message history for navigation
+    setMessageHistory(prev => [...prev, inputValue]);
+    
+    // Reset navigation state
+    setHistoryIndex(-1);
+    setTempInput('');
+    
     setInputValue('');
     setIsTyping(true);
 
@@ -803,7 +851,15 @@ const Chatbot: React.FC<ChatbotProps> = ({ isVisible, onClose }) => {
           <input
             type="text"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              // Reset history navigation when user manually changes input
+              if (historyIndex !== -1) {
+                setHistoryIndex(-1);
+                setTempInput('');
+              }
+            }}
+            onKeyDown={handleKeyDown}
             placeholder="Type your message..."
             className="chatbot-input"
             maxLength={500}
