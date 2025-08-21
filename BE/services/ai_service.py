@@ -61,19 +61,9 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
-from models import Product, RecommendationSourceEnum
+from models import Product, RecommendationSourceEnum, ALGORITHM_TO_REC_SOURCE
 from product_service import ProductService
 from services.middleware_service import MiddlewareService
-
-# Mapping dictionary for algorithm labels to recommendation sources
-ALGORITHM_TO_REC_SOURCE = {
-    "top_item_to_item": RecommendationSourceEnum.PERSONALIZED.value,
-    "top_als": RecommendationSourceEnum.SAME_TASTE.value,
-    "top_pagerank": RecommendationSourceEnum.SAME_TASTE.value,
-    "fit_description": RecommendationSourceEnum.DESCRIPTION.value,
-    "most_added_to_wishlist": RecommendationSourceEnum.WISHLIST.value,
-    "most_purchased": RecommendationSourceEnum.PURCHASE.value,
-}
 
 # Load environment variables
 env_path = os.path.join(parent_dir, '.env')

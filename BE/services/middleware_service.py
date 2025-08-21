@@ -95,7 +95,7 @@ class MiddlewareService:
             recommendations = response.json()
             return recommendations
 
-    def get_recommendations_external(self, product_ids: List[int], user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_recommendations_external(self, product_ids: Optional[List[int]], user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Find gifts external function that fetches gift recommendations from the recommendation endpoint.
         

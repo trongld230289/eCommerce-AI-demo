@@ -191,12 +191,14 @@ def add_product_to_wishlist(
             wishlist_id, user_id, product_data.product_id
         )
         # Thuong implementation - add product to wishlist
+        print(f"DEBUG BE ROUTER: About to call Neo4j service - wishlist: {wishlist_id}, user: {user_id}, product: {product_data.product_id}")
         with httpx.Client() as client:
             response = client.post(
                 f"http://localhost:8003/api/wishlist/{wishlist_id}/products",
                 params={"user_id": user_id},
                 json=product_data.dict()
             )
+            print(f"DEBUG BE ROUTER: Neo4j service response - status: {response.status_code}, text: {response.text[:200]}")
             if response.status_code != 200:
                 raise HTTPException(status_code=500, detail=f"Failed to sync add product with external service: {response.text}")
 
