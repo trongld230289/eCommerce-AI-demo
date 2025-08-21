@@ -2469,14 +2469,21 @@ async def get_recommendations(request: AlgoRecommendationRequest):
                 {productId: p.productId, name: p.name, score: r.score}] 
              ELSE [] END AS pagerank_results
         // Aggregate and sort Item-to-Item results, limiting to top 5 distinct products
-        UNWIND CASE WHEN size(item_to_item_results) = 0 THEN [{}] ELSE item_to_item_results END AS item
-        WITH item.productId AS productId, item.name AS name, 
-             max(item.score) AS max_score,
-             als_results, pagerank_results
-        WHERE productId IS NOT NULL
-        ORDER BY max_score DESC
-        WITH collect({productId: productId, name: name, score: max_score})[0..5] AS top_item_to_item,
-             als_results, pagerank_results
+        WITH item_to_item_results, als_results, pagerank_results
+        CALL {
+          WITH item_to_item_results
+          UNWIND item_to_item_results AS item
+          WITH item.productId AS productId, item.name AS name, max(item.score) AS max_score
+          WHERE productId IS NOT NULL
+          ORDER BY max_score DESC
+          RETURN collect({productId: productId, name: name, score: max_score})[0..5] AS top_item_to_item
+        UNION
+          WITH item_to_item_results
+          WITH [] AS top_item_to_item
+          WHERE size(item_to_item_results) = 0
+          RETURN top_item_to_item
+        }
+        WITH top_item_to_item, als_results, pagerank_results
         // Sort and limit ALS results (if any) by score DESC, top 5
         UNWIND (CASE WHEN size(als_results) = 0 THEN [null] ELSE als_results END) AS als_item
         WITH top_item_to_item, pagerank_results, als_item
@@ -2506,6 +2513,7 @@ async def get_recommendations(request: AlgoRecommendationRequest):
             raise HTTPException(status_code=404, detail="No recommendations found")
         
         recommendations = result[0]["recommendations"]
+        logger.info(f"Recommendations: {recommendations}")
         
         # Transform to the desired format with labels and product_ids
         formatted_recommendations = [
