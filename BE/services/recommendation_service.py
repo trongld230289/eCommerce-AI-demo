@@ -48,22 +48,31 @@ class RecommendationService:
     async def get_user_events(self, user_id: str, days_back: int = 30) -> List[Dict[str, Any]]:
         """Get user events from the last N days"""
         try:
+            print(f"DEBUG: Getting user events for user_id: {user_id}, days_back: {days_back}")
             collection = self._get_collection()
             
             # Calculate timestamp threshold
             cutoff_time = time.time() - (days_back * 24 * 60 * 60)
+            print(f"DEBUG: Cutoff timestamp: {cutoff_time} (current time: {time.time()})")
             
-            # Query events for user
-            query = collection.where("user_id", "==", user_id).where("timestamp", ">=", cutoff_time)
+            # Query events for user (without timestamp to avoid composite index requirement)
+            query = collection.where("user_id", "==", user_id)
             docs = query.get()
+            print(f"DEBUG: Found {len(docs)} documents for user (before timestamp filter)")
             
             events = []
             for doc in docs:
                 event_data = doc.to_dict()
-                events.append(event_data)
+                # Filter by timestamp in code instead of in query
+                if event_data.get('timestamp', 0) >= cutoff_time:
+                    print(f"DEBUG: Event data: {event_data}")
+                    events.append(event_data)
+                else:
+                    print(f"DEBUG: Skipping old event: {event_data.get('timestamp', 0)} < {cutoff_time}")
             
             # Sort by timestamp (newest first)
             events.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+            print(f"DEBUG: Returning {len(events)} events for user {user_id} after timestamp filter")
             
             return events
             
@@ -74,10 +83,14 @@ class RecommendationService:
     async def get_personalized_recommendations(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Get personalized recommendations based on user behavior"""
         try:
+            print(f"DEBUG: Getting personalized recommendations for user_id: {user_id}")
+            
             # Get user events
             events = await self.get_user_events(user_id, days_back=30)
+            print(f"DEBUG: Found {len(events)} events for user {user_id}")
             
             if not events:
+                print(f"DEBUG: No events found for user {user_id}, returning empty list")
                 return []
             
             # Analyze user preferences
@@ -231,20 +244,23 @@ class RecommendationService:
         try:
             recommendations = []
             source = RecommendationSourceEnum.RATING.value  # Default fallback
-            
+            print("Generating recommendations for request:", request)
             # Strategy 1: Personalized recommendations for logged-in users
             if request.user_id:
                 personalized = await self.get_personalized_recommendations(request.user_id, request.limit)
+                print(f"Personalized recommendations for user {request.user_id}: {len(personalized)} found")
                 if personalized:
                     recommendations = personalized
                     source = RecommendationSourceEnum.PERSONALIZED.value
                     # Add rec_source to each product
                     for product in recommendations:
                         product['rec_source'] = RecommendationSourceEnum.PERSONALIZED.value
+
             
             # Strategy 2: Category-based recommendations
             if not recommendations and request.category:
                 category_recs = await self.get_category_recommendations(request.category, request.limit)
+                print(f"Category recommendations for user {request.user_id}: {len(category_recs)} found")
                 if category_recs:
                     recommendations = category_recs
                     source = RecommendationSourceEnum.CATEGORY.value
@@ -255,6 +271,7 @@ class RecommendationService:
             # Strategy 3: Trending recommendations
             if not recommendations:
                 trending = await self.get_trending_recommendations(request.limit)
+                print(f"Trending recommendations for user {request.user_id}: {len(trending)} found")
                 if trending and len(trending) >= request.limit:
                     recommendations = trending
                     source = RecommendationSourceEnum.TRENDING.value
@@ -290,6 +307,8 @@ class RecommendationService:
                 all_products.sort(key=lambda x: x.get('rating', 0), reverse=True)
                 recommendations = all_products[:request.limit]
                 source = RecommendationSourceEnum.RATING.value
+
+                print(f"Fallback recommendations for user {request.user_id}: {len(recommendations)} found") 
                 # Add rec_source to each product
                 for product in recommendations:
                     product['rec_source'] = RecommendationSourceEnum.RATING.value
