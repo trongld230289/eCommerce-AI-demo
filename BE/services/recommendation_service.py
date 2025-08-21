@@ -4,9 +4,11 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 from firebase_config import get_firestore_db
-from models import UserEvent, UserEventCreate, RecommendationRequest, RecommendationResponse, EventType, RecommendationSourceEnum
+from models import UserEvent, UserEventCreate, RecommendationRequest, RecommendationResponse, EventType, RecommendationSourceEnum, ALGORITHM_TO_REC_SOURCE
 from product_service import product_service
 import random
+
+from services.middleware_service import get_recommendations_external
 
 class RecommendationService:
     def __init__(self):
@@ -256,7 +258,31 @@ class RecommendationService:
                     for product in recommendations:
                         product['rec_source'] = RecommendationSourceEnum.PERSONALIZED.value
 
-            
+                # implement get_recommendations_external input user id
+                external_recs = await get_recommendations_external(user_id=request.user_id)
+                print(f"External recommendations for user {request.user_id}: {len(external_recs)} found")
+                for recommendation in external_recs:
+                    label = recommendation.get("label")
+                    product_ids = recommendation.get("product_ids", [])
+                    
+                    for product_id in product_ids:
+                        product_data = self.product_service.get_product_by_id(product_id)
+                        if product_data:
+                            # Create product structure similar to semantic_search results
+                            external_product = {
+                                "id": str(product_id),
+                                "name": product_data.get("name", ""),
+                                "category": product_data.get("category", ""),
+                                "price": product_data.get("price", 0),
+                                "original_price": product_data.get("original_price", product_data.get("price", 0)),
+                                "rating": product_data.get("rating", 0),
+                                "discount": product_data.get("discount", 0),
+                                "imageUrl": product_data.get("imageUrl", ""),
+                                "rec_source": ALGORITHM_TO_REC_SOURCE.get(label, RecommendationSourceEnum.GIFT.value)  # Map algorithm label to rec_source enum
+                            }
+                            
+                            recommendations.append(external_product)
+
             # Strategy 2: Category-based recommendations
             if not recommendations and request.category:
                 category_recs = await self.get_category_recommendations(request.category, request.limit)

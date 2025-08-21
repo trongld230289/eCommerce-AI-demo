@@ -40,6 +40,24 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
         return { icon: '🛍️', title: 'Similarity Product', animation: 'productPulse' };
       case 'gift':
         return { icon: '🎁', title: 'Gift Suggestion', animation: 'giftGlow' };
+      case 'buy_together':
+        return { icon: '🛒🤝', title: 'Buy Together', animation: 'buyTogetherShake' };
+      case 'bundle':
+        return { icon: '📦🔗', title: 'Bundle Deal', animation: 'bundleFloat' };
+      case 'frequently_bought':
+        return { icon: '🔄🛍️', title: 'Frequently Bought Together', animation: 'frequentPulse' };
+      case 'combo_deal':
+        return { icon: '💝🏷️', title: 'Combo Deal', animation: 'comboBounce' };
+      case 'paired_items':
+        return { icon: '🔗✨', title: 'Perfect Pair', animation: 'pairGlow' };
+      case 'complementary':
+        return { icon: '🧩🎯', title: 'Complementary Items', animation: 'complementaryPuzzle' };
+      case 'cross_sell':
+        return { icon: '🎪🎊', title: 'Cross Sell Suggestion', animation: 'crossSellSpin' };
+      case 'upsell':
+        return { icon: '⬆️💎', title: 'Upgrade Suggestion', animation: 'upsellRise' };
+      case 'accessory':
+        return { icon: '🔧⚙️', title: 'Recommended Accessory', animation: 'accessoryRotate' };
       default:
         return null;
     }
@@ -395,6 +413,50 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
         @keyframes giftGlow {
           0% { filter: brightness(1); }
           100% { filter: brightness(1.5) drop-shadow(0 0 5px gold); }
+        }
+        @keyframes buyTogetherShake {
+          0%, 100% { transform: translateX(0) scale(1); }
+          25% { transform: translateX(-1px) scale(1.05); }
+          75% { transform: translateX(1px) scale(1.05); }
+        }
+        @keyframes bundleFloat {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-3px) rotate(2deg); }
+        }
+        @keyframes frequentPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.15); opacity: 0.8; }
+        }
+        @keyframes comboBounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0) scale(1); }
+          40% { transform: translateY(-4px) scale(1.1); }
+          60% { transform: translateY(-2px) scale(1.05); }
+        }
+        @keyframes pairGlow {
+          0% { filter: brightness(1) drop-shadow(0 0 0px transparent); }
+          50% { filter: brightness(1.3) drop-shadow(0 0 8px rgba(255, 215, 0, 0.6)); }
+          100% { filter: brightness(1) drop-shadow(0 0 0px transparent); }
+        }
+        @keyframes complementaryPuzzle {
+          0%, 100% { transform: rotate(0deg) scale(1); }
+          25% { transform: rotate(-5deg) scale(1.05); }
+          75% { transform: rotate(5deg) scale(1.05); }
+        }
+        @keyframes crossSellSpin {
+          0% { transform: rotate(0deg) scale(1); }
+          50% { transform: rotate(180deg) scale(1.1); }
+          100% { transform: rotate(360deg) scale(1); }
+        }
+        @keyframes upsellRise {
+          0%, 100% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-5px) scale(1.2); }
+        }
+        @keyframes accessoryRotate {
+          0% { transform: rotate(0deg); }
+          25% { transform: rotate(90deg) scale(1.1); }
+          50% { transform: rotate(180deg); }
+          75% { transform: rotate(270deg) scale(1.1); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
     </div>
