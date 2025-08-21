@@ -1,6 +1,7 @@
 import os
 import sys
 from typing import List, Dict, Any
+import httpx
 
 # Add parent directory to path to import services
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -67,45 +68,59 @@ class MiddlewareService:
             print(f"Error in simple semantic search: {str(e)}")
             return []
     
-    def find_gifts_external(self) -> List[Dict[str, Any]]:
+    def find_gifts_external(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
-        Find gifts external function that returns hardcoded gift recommendations.
+        Find gifts external function that fetches gift recommendations from the gifting endpoint.
+        
+        Args:
+            query: The search query for gifting.
+            limit: The maximum number of results per label (default: 10).
         
         Returns:
             List of gift recommendation dictionaries with labels and product IDs
         """
+        # Thuong implementation - gift endpoint
 
-        # Thuong implementation
-        return [
-            {
-                "label": "wishlist",
-                "product_ids": [1, 2, 3]
-            },
-            {
-                "label": "view", 
-                "product_ids": [4, 5]
-            }
-        ]
+        url = "http://localhost:8003/gift"  # Assuming the main backend runs on port 8003
+        payload = {
+            "query": query,
+            "limit": limit
+        }
+        
+        with httpx.Client() as client:
+            response = client.post(url, json=payload)
+            if response.status_code != 200:
+                raise ValueError(f"Failed to fetch gifts: {response.text}")
+            
+            recommendations = response.json()
+            return recommendations
 
-    def get_recommendations_external(self) -> List[Dict[str, Any]]:
+    def get_recommendations_external(self, product_ids: List[int], user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Find gifts external function that returns hardcoded gift recommendations.
+        Find gifts external function that fetches gift recommendations from the recommendation endpoint.
+        
+        Args:
+            product_ids: List of product IDs to base recommendations on.
+            user_id: Optional user ID for personalized recommendations.
         
         Returns:
             List of gift recommendation dictionaries with labels and product IDs
         """
-
-        # Thuong implementation
-        return [
-            {
-                "label": "wishlist",
-                "product_ids": [1, 2, 3]
-            },
-            {
-                "label": "view", 
-                "product_ids": [4, 5]
-            }
-        ]
+        # Thuong implementation - get recommendation endpoint
+        
+        url = "http://localhost:8003/get-recommendations"
+        payload = {
+            "product_ids": product_ids,
+            "user_id": user_id
+        }
+        
+        with httpx.Client() as client:
+            response = client.post(url, json=payload)
+            if response.status_code != 200:
+                raise ValueError(f"Failed to fetch recommendations: {response.text}")
+            
+            recommendations = response.json()
+            return recommendations
     
     def push_user_after_registration(self, user_id: str, user_email: str, user_name: str) -> Dict[str, str]:
         """
@@ -128,7 +143,19 @@ class MiddlewareService:
             print("====================================")
 
             # Thuong implementation push user info
-             
+        
+            data = {
+                "userId": user_id,
+                "name": user_name,
+                "email": user_email
+            }
+            
+            url = "http://localhost:8003/register-user"
+            response = httpx.post(url, json=data)
+            
+            if response.status_code != 200:
+                raise Exception(f"Failed to register user: HTTP {response.status_code}")
+            
             # Here you can add additional logic such as:
             # - Save user to database
             # - Send welcome email

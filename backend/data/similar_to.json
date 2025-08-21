@@ -1,0 +1,67 @@
+[
+    {
+        "productId1": 6,
+        "productId2": 13,
+        "score": 0.6
+    },
+    {
+        "productId1": 9,
+        "productId2": 17,
+        "score": 0.5
+    },
+    {
+        "productId1": 9,
+        "productId2": 23,
+        "score": 0.5
+    },
+    {
+        "productId1": 9,
+        "productId2": 27,
+        "score": 0.5
+    },
+    {
+        "productId1": 11,
+        "productId2": 22,
+        "score": 0.6
+    },
+    {
+        "productId1": 16,
+        "productId2": 26,
+        "score": 0.6
+    },
+    {
+        "productId1": 17,
+        "productId2": 23,
+        "score": 0.5
+    },
+    {
+        "productId1": 17,
+        "productId2": 27,
+        "score": 0.5
+    },
+    {
+        "productId1": 18,
+        "productId2": 24,
+        "score": 0.5
+    },
+    {
+        "productId1": 21,
+        "productId2": 25,
+        "score": 0.6
+    },
+    {
+        "productId1": 21,
+        "productId2": 29,
+        "score": 0.6
+    },
+    {
+        "productId1": 23,
+        "productId2": 27,
+        "score": 0.5
+    },
+    {
+        "productId1": 25,
+        "productId2": 29,
+        "score": 0.6
+    }
+]
