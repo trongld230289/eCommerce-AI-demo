@@ -37,7 +37,7 @@ const SimpleProductCard: React.FC<SimpleProductCardProps> = ({
       case 'same_taste':
         return { icon: '🤝', title: 'Similar Taste', animation: 'tasteMate' };
       case 'product':
-        return { icon: '🛍️', title: 'Similarity Search', animation: 'productPulse' };
+        return { icon: '🛍️', title: 'Similarity Product', animation: 'productPulse' };
       case 'gift':
         return { icon: '🎁', title: 'Gift Suggestion', animation: 'giftGlow' };
       default:
