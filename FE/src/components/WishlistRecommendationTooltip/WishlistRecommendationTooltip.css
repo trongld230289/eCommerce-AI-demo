@@ -22,6 +22,22 @@
   animation: pulse-glow 2s infinite;
 }
 
+.wishlist-recommendation-icon.loading {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  animation: loading-pulse 1.5s infinite;
+}
+
+@keyframes loading-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 2px 12px rgba(0, 123, 255, 0.6);
+  }
+}
+
 @keyframes pulse-glow {
   0%, 100% {
     transform: scale(1);
@@ -227,6 +243,42 @@
 .recommendation-footer small {
   color: #999;
   font-size: 11px;
+}
+
+/* Loading states */
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  font-size: 24px;
+  color: #007bff;
+  margin-bottom: 12px;
+}
+
+.loading-content p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.no-recommendation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.no-recommendation p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
 }
 
 /* Responsive adjustments */

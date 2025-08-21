@@ -759,15 +759,20 @@ const Wishlist = () => {
                     </div>
                   );
 
-                  // Wrap with recommendation tooltip if available
-                  return recommendation ? (
+                  // Get recommendation and loading state for this product
+                  const itemRecommendation = recommendations.get(item.product_id);
+                  const isItemLoadingRecommendation = productLoadingStates.get(item.product_id) || false;
+
+                  // Always wrap with recommendation tooltip to show loading state
+                  return (
                     <WishlistRecommendationTooltip 
                       key={item.id} 
-                      recommendation={recommendation}
+                      recommendation={itemRecommendation}
+                      isLoading={isItemLoadingRecommendation}
                     >
                       {ItemComponent}
                     </WishlistRecommendationTooltip>
-                  ) : ItemComponent;
+                  );
                 })}
               </div>
             </div>
