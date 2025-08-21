@@ -52,10 +52,11 @@ async def simple_search_get(
     try:
         products = simple_semantic_search(q, limit)
         # Thuong implementation
+        product_ids = [product["id"] for product in products]
         return {
             "status": "success",
-            "products": products,
-            "total_results": len(products)
+            "product_ids": product_ids,
+            "total_results": len(product_ids)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")

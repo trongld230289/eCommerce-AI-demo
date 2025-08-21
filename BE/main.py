@@ -463,6 +463,15 @@ async def add_item_to_cart(cart_item: CartAddItem, user_id: str = Query(...)):
     try:
         cart = await cart_service.add_item_to_cart(user_id, cart_item)
         # Thuong implementation - add product to cart
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"http://localhost:8003/api/cart/add?user_id={user_id}",
+                headers={"Content-Type": "application/json"},
+                json={"product_id": cart_item.product_id, "quantity": cart_item.quantity}
+            )
+            if response.status_code != 200:
+                print(f"Failed to push to external service: {response.text}")
+        
         return cart
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error adding item to cart: {str(e)}")
@@ -472,6 +481,16 @@ async def update_cart_item(cart_item: CartUpdateItem, user_id: str = Query(...))
     """Update item quantity in cart"""
     try:
         cart = await cart_service.update_item_quantity(user_id, cart_item)
+        # Thuong implementation - update product quantity in cart
+        async with httpx.AsyncClient() as client:
+            response = await client.put(
+                f"http://localhost:8003/api/cart/update?user_id={user_id}",
+                headers={"Content-Type": "application/json"},
+                json={"product_id": cart_item.product_id, "quantity": cart_item.quantity}
+            )
+            if response.status_code != 200:
+                print(f"Failed to push to external service: {response.text}")
+
         return cart
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating cart item: {str(e)}")
@@ -482,6 +501,15 @@ async def remove_item_from_cart(cart_item: CartRemoveItem, user_id: str = Query(
     try:
         cart = await cart_service.remove_item_from_cart(user_id, cart_item)
         # Thuong implementation - remove product from cart
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(
+                f"http://localhost:8003/api/cart/remove?user_id={user_id}",
+                headers={"Content-Type": "application/json"},
+                json={"product_id": cart_item.product_id}
+            )
+            if response.status_code != 200:
+                print(f"Failed to push to external service: {response.text}")
+
         return cart
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error removing item from cart: {str(e)}")
@@ -491,6 +519,14 @@ async def clear_cart(user_id: str = Query(...)):
     """Clear all items from cart"""
     try:
         cart = await cart_service.clear_cart(user_id)
+        # Thuong implementation - clear cart
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(
+                f"http://localhost:8003/api/cart/clear?user_id={user_id}"
+            )
+            if response.status_code != 200:
+                print(f"Failed to push to external service: {response.text}")
+
         return cart
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error clearing cart: {str(e)}")
@@ -512,6 +548,14 @@ async def track_user_event(event: UserEventCreate):
     try:
         success = await recommendation_service.track_user_event(event)
         # Thuong implementation - push user event to external service
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "http://localhost:8003/api/events",
+                json=event.model_dump()
+            )
+            if response.status_code != 200:
+                raise ValueError(f"Failed to push event to external service: {response.status_code} - {response.text}")
+
         if success:
             return {"status": "success", "message": "Event tracked successfully"}
         else:

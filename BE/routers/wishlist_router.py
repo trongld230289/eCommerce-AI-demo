@@ -7,6 +7,7 @@ from models import (
 )
 from services.wishlist_service import wishlist_service
 from auth import get_current_user
+import httpx
 
 router = APIRouter(prefix="/api/wishlist", tags=["wishlist"])
 
@@ -71,6 +72,18 @@ def create_wishlist(
         print(f"  user_name: {wishlist_data.user_name}")
         
         wishlist = wishlist_service.create_wishlist(wishlist_data)
+        # Thuong implementation - create the wishlist
+        with httpx.Client() as client:
+            neo_data = {
+                "id": wishlist.id,
+                "name": wishlist.name,
+                "user_id": wishlist.user_id,
+                "note": None,  # Assuming note is not provided in WishlistCreate
+            }
+            response = client.post("http://localhost:8003/api/wishlist", json=neo_data)
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Failed to sync create with external service: {response.text}")
+            
         return wishlist
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -109,6 +122,16 @@ def update_wishlist(
             raise HTTPException(status_code=401, detail="User not authenticated")
         
         wishlist = wishlist_service.update_wishlist(wishlist_id, user_id, update_data)
+        # Thuong implementation - update the wishlist
+        with httpx.Client() as client:
+            response = client.put(
+                f"http://localhost:8003/api/wishlist/{wishlist_id}",
+                params={"user_id": user_id},
+                json=update_data.dict(exclude_unset=True)
+            )
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Failed to sync update with external service: {response.text}")
+
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
         
@@ -130,6 +153,15 @@ def delete_wishlist(
             raise HTTPException(status_code=401, detail="User not authenticated")
         
         success = wishlist_service.delete_wishlist(wishlist_id, user_id)
+        # Thuong implementation - delete wishlist
+        with httpx.Client() as client:
+            response = client.delete(
+                f"http://localhost:8003/api/wishlist/{wishlist_id}",
+                params={"user_id": user_id}
+            )
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Failed to sync delete with external service: {response.text}")
+
         if not success:
             raise HTTPException(status_code=404, detail="Wishlist not found")
         
@@ -159,6 +191,15 @@ def add_product_to_wishlist(
             wishlist_id, user_id, product_data.product_id
         )
         # Thuong implementation - add product to wishlist
+        with httpx.Client() as client:
+            response = client.post(
+                f"http://localhost:8003/api/wishlist/{wishlist_id}/products",
+                params={"user_id": user_id},
+                json=product_data.dict()
+            )
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Failed to sync add product with external service: {response.text}")
+
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
         
@@ -188,6 +229,14 @@ def remove_product_from_wishlist(
             wishlist_id, user_id, product_id
         )
         # Thuong implementation - remove product from wishlist
+        with httpx.Client() as client:
+            response = client.delete(
+                f"http://localhost:8003/api/wishlist/{wishlist_id}/products/{product_id}",
+                params={"user_id": user_id}
+            )
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Failed to sync remove product with external service: {response.text}")
+
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
         
@@ -209,6 +258,15 @@ def clear_wishlist(
             raise HTTPException(status_code=401, detail="User not authenticated")
         
         wishlist = wishlist_service.clear_wishlist(wishlist_id, user_id)
+        # Thuong implementation - clear wishlist
+        with httpx.Client() as client:
+            response = client.post(
+                f"http://localhost:8003/api/wishlist/{wishlist_id}/clear",
+                params={"user_id": user_id}
+            )
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Failed to sync clear with external service: {response.text}")
+
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
         

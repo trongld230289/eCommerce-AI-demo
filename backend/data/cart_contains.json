@@ -1,0 +1,32 @@
+[
+    {
+        "cardId": "cart-user1",
+        "productId": 3,
+        "quantity": 1,
+        "added_at": 1693526400000
+    },
+    {
+        "cardId": "cart-user3",
+        "productId": 8,
+        "quantity": 1,
+        "added_at": 1693526400000
+    },
+    {
+        "cardId": "cart-user5",
+        "productId": 17,
+        "quantity": 1,
+        "added_at": 1693526400000
+    },
+    {
+        "cardId": "cart-user7",
+        "productId": 12,
+        "quantity": 1,
+        "added_at": 1693526400000
+    },
+    {
+        "cardId": "cart-user9",
+        "productId": 26,
+        "quantity": 1,
+        "added_at": 1693526400000
+    }
+]
