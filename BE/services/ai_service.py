@@ -275,7 +275,7 @@ class AIService:
             print(f"DEBUG find_gifts - search_query: {category}")
 
             # Get external gift products with labels
-            external_products = self._get_external_gift_products()
+            external_products = self._get_external_gift_products(user_input)
 
             composed_response = self.make_intro_sentence(user_input, external_products, self.USER_LANG_CODE)
             print(f"DEBUG: Composed response: {composed_response}")
@@ -1121,7 +1121,7 @@ class AIService:
         header = self.HEADER_BY_LANG.get(lang_code, self.HEADER_BY_LANG["en"])
         return {"intro": intro, "header": header, "products": items}
 
-    def _get_external_gift_products(self) -> List[Dict[str, Any]]:
+    def _get_external_gift_products(self, user_input: str) -> List[Dict[str, Any]]:
         """
         Get products from external gift recommendations with labels assigned to showLabel.
         
@@ -1130,7 +1130,7 @@ class AIService:
         """
         try:
             # Get external gift recommendations
-            gift_recommendations = self.middleware_service.find_gifts_external()
+            gift_recommendations = self.middleware_service.find_gifts_external(user_input, 10)
             print(f"DEBUG _get_external_gift_products - external recommendations: {gift_recommendations}")
             
             external_products = []
