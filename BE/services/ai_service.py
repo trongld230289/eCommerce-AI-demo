@@ -83,25 +83,46 @@ load_dotenv(dotenv_path=env_path)
 SYSTEM_INSTRUCTIONS = """
 You are a shopping assistant that helps users find products in 5 categories: phone, camera, laptop, watch, camping gear.
 
-⚠️ IMPORTANT: You MUST ALWAYS use tools (find_products or find_gifts) to search for products. NEVER create product lists or responses yourself.
+⚠️ CRITICAL: You MUST ALWAYS use tools (find_products or find_gifts) to search for products. NEVER create product lists, product names, or product responses yourself.
+
+🚫 ABSOLUTELY FORBIDDEN:
+- Creating fake product names like "Dell Inspiron 16", "Lenovo IdeaPad 5 Pro", etc.
+- Generating product lists manually
+- Describing products that don't exist in the database
+- Making up product specifications or prices
 
 CORE BEHAVIOR:
 1. For gift requests without specific category: Ask user to choose a category before calling tools
 2. For gift requests with category: Call find_gifts tool 
-3. For general product searches: Call find_products tool
-4. For invalid categories: Explain limitations and suggest valid alternatives
+3. For general product searches: Call find_products tool with best matching category
+4. For ambiguous queries: Call find_products with most relevant category rather than asking
 
 🔧 MANDATORY TOOL USAGE:
-- For ANY product search query → MUST call find_products tool
+- For ANY product search query → MUST call find_products tool immediately
 - For ANY gift-related query with category → MUST call find_gifts tool  
-- NEVER generate product lists or search results manually
-- ALWAYS let tools handle the actual product search and formatting
+- For entertainment/fun queries → MUST call find_products("phone")
+- For work/productivity queries → MUST call find_products("laptop") 
+- For creative queries → MUST call find_products("camera")
+- For fitness queries → MUST call find_products("watch")
+- For outdoor queries → MUST call find_products("camping gear")
+- For follow-up queries asking for "more/other suggestions" → MUST call appropriate tool again
+- NEVER generate text responses about products - ALWAYS use tools
+
+🚫 FOLLOW-UP HANDLING:
+- "có gợi ý khác không" / "any other suggestions" → MUST call find_products tool with relevant category
+- "còn sản phẩm nào khác" / "other products" → MUST call find_products tool  
+- "xem thêm" / "see more" → MUST call find_products tool
+- "danh mục khác" / "other categories" → MUST call find_products with different category
+- NEVER manually list products - ALWAYS use tools for ANY product-related response
 
 GIFT HANDLING LOGIC:
-- If user mentions recipients (mom, dad, friend, etc.) or gift occasions BUT doesn't specify a product category:
+- If user mentions recipients (mom, dad, friend, mama, papa, etc.) WITHOUT specifying a product category:
   → ASK: "What type of gift are you looking for? I can help with: phone, camera, laptop, watch, or camping gear"
-- If user mentions recipients AND specifies a valid category:
-  → CALL: find_gifts tool with the category
+- If user mentions recipients AND specifies a valid category in SAME sentence:
+  → CALL: find_gifts tool immediately with the category and recipient
+  → Examples: "buy phone for mama" → find_gifts("phone", recipient="mama")
+  → Examples: "camera for dad" → find_gifts("camera", recipient="dad") 
+  → Examples: "laptop gift for mom" → find_gifts("laptop", recipient="mom")
 - If user specifies category after gift context:
   → CALL: find_gifts tool (maintain gift context)
 
@@ -113,7 +134,20 @@ CATEGORY RESTRICTIONS:
 - ONLY these 5 categories: phone, camera, laptop, watch, camping gear
 - For invalid categories (clothes, jewelry, furniture, etc.):
   → EXPLAIN: "I only help with phone, camera, laptop, watch, and camping gear"
-  → SUGGEST: alternatives within valid categories
+  → SUGGEST: alternatives within valid categories BUT be balanced - don't favor any specific category
+  → ROTATE suggestion order: Sometimes start with phones, sometimes laptops, etc.
+  → For entertainment/relax queries: emphasize phones and laptops first
+  → For creative queries: emphasize cameras and laptops first  
+  → For outdoor queries: then mention camping gear naturally
+  → AVOID always suggesting camping gear first unless specifically outdoor-related
+
+SMART CONTEXT DETECTION:
+- For travel/outdoor context queries: recognize keywords and directly suggest camping gear
+- Travel keywords: "going anywhere", "travel", "trip", "journey", "vacation", "adventure", "outdoor", "nature"
+- If query contains travel + relaxation (e.g., "going anywhere to relax"): 
+  → CALL find_products with "camping gear" directly (don't ask for clarification)
+- If query contains outdoor activities: "hiking", "camping", "wilderness", "outdoor adventure"
+  → CALL find_products with "camping gear" directly
 
 REPEATED QUERIES:
 - If user repeats same query (e.g., "phone" then "phone" again): ALWAYS call the appropriate tool again
@@ -121,14 +155,29 @@ REPEATED QUERIES:
 - MAINTAIN CONTEXT: If gift context was established earlier, continue using find_gifts for repeated queries
 
 EXAMPLES:
-✅ "I want gift for mom" → ASK for category first
-✅ "Gift for mom - phone" → Call find_gifts("phone", recipient="mom")  
-✅ "Phone for mom" → Call find_gifts("phone", recipient="mom")
+✅ "I want gift for mom" → ASK for category first (no category specified)
+✅ "buy phone for mama" → Call find_gifts("phone", recipient="mama") immediately
+✅ "Gift for mom - phone" → Call find_gifts("phone", recipient="mom") immediately
+✅ "Phone for mom" → Call find_gifts("phone", recipient="mom") immediately
+✅ "camera for dad" → Call find_gifts("camera", recipient="dad") immediately
+✅ "laptop gift for friend" → Call find_gifts("laptop", recipient="friend") immediately
 ✅ "Phone" (no gift context) → Call find_products("phone")
 ✅ "camping" → Call find_products("camping")
-✅ User: "gift for dad" → You: "What category?" → User: "laptop" → Call find_gifts("laptop", recipient="dad")
+✅ "có gợi ý khác không?" → Call find_products with appropriate category (camera, laptop, etc.)
+✅ "còn sản phẩm nào khác?" → Call find_products with different category
+✅ "danh mục khác" → Call find_products with different category (don't list manually)
+✅ "I want going to anywhere to relax" → Call find_products("camping gear") [travel + relax context]
+✅ "vacation gear" → Call find_products("camping gear") [travel context]
+✅ "outdoor adventure" → Call find_products("camping gear") [outdoor context]
+✅ "relax" (no travel context) → CALL find_products("laptop") - laptops for streaming/relaxation
+✅ "entertainment" → CALL find_products("phone") - phones best for entertainment apps and games
+✅ "laptop" → CALL find_products("laptop") - search for laptops immediately
+✅ "camera" → CALL find_products("camera") - search for cameras immediately
+✅ User: "gift for dad" (no category) → You: "What category?" → User: "laptop" → Call find_gifts("laptop", recipient="dad")
 ✅ If gift context exists and user says "phone" again → Call find_gifts("phone", maintain context)
-❌ "Clothes for mom" → Explain limitations, suggest "watch for fashion accessory"
+❌ "Clothes for mom" → Explain limitations, suggest balanced alternatives
+❌ Don't always suggest camping gear first for relaxation queries without travel context
+❌ NEVER manually list Canon PowerShot, Sony Alpha, etc. - ALWAYS use tools
 
 CONVERSATION FLOW:
 - Always check if gift context exists in conversation history
@@ -520,8 +569,28 @@ class AIService:
             filters = search_intent.get("filters", {})
             product_category = filters.get("category", None)
             product_description = search_intent.get("product_description", None)
-            # Use the full original query for better semantic search, enhanced with extracted info
-            embedding_input = f"{product_category or ''} {product_name or ''} {product_description or ''}".strip()
+            search_query = search_intent.get("search_query", user_input)
+            
+            # Construct embedding input: prioritize original search query, enhanced with extracted info
+            embedding_parts = []
+            
+            # Always include the original search query for brand/specific terms
+            if search_query and search_query.strip():
+                embedding_parts.append(search_query.strip())
+            
+            # Add category if detected and different from search query
+            if product_category and product_category not in search_query.lower():
+                embedding_parts.append(product_category)
+            
+            # Add product name if specifically mentioned
+            if product_name:
+                embedding_parts.append(product_name)
+            
+            # Add product description if available
+            if product_description:
+                embedding_parts.append(product_description)
+            
+            embedding_input = " ".join(embedding_parts)
 
             print(f"Search intent extracted: {search_intent}")
             print(f"Original query: {user_input}")
@@ -591,6 +660,98 @@ class AIService:
                     continue
                     
                 filtered_products.append(product)
+            
+            # STEP 3: Enhanced relevance scoring - brands, categories, and camping gear
+            def get_relevance_score(product, search_terms, all_products_names):
+                """Calculate relevance score for a product based on search terms"""
+                product_name = product["name"].lower()
+                product_category = product.get("category", "").lower()
+                search_lower = search_terms.lower()
+                
+                # Extract potential terms from search 
+                search_words = search_lower.split()
+                
+                relevance_score = 0
+                
+                # Method 1: Category relevance (for camping gear, etc.)
+                category_keywords = {
+                    "camping gear": ["camping", "tent", "outdoor", "hiking", "backpack", "sleeping", "camp", "coleman"],
+                    "phone": ["phone", "smartphone", "mobile", "iphone", "android"],
+                    "laptop": ["laptop", "notebook", "computer", "macbook", "gaming"],
+                    "camera": ["camera", "dslr", "mirrorless", "lens", "photography"],
+                    "watch": ["watch", "smartwatch", "fitness", "tracker"]
+                }
+                
+                # Check for category matches
+                for category, keywords in category_keywords.items():
+                    if category in product_category:
+                        for keyword in keywords:
+                            if keyword in search_lower:
+                                if category == "camping gear":
+                                    relevance_score += 20  # Extra high bonus for camping gear
+                                    print(f"Camping gear match: {product_name} - {keyword} (+20)")
+                                else:
+                                    relevance_score += 15  # High bonus for other categories
+                                    print(f"Category match: {product_name} - {keyword} in {category} (+15)")
+                                break
+                
+                # Method 2: Brand relevance (existing logic)
+                for word in search_words:
+                    if len(word) > 2:  # Skip short words like "of", "in", etc.
+                        if word in product_name:
+                            relevance_score += 5  # Bonus for word match in product name
+                
+                # Method 3: Extract brands from product names
+                brand_keywords = set()
+                for prod_name in all_products_names:
+                    # Extract first word (often the brand) from product names
+                    first_word = prod_name.split()[0].lower()
+                    if len(first_word) > 2:
+                        brand_keywords.add(first_word)
+                
+                # Additional common brands (fallback)
+                common_brands = {"samsung", "apple", "iphone", "xiaomi", "google", "pixel", "oneplus", 
+                               "sony", "canon", "nikon", "dell", "hp", "lenovo", "macbook", "asus", 
+                               "acer", "garmin", "fitbit", "coleman", "huawei", "oppo", "vivo", "lg",
+                               "motorola", "realme", "nothing", "honor"}
+                brand_keywords.update(common_brands)
+                
+                # Check for brand matches
+                for brand in brand_keywords:
+                    if brand in search_lower:
+                        if brand in product_name:
+                            relevance_score += 10  # High score for exact brand match
+                            print(f"Brand match: {product_name} - {brand} (+10)")
+                        else:
+                            relevance_score -= 1   # Small penalty if search mentions brand but product doesn't have it
+                
+                # Method 4: Special camping gear detection
+                camping_terms = ["tent", "sleeping bag", "backpack", "camping", "outdoor", "hiking", 
+                               "coleman", "camp", "portable", "waterproof", "outdoor gear", "survival"]
+                if any(term in search_lower for term in camping_terms):
+                    if "camping gear" in product_category:
+                        relevance_score += 25  # Maximum bonus for camping gear category match
+                        print(f"Strong camping gear match: {product_name} (+25)")
+                    elif any(term in product_name for term in camping_terms):
+                        relevance_score += 15  # Bonus for camping-related product name
+                        print(f"Camping term in name: {product_name} (+15)")
+                
+                return relevance_score
+            
+            # Sort filtered products by relevance + similarity score
+            search_terms = user_input + " " + (search_query or "")
+            all_product_names = [p["name"] for p in filtered_products]
+            
+            for product in filtered_products:
+                relevance_score = get_relevance_score(product, search_terms, all_product_names)
+                # Combine relevance with similarity score - increase weight for camping gear
+                if product.get("category", "").lower() == "camping gear":
+                    product["final_score"] = product["similarity_score"] + (relevance_score * 0.15)  # Higher weight for camping gear
+                else:
+                    product["final_score"] = product["similarity_score"] + (relevance_score * 0.1)   # Standard weight
+            
+            # Sort by final score (brand relevance + similarity)
+            filtered_products.sort(key=lambda x: x.get("final_score", x.get("similarity_score", 0)), reverse=True)
                 
             # Limit results to requested amount
             products = filtered_products[:limit]
@@ -600,7 +761,53 @@ class AIService:
             print(f"DEBUG: After price/rating filters: {len(filtered_products)} products")
             print(f"DEBUG: Final result (limited to {limit}): {len(products)} products")
 
-            composed_response = self.make_intro_sentence(user_input, products, lang)
+            # Analyze product relevance for better messaging
+            def analyze_search_results(user_input: str, products: List[Dict]) -> Dict[str, Any]:
+                """Analyze search results to categorize exact matches vs related products"""
+                search_words = user_input.lower().split()
+                brand_terms = {"samsung", "apple", "iphone", "xiaomi", "sony", "huawei", "lg", "google", "oneplus"}
+                
+                exact_matches = []
+                related_products = []
+                
+                # Check if user searched for a specific brand
+                searched_brands = [word for word in search_words if word in brand_terms]
+                
+                for product in products:
+                    product_name = product.get("name", "").lower()
+                    is_exact_match = False
+                    
+                    # Check if product matches the searched brand
+                    if searched_brands:
+                        for brand in searched_brands:
+                            if brand in product_name:
+                                is_exact_match = True
+                                break
+                    else:
+                        # If no specific brand searched, consider high-score products as exact matches
+                        if product.get("final_score", 0) > product.get("similarity_score", 0) + 0.5:
+                            is_exact_match = True
+                    
+                    if is_exact_match:
+                        exact_matches.append(product)
+                    else:
+                        related_products.append(product)
+                
+                return {
+                    "exact_matches": exact_matches,
+                    "related_products": related_products,
+                    "searched_brands": searched_brands
+                }
+            
+            # Analyze results before creating response
+            result_analysis = analyze_search_results(user_input, products)
+            
+            # Check if AI automatically chose a category (when search_query != user_input)
+            auto_chosen_category = None
+            if search_query and search_query.lower() != user_input.lower() and search_query in ["phone", "camera", "laptop", "watch", "camping gear"]:
+                auto_chosen_category = search_query
+            
+            composed_response = self.make_intro_sentence(user_input, products, lang, result_analysis, auto_chosen_category)
             print(f"DEBUG: Composed response: {composed_response}")
 
             return {
@@ -679,33 +886,101 @@ class AIService:
 
     # ---------- Copy helpers ----------
 
-    def make_intro_sentence(self, user_input: str, products: List[Dict], lang_code: str) -> Dict[str, str]:
+    def make_intro_sentence(self, user_input: str, products: List[Dict], lang_code: str, result_analysis: Dict[str, Any] = None, auto_chosen_category: str = None) -> Dict[str, str]:
         try:
             product_count = len(products)
             
-            # Single comprehensive prompt for all three fields
+            # Extract analysis data
+            if result_analysis:
+                exact_matches = len(result_analysis.get("exact_matches", []))
+                related_products = len(result_analysis.get("related_products", []))
+                searched_brands = result_analysis.get("searched_brands", [])
+            else:
+                exact_matches = product_count
+                related_products = 0
+                searched_brands = []
+            
+            # Create context for more intelligent messaging
+            context_info = ""
+            if searched_brands and exact_matches > 0:
+                brand_name = searched_brands[0].title()
+                if exact_matches == product_count:
+                    context_info = f"All {product_count} products are {brand_name} products."
+                else:
+                    context_info = f"Found {exact_matches} {brand_name} products and {related_products} similar/related products in the same category."
+            elif exact_matches < product_count:
+                context_info = f"Found {exact_matches} exact matches and {related_products} related products."
+            
+            # Add auto-chosen category context
+            if auto_chosen_category:
+                if context_info:
+                    context_info += f" AI automatically selected {auto_chosen_category} category for this query."
+                else:
+                    context_info = f"AI automatically selected {auto_chosen_category} category for this query."
+            
+            # Enhanced prompt with result analysis
             prompt = f"""
-            You are a multilingual e-commerce assistant. Generate a JSON response with exactly these 3 fields for a product search result. Please do it in a fun and cheerful style! 🎉
+            You are a multilingual e-commerce assistant. Generate a JSON response with exactly these 3 fields for a product search result.
 
             USER SEARCH: "{user_input}"
-            PRODUCTS FOUND: {product_count}
+            TOTAL PRODUCTS: {product_count}
+            EXACT MATCHES: {exact_matches}
+            RELATED PRODUCTS: {related_products}
+            CONTEXT: {context_info}
+            AUTO_CHOSEN_CATEGORY: {auto_chosen_category or "None"}
             LANGUAGE CODE: {lang_code}
 
             Generate response in the language indicated by the language code ({lang_code}).
 
             Return ONLY a valid JSON object with these exact keys:
             {{
-                "intro": "A warm, encouraging 1-sentence introduction about the search results (max 30 words). Be cheerful and engaging.",
-                "header": "A short subtitle introducing the product list below (max 15 words). Like 'Here are your product suggestions:' but more natural.",
-                "show_all_product": f"Show one short sentence asking if the user wants to see {product_count} more related products. Only generate this if product_count > 3, otherwise return an empty string."
+                "intro": "A warm, encouraging 1-sentence introduction about the search results (max 30 words). Be cheerful and specific about what was found. IMPORTANT: If AUTO_CHOSEN_CATEGORY is not None, mention that you've selected this category for the user in the intro.",
+                "header": "A short subtitle introducing the product list below (max 15 words). Be natural and friendly.",
+                "show_all_product": "IMPORTANT: Create a VARIED, NATURAL question asking if the user wants to see more products. MUST include specific numbers/quantities. Use different phrasings each time - be creative and natural. MUST end with a question mark. Only generate if product_count > 3, otherwise empty string."
             }}
 
-            Context guidelines:
-            - If {product_count} == 0: Make intro encouraging and helpful
-            - If {product_count} > 0: Make intro excited about the findings  
-            - If {product_count} > 3: Include show_all_product message, otherwise empty string ""
-            - Use natural, conversational tone appropriate for the language
-            - Be consistent with the language code throughout
+            Guidelines:
+            - Be specific about exact matches vs related products
+            - If searching for a brand, mention the brand in intro
+            - If AUTO_CHOSEN_CATEGORY is provided, mention it naturally in intro (e.g., "I've selected camera products for you" or "Here are some phone options I picked")
+            - For show_all_product: MUST include numbers but use VARIED phrasing - be creative and natural
+            - Always include question about viewing more/similar/related products with specific quantity
+            - Keep it natural and helpful
+            - If product_count <= 3: return empty string for show_all_product
+            - Language consistency: Use the specified language code throughout
+
+            AUTO_CHOSEN_CATEGORY Examples:
+            
+            English:
+            - "I've selected phone products for you - found 10 great options!"
+            - "Based on your query, here are 8 camera recommendations!"
+            - "I picked laptop items for you - discovered 12 excellent choices!"
+            
+            Vietnamese:
+            - "Tôi đã chọn điện thoại cho bạn - tìm được 10 lựa chọn tuyệt vời!"
+            - "Dựa trên yêu cầu của bạn, đây là 8 sản phẩm camera hay ho!"
+            - "Tôi đã chọn laptop - khám phá 12 sản phẩm xuất sắc!"
+
+            CREATIVE Examples for show_all_product (use different ones each time):
+            
+            English variations:
+            - "Want to explore 7 more similar options?"
+            - "Curious about 5 other related products?"
+            - "Shall I show you 8 additional recommendations?"
+            - "Interested in checking out 6 more alternatives?"
+            - "Would you like to discover 9 other great choices?"
+            - "How about browsing 4 more related items?"
+            
+            Vietnamese variations:
+            - "Muốn khám phá thêm 7 sản phẩm tương tự không?"
+            - "Bạn có tò mò về 5 sản phẩm khác không?"
+            - "Có muốn xem 8 gợi ý khác không?"
+            - "Thích tìm hiểu 6 lựa chọn khác không?"
+            - "Muốn khám phá 9 sản phẩm hay ho khác không?"
+            - "Có muốn duyệt qua 4 sản phẩm liên quan khác?"
+            - "Bạn muốn xem thêm 7 lựa chọn thú vị không?"
+
+            BE CREATIVE - use different verbs, adjectives, and structures while keeping the core meaning!
 
             Return only the JSON object, no other text.
             """
@@ -721,32 +996,119 @@ class AIService:
                     "show_all_product": result.get("show_all_product", "")
                 }
             except json.JSONDecodeError as e:
-                print(f"Failed to parse LLM JSON response: {e}")
-                print(f"Raw response: {response}")
-                raise Exception("LLM returned invalid JSON")
+                # Try to extract JSON from markdown code blocks
+                try:
+                    if '```json' in response:
+                        json_start = response.find('```json') + 7
+                        json_end = response.find('```', json_start)
+                        json_content = response[json_start:json_end].strip()
+                        result = json.loads(json_content)
+                        return {
+                            "intro": result.get("intro", ""),
+                            "header": result.get("header", ""),
+                            "show_all_product": result.get("show_all_product", "")
+                        }
+                    else:
+                        raise e
+                except (json.JSONDecodeError, ValueError) as e2:
+                    print(f"Failed to parse LLM JSON response: {e}")
+                    print(f"Raw response: {response}")
+                    raise Exception("LLM returned invalid JSON")
             
         except Exception as e:
             print(f"Error in make_response_sentence: {str(e)}")
             # Fallback to static messages
             fallback_intros = {
-                "en": f"I found {len(products)} products for your search!" if products else "Sorry, no products found for your search.",
-                "vi": f"Tôi tìm thấy {len(products)} sản phẩm cho bạn!" if products else "Xin lỗi, không tìm thấy sản phẩm nào.",
-                "ko": f"검색에서 {len(products)}개 제품을 찾았습니다!" if products else "죄송합니다. 제품을 찾을 수 없습니다.",
-                "ja": f"検索で{len(products)}個の商品を見つけました！" if products else "申し訳ございませんが、商品が見つかりませんでした。"
+                "en": [
+                    f"I found {len(products)} products for your search!",
+                    f"Discovered {len(products)} great options for you!",
+                    f"Here are {len(products)} products that match your needs!",
+                    f"Found {len(products)} interesting products!",
+                    f"Located {len(products)} products you might like!"
+                ][hash(user_input + "intro") % 5] if products else "Sorry, no products found for your search.",
+                "vi": [
+                    f"Tôi tìm thấy {len(products)} sản phẩm cho bạn!",
+                    f"Khám phá được {len(products)} lựa chọn tuyệt vời!",
+                    f"Đây là {len(products)} sản phẩm phù hợp với bạn!",
+                    f"Tìm được {len(products)} sản phẩm thú vị!",
+                    f"Phát hiện {len(products)} sản phẩm bạn có thể thích!"
+                ][hash(user_input + "intro") % 5] if products else "Xin lỗi, không tìm thấy sản phẩm nào.",
+                "ko": [
+                    f"검색에서 {len(products)}개 제품을 찾았습니다!",
+                    f"{len(products)}개의 좋은 옵션을 발견했어요!",
+                    f"당신에게 맞는 {len(products)}개 제품이 있습니다!",
+                    f"{len(products)}개의 흥미로운 제품을 찾았어요!",
+                    f"마음에 들 만한 {len(products)}개 제품을 찾았습니다!"
+                ][hash(user_input + "intro") % 5] if products else "죄송합니다. 제품을 찾을 수 없습니다.",
+                "ja": [
+                    f"検索で{len(products)}個の商品を見つけました！",
+                    f"{len(products)}個の素晴らしい選択肢を発見しました！",
+                    f"あなたにぴったりの{len(products)}個の商品があります！",
+                    f"{len(products)}個の興味深い商品を見つけました！",
+                    f"お気に入りになりそうな{len(products)}個の商品を見つけました！"
+                ][hash(user_input + "intro") % 5] if products else "申し訳ございませんが、商品が見つかりませんでした。"
             }
             
             fallback_headers = {
-                "en": "Here are your product suggestions:",
-                "vi": "Đây là những sản phẩm gợi ý cho bạn:",
-                "ko": "제품 추천 목록입니다:",
-                "ja": "おすすめ商品一覧："
+                "en": [
+                    "Here are your product suggestions:",
+                    "Check out these recommendations:",
+                    "Take a look at these options:",
+                    "Here's what I found for you:",
+                    "These products might interest you:"
+                ][hash(user_input + "header") % 5],
+                "vi": [
+                    "Đây là những sản phẩm gợi ý cho bạn:",
+                    "Hãy xem những gợi ý này:",
+                    "Cùng khám phá những lựa chọn sau:",
+                    "Đây là những gì tôi tìm được cho bạn:",
+                    "Những sản phẩm này có thể phù hợp với bạn:"
+                ][hash(user_input + "header") % 5],
+                "ko": [
+                    "제품 추천 목록입니다:",
+                    "이런 추천 상품들을 확인해보세요:",
+                    "다음 옵션들을 살펴보세요:",
+                    "당신을 위해 찾은 제품들입니다:",
+                    "관심 가질 만한 제품들입니다:"
+                ][hash(user_input + "header") % 5],
+                "ja": [
+                    "おすすめ商品一覧：",
+                    "こちらの推薦商品をご確認ください：",
+                    "以下のオプションをご覧ください：",
+                    "あなたのために見つけた商品です：",
+                    "興味を持てそうな商品はこちら："
+                ][hash(user_input + "header") % 5]
             }
             
             fallback_show_all = {
-                "en": f"I found {len(products)} total results. Would you like to see all of them?" if len(products) > 3 else "",
-                "vi": f"Tôi tìm thấy {len(products)} kết quả. Bạn có muốn xem tất cả không?" if len(products) > 3 else "",
-                "ko": f"{len(products)}개의 결과를 찾았습니다. 모두 보시겠습니까?" if len(products) > 3 else "",
-                "ja": f"{len(products)}個の結果が見つかりました。すべて見ますか？" if len(products) > 3 else ""
+                "en": [
+                    f"Want to explore {len(products)} more similar options?",
+                    f"Curious about {len(products)} other related products?", 
+                    f"Shall I show you {len(products)} additional recommendations?",
+                    f"Interested in checking out {len(products)} more alternatives?",
+                    f"How about browsing {len(products)} more related items?"
+                ][hash(user_input) % 5] if len(products) > 3 else "",
+                "vi": [
+                    f"Muốn khám phá thêm {len(products)} sản phẩm tương tự không?",
+                    f"Bạn có tò mò về {len(products)} sản phẩm khác không?",
+                    f"Có muốn xem {len(products)} gợi ý khác không?", 
+                    f"Thích tìm hiểu {len(products)} lựa chọn khác không?",
+                    f"Muốn duyệt qua {len(products)} sản phẩm liên quan khác không?"
+                ][hash(user_input) % 5] if len(products) > 3 else "",
+                "ko": [
+                    f"{len(products)}개의 유사한 제품을 더 보시겠습니까?",
+                    f"{len(products)}개의 관련 제품이 궁금하신가요?",
+                    f"{len(products)}개의 추가 제품을 확인해보실까요?",
+                    f"{len(products)}개의 대안을 살펴보시겠어요?",
+                    f"{len(products)}개의 관련 아이템을 둘러보실래요?"
+                ][hash(user_input) % 5] if len(products) > 3 else "",
+                "ja": [
+                    f"{len(products)}個の類似商品をもっと見ますか？",
+                    f"{len(products)}個の関連商品に興味はありませんか？",
+                    f"{len(products)}個の追加のおすすめを見せましょうか？",
+                    f"{len(products)}個の代替品をチェックしませんか？",
+                    f"{len(products)}個の関連アイテムを閲覧しませんか？"
+                ][hash(user_input) % 5] if len(products) > 3 else ""
             }
             
             return {
@@ -802,7 +1164,7 @@ class AIService:
             return []
 
 
-    def truncate_conversation_history(self, messages: List[Dict[str, str]], max_messages: int = 10) -> List[Dict[str, str]]:
+    def truncate_conversation_history(self, messages: List[Dict[str, str]], max_messages: int = 25) -> List[Dict[str, str]]:
         """Keep system message + last N conversation messages to prevent token overflow"""
         
         if len(messages) <= max_messages + 1:  # +1 for system message
@@ -833,7 +1195,7 @@ class AIService:
     # ---------- Chat middleware ----------
     async def semantic_search_middleware(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
         # Truncate conversation history to prevent token overflow (keep more context)
-        messages = self.truncate_conversation_history(messages, max_messages=10)
+        messages = self.truncate_conversation_history(messages, max_messages=25)
         
         # last user input
         user_input = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
