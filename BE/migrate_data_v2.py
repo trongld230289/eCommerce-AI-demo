@@ -600,9 +600,10 @@ def get_openai_embedding(text: str) -> List[float]:
     """Generate embeddings using OpenAI API"""
     try:
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         response = client.embeddings.create(
             input=text,
-            model="text-embedding-3-small"
+            model=embedding_model
         )
         return response.data[0].embedding
     except Exception as e:
@@ -667,7 +668,7 @@ class ChromaDBEmbedder:
     def __init__(self):
         """Initialize the ChromaDB embedder"""
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.embedding_model = "text-embedding-3-small"
+        self.embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         
         if self.api_key:
             self.openai_client = openai.OpenAI(api_key=self.api_key)
@@ -706,7 +707,7 @@ class ChromaDBEmbedder:
                 metadata={
                     "hnsw:space": "cosine", 
                     "description": "E-commerce product embeddings",
-                    "embedding_model": "text-embedding-3-small",
+                    "embedding_model": self.embedding_model,
                     "embedding_dimensions": 1536
                 },
                 embedding_function=None  # We provide our own embeddings

@@ -155,12 +155,16 @@ def delete_wishlist(
         success = wishlist_service.delete_wishlist(wishlist_id, user_id)
         # Thuong implementation - delete wishlist
         with httpx.Client() as client:
-            response = client.delete(
-                f"http://localhost:8003/api/wishlist/{wishlist_id}",
-                params={"user_id": user_id}
-            )
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"Failed to sync delete with external service: {response.text}")
+            try:
+                response = client.delete(
+                    f"http://localhost:8003/api/wishlist/{wishlist_id}",
+                    params={"user_id": user_id},
+                    timeout=5.0
+                )
+                if response.status_code != 200:
+                    print(f"Warning: Failed to sync delete with external service: {response.text}")
+            except Exception as sync_error:
+                print(f"Warning: External sync failed (service may be down): {sync_error}")
 
         if not success:
             raise HTTPException(status_code=404, detail="Wishlist not found")
@@ -193,14 +197,18 @@ def add_product_to_wishlist(
         # Thuong implementation - add product to wishlist
         print(f"DEBUG BE ROUTER: About to call Neo4j service - wishlist: {wishlist_id}, user: {user_id}, product: {product_data.product_id}")
         with httpx.Client() as client:
-            response = client.post(
-                f"http://localhost:8003/api/wishlist/{wishlist_id}/products",
-                params={"user_id": user_id},
-                json=product_data.dict()
-            )
-            print(f"DEBUG BE ROUTER: Neo4j service response - status: {response.status_code}, text: {response.text[:200]}")
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"Failed to sync add product with external service: {response.text}")
+            try:
+                response = client.post(
+                    f"http://localhost:8003/api/wishlist/{wishlist_id}/products",
+                    params={"user_id": user_id},
+                    json=product_data.dict(),
+                    timeout=5.0
+                )
+                print(f"DEBUG BE ROUTER: Neo4j service response - status: {response.status_code}, text: {response.text[:200]}")
+                if response.status_code != 200:
+                    print(f"Warning: Failed to sync add product with external service: {response.text}")
+            except Exception as sync_error:
+                print(f"Warning: External sync failed (service may be down): {sync_error}")
 
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
@@ -232,12 +240,16 @@ def remove_product_from_wishlist(
         )
         # Thuong implementation - remove product from wishlist
         with httpx.Client() as client:
-            response = client.delete(
-                f"http://localhost:8003/api/wishlist/{wishlist_id}/products/{product_id}",
-                params={"user_id": user_id}
-            )
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"Failed to sync remove product with external service: {response.text}")
+            try:
+                response = client.delete(
+                    f"http://localhost:8003/api/wishlist/{wishlist_id}/products/{product_id}",
+                    params={"user_id": user_id},
+                    timeout=5.0
+                )
+                if response.status_code != 200:
+                    print(f"Warning: Failed to sync remove product with external service: {response.text}")
+            except Exception as sync_error:
+                print(f"Warning: External sync failed (service may be down): {sync_error}")
 
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
@@ -262,12 +274,16 @@ def clear_wishlist(
         wishlist = wishlist_service.clear_wishlist(wishlist_id, user_id)
         # Thuong implementation - clear wishlist
         with httpx.Client() as client:
-            response = client.post(
-                f"http://localhost:8003/api/wishlist/{wishlist_id}/clear",
-                params={"user_id": user_id}
-            )
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"Failed to sync clear with external service: {response.text}")
+            try:
+                response = client.post(
+                    f"http://localhost:8003/api/wishlist/{wishlist_id}/clear",
+                    params={"user_id": user_id},
+                    timeout=5.0
+                )
+                if response.status_code != 200:
+                    print(f"Warning: Failed to sync clear with external service: {response.text}")
+            except Exception as sync_error:
+                print(f"Warning: External sync failed (service may be down): {sync_error}")
 
         if not wishlist:
             raise HTTPException(status_code=404, detail="Wishlist not found")
