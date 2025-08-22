@@ -1,5 +1,7 @@
 import time
 from typing import List, Optional
+import httpx
+from fastapi import HTTPException
 from firebase_config import get_firestore_db
 from models import (
     Wishlist, WishlistCreate, WishlistUpdate, WishlistItem, ShareType, 
@@ -103,6 +105,20 @@ class WishlistService:
             
             print(f"Saving wishlist to Firestore with dict: {wishlist_dict}")
             doc_ref.set(wishlist_dict)
+
+             # thangnaozay
+             # Thuong implementation - create the wishlist
+            with httpx.Client() as client:
+                neo_data = {
+                    "id": wishlist_dict["id"],
+                    "name": wishlist_dict["name"],
+                    "user_id": wishlist_dict["user_id"],
+                    "note": None,  # Assuming note is not provided in WishlistCreate
+                }
+            response = client.post("http://localhost:8003/api/wishlist", json=neo_data)
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Failed to sync create with external service: {response.text}")
+            
             return Wishlist(**wishlist_dict)
             
         except Exception as e:
