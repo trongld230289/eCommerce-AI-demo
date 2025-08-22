@@ -7,6 +7,7 @@ from models import (
     WishlistSearchResponse
 )
 from product_service import product_service
+import httpx
 
 class WishlistService:
     def __init__(self):
@@ -103,6 +104,22 @@ class WishlistService:
             
             print(f"Saving wishlist to Firestore with dict: {wishlist_dict}")
             doc_ref.set(wishlist_dict)
+
+            try:
+                # Thuong implementation - create the wishlist
+                with httpx.Client() as client:
+                    neo_data = {
+                        "id": wishlist_dict["id"],
+                        "name": wishlist_dict["name"],
+                        "user_id": wishlist_dict["user_id"],
+                        "note": None,  # Assuming note is not provided in WishlistCreate
+                    }
+                    response = client.post("http://localhost:8003/api/wishlist", json=neo_data)
+                    if response.status_code != 200:
+                        print(f"Failed to sync create with external service: {response.text}")
+            except Exception as e:
+                print(f"Error syncing create with external service: {e}")
+
             return Wishlist(**wishlist_dict)
             
         except Exception as e:
