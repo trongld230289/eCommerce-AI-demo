@@ -73,7 +73,6 @@ sys.path.append(parent_dir)
 
 from models import Product, RecommendationSourceEnum, ALGORITHM_TO_REC_SOURCE
 from product_service import ProductService
-from services.middleware_service import MiddlewareService
 
 # Load environment variables
 env_path = os.path.join(parent_dir, '.env')
@@ -476,7 +475,6 @@ class AIService:
         self.embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         self._initialize_collection()
         self.product_service = ProductService()
-        self.middleware_service = MiddlewareService()
         
         # Initialize ProductRelationshipService if available
         if RELATIONSHIP_SERVICE_AVAILABLE:
@@ -1973,8 +1971,8 @@ class AIService:
             List of gift recommendation dictionaries with labels and product IDs
         """
         # Thuong implementation - gift endpoint
-
-        url = "http://localhost:8003/gift"  # Assuming the main backend runs on port 8003
+        # Fixed: Changed from port 8003 to 8000 where the main backend actually runs
+        url = "http://localhost:8003/gift"
         payload = {
             "query": query,
             "product_ids": product_ids,
