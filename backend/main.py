@@ -103,6 +103,7 @@ class ChatbotResponse(BaseModel):
 class SmartSearchRequest(BaseModel):
     query: str
     limit: Optional[int] = 10
+    product_ids: List[int] = Field(default_factory=lambda: [1, 2, 3])
 
 class SmartSearchResponse(BaseModel):
     query: str
@@ -898,6 +899,23 @@ def create_gifting_workflow():
 
     def step1_filter_conditions(state: GiftingWorkflowState) -> Dict[str, Any]:
         logger.info(f"Entering step1_filter_conditions with state: {state}")
+        
+        # Translate query to English
+        translate_prompt = PromptTemplate(
+            input_variables=["query"],
+            template="""
+            Translate the following query to English if it's not in English. If it's already in English, return as is. Focus on translating product names or categories to their English equivalents (e.g., 'đồng hồ' to 'watch', 'quà' to 'gift').
+            
+            Query: {query}
+            
+            Return only the translated query as a string.
+            """
+        )
+        logger.info("Invoking LLM for query translation")
+        response = llm.invoke(translate_prompt.format(query=state["query"]))
+        translated_query = response.content.strip()
+        logger.info(f"Translated query: {translated_query}")
+        
         prompt = PromptTemplate(
             input_variables=["query"],
             template="""
@@ -905,7 +923,7 @@ def create_gifting_workflow():
             
             Determine if the query specifies exact values for these product fields. Be certain - no guessing. If not explicitly mentioned, do not include.
             Fields:
-            - targetGenders (array, e.g., ['male', 'female', 'unisex'])
+            - targetGenders (array, e.g., ['male', 'female', 'unisex']). If 'male' or 'female' is specified (e.g., 'father' implies 'male', 'mother' implies 'female'), also include 'unisex' in the condition to match products suitable for both the specified gender and unisex.
             - giftingSymbolicValue (string: 'high', 'medium', 'low')
             - giftingUtilitarianScore (float 0-1)
             - giftingPriceRange (string: 'low', 'mid', 'high')
@@ -915,13 +933,13 @@ def create_gifting_workflow():
             - giftingSelfGiftingSuitability (string: 'high', 'medium', 'low')
             - giftingPowerSignaling (string: 'high', 'medium', 'low')
             
-            For each field that has an exact value in the query, provide a Cypher condition snippet, e.g., "p.giftingSymbolicValue = 'high'" or "ANY(g IN ['male'] WHERE g IN p.targetGenders)".
+            For each field that has an exact value in the query, provide a Cypher condition snippet. For targetGenders, if 'male' or 'female' is specified, generate a condition like "ANY(g IN ['male', 'unisex'] WHERE g IN p.targetGenders)" or "ANY(g IN ['female', 'unisex'] WHERE g IN p.targetGenders)". For other fields, use exact matches, e.g., "p.giftingSymbolicValue = 'high'".
             
             Respond with only the JSON object and nothing else: {{"conditions": ["cypher_condition1", "cypher_condition2", ...]}}
             """
         )
         logger.info("Invoking LLM for main conditions prompt")
-        response = llm.invoke(prompt.format(query=state["query"]))
+        response = llm.invoke(prompt.format(query=translated_query))
         content = response.content.strip()
         logger.info(f"Raw LLM response for conditions: {content}")
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
@@ -936,7 +954,7 @@ def create_gifting_workflow():
                 result = {"conditions": []}
         else:
             logger.warning("No valid JSON found in LLM response for conditions")
-            result = {"conditions": []}  # Fallback to empty conditions if no JSON found
+            result = {"conditions": []}
         conditions = result.get("conditions", [])
         logger.info(f"Extracted conditions: {conditions}")
 
@@ -953,38 +971,53 @@ def create_gifting_workflow():
         all_categories = [r['category'] for r in categories_results]
         logger.info(f"Distinct categories: {all_categories}")
 
+        # Get distinct tags to help identify product types
+        tags_query = """
+        MATCH (p:Product)
+        UNWIND p.tags AS tag
+        RETURN DISTINCT tag AS tag
+        """
+        tags_results = mcp.run_cypher_query(tags_query)
+        logger.info(f"Raw results from tags query: {tags_results}")
+        all_tags = [r['tag'] for r in tags_results]
+        logger.info(f"Distinct tags: {all_tags}")
+
         categories_prompt = PromptTemplate(
-            input_variables=["query", "categories"],
+            input_variables=["query", "categories", "tags"],
             template="""
             User query: {query}
-            Available categories: {categories}
+            Available gifting categories: {categories}
+            Available product tags: {tags}
             
-            Determine if the query implies specific categories from the available list. Be certain - no guessing. If not explicitly or clearly implied, return empty list.
+            Determine if the query implies specific gifting categories or product types from the available lists. Map product-related terms to tags (e.g., 'watch' or 'đồng hồ' to 'Watch', 'smartwatch', or 'wearable'). Be certain - no guessing. If the query explicitly mentions a product type (e.g., 'watch') or a gift for a specific occasion (e.g., 'birthday'), include matching categories or tags. If not explicitly or clearly implied, return empty lists.
             
-            Respond with only the JSON object and nothing else: {{"categories": ["implied_cat1", "implied_cat2", ...]}}
+            Respond with only the JSON object and nothing else: {{"categories": ["implied_cat1", "implied_cat2", ...], "tags": ["implied_tag1", "implied_tag2", ...]}}
             """
         )
-        logger.info("Invoking LLM for categories prompt")
-        response = llm.invoke(categories_prompt.format(query=state["query"], categories=json.dumps(all_categories)))
+        logger.info("Invoking LLM for categories and tags prompt")
+        response = llm.invoke(categories_prompt.format(query=translated_query, categories=json.dumps(all_categories), tags=json.dumps(all_tags)))
         content = response.content.strip()
-        logger.info(f"Raw LLM response for categories: {content}")
+        logger.info(f"Raw LLM response for categories and tags: {content}")
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
         if json_match:
             json_str = json_match.group(0)
-            logger.info(f"Matched JSON string for categories: {json_str}")
+            logger.info(f"Matched JSON string for categories and tags: {json_str}")
             try:
                 result = json.loads(json_str)
-                logger.info(f"Successfully parsed categories: {result}")
+                logger.info(f"Successfully parsed categories and tags: {result}")
             except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse JSON for categories: {e}, json_str: {json_str}")
-                result = {"categories": []}
+                logger.error(f"Failed to parse JSON for categories and tags: {e}, json_str: {json_str}")
+                result = {"categories": [], "tags": []}
         else:
-            logger.warning("No valid JSON found in LLM response for categories")
-            result = {"categories": []}
+            logger.warning("No valid JSON found in LLM response for categories and tags")
+            result = {"categories": [], "tags": []}
         implied_categories = result.get("categories", [])
-        logger.info(f"Implied categories: {implied_categories}")
+        implied_tags = result.get("tags", [])
+        logger.info(f"Implied categories: {implied_categories}, Implied tags: {implied_tags}")
         categories_cypher = "ANY(cat IN $categories WHERE cat IN p.giftingCategories)" if implied_categories else ""
+        tags_cypher = "ANY(tag IN $tags WHERE tag IN p.tags)" if implied_tags else ""
         logger.info(f"Categories cypher condition: {categories_cypher}")
+        logger.info(f"Tags cypher condition: {tags_cypher}")
 
         # Get distinct giftingRelationshipTypes
         logger.info("Executing Cypher query to get distinct relationship types")
@@ -1004,13 +1037,13 @@ def create_gifting_workflow():
             User query: {query}
             Available relationship types: {rel_types}
             
-            Determine if the query implies specific relationship types from the available list. Be certain - no guessing. If not explicitly or clearly implied, return empty list.
+            Determine if the query implies specific relationship types from the available list. Map familial terms (e.g., 'father', 'ba tôi' to 'family'). Be certain - no guessing. If not explicitly or clearly implied, return empty list.
             
             Respond with only the JSON object and nothing else: {{"rel_types": ["implied_rel1", "implied_rel2", ...]}}
             """
         )
         logger.info("Invoking LLM for rel_types prompt")
-        response = llm.invoke(rel_types_prompt.format(query=state["query"], rel_types=json.dumps(all_rel_types)))
+        response = llm.invoke(rel_types_prompt.format(query=translated_query, rel_types=json.dumps(all_rel_types)))
         content = response.content.strip()
         logger.info(f"Raw LLM response for rel_types: {content}")
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
@@ -1032,12 +1065,14 @@ def create_gifting_workflow():
         logger.info(f"Rel types cypher condition: {rel_types_cypher}")
 
         mcp.close()
-        logger.info("Closed MCP connection after fetching categories and rel_types")
+        logger.info("Closed MCP connection after fetching categories, tags, and rel_types")
 
         # Merge cyphers
         where_clauses = conditions
         if categories_cypher:
             where_clauses.append(categories_cypher)
+        if tags_cypher:
+            where_clauses.append(tags_cypher)
         if rel_types_cypher:
             where_clauses.append(rel_types_cypher)
         logger.info(f"Merged where clauses: {where_clauses}")
@@ -1050,6 +1085,9 @@ def create_gifting_workflow():
             if categories_cypher:
                 parameters["categories"] = implied_categories
                 logger.info(f"Added categories parameter: {parameters['categories']}")
+            if tags_cypher:
+                parameters["tags"] = implied_tags
+                logger.info(f"Added tags parameter: {parameters['tags']}")
             if rel_types_cypher:
                 parameters["rel_types"] = implied_rel_types
                 logger.info(f"Added rel_types parameter: {parameters['rel_types']}")
@@ -1061,6 +1099,9 @@ def create_gifting_workflow():
                 logger.info(f"Raw results from merged query: {results}")
                 product_ids = [r['product_id'] for r in results]
                 logger.info(f"Extracted product_ids: {product_ids}")
+            except Exception as e:
+                logger.error(f"Error executing merged Cypher query: {e}")
+                product_ids = []
             finally:
                 mcp.close()
                 logger.info("Closed MCP connection after executing merged query")
@@ -1068,61 +1109,16 @@ def create_gifting_workflow():
             logger.info("No where clauses present, skipping merged query execution. product_ids remains empty.")
 
         logger.info(f"Returning from step1_filter_conditions with step1_product_ids: {product_ids}")
-        return {"step1_product_ids": product_ids}
+        return {"step1_product_ids": product_ids, "translated_query": translated_query}
 
     def step2_rag(state: GiftingWorkflowState) -> Dict[str, Any]:
         logger.info(f"Entering step2_rag with state: {state}")
-        refine_prompt = PromptTemplate(
-            input_variables=["query"],
-            template="""
-            Refine the user query for product search based on description. Exclude gifting-related info, focus on the product itself as if the user is buying for themselves.
-            
-            Original query: {query}
-            
-            Return the refined query as string.
-            """
-        )
-        logger.info("Invoking LLM for query refinement")
-        response = llm.invoke(refine_prompt.format(query=state["query"]))
-        refined_query = response.content.strip()
-        logger.info(f"Refined query from LLM: {refined_query}")
-
-        # Perform RAG using curl to the endpoint
-        try:
-            import subprocess
-            import json
-            from urllib.parse import quote
-
-            query_quoted = quote(refined_query)
-            url = f"http://localhost:8000/middleware/search?q={query_quoted}&limit={state['limit']}"
-            response = subprocess.run(['curl', '-s', url], capture_output=True, text=True)
-            if response.returncode != 0:
-                raise Exception(f"Curl failed with code {response.returncode}: {response.stderr}")
-
-            content = response.stdout.strip()
-            if not content:
-                logger.error("RAG response is empty")
-                similarities = []
-            else:
-                result = json.loads(content)
-                if result.get("status") != "success":
-                    raise Exception(f"Search failed: {result.get('detail', 'Unknown error')}")
-
-                product_ids = result.get("product_ids", [])
-                similarities = [(pid, 1.0) for pid in product_ids]  # Dummy score since no embeddings
-                logger.info(f"RAG search found product_ids: {product_ids}")
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse RAG response as JSON: {e}, content: {content}")
-            similarities = []
-        except Exception as e:
-            logger.error(f"Error during RAG search: {e}")
-            similarities = []
-
-        similarities.sort(key=lambda x: x[1], reverse=True)
-        logger.info(f"Sorted similarities: {similarities}")
-        rag_product_ids = [pid for pid, _ in similarities]  # Already limited
-        logger.info(f"Extracted rag_product_ids: {rag_product_ids}")
-
+        rag_product_ids = state.get("product_ids", [])
+        if not rag_product_ids:
+            logger.info("No product_ids provided, falling back to step1_product_ids")
+            rag_product_ids = state.get("step1_product_ids", [])[:state.get('limit', 10)]
+        else:
+            logger.info(f"Using provided product_ids: {rag_product_ids}")
         logger.info(f"Returning from step2_rag with step2_product_ids: {rag_product_ids}")
         return {"step2_product_ids": rag_product_ids}
 
@@ -1134,84 +1130,111 @@ def create_gifting_workflow():
         combined_ids = list(set(step1_ids + step2_ids))
         logger.info(f"Combined unique product ids: {combined_ids}")
 
-        # Count distinct wishlists
-        logger.info("Executing Cypher query for wishlist counts")
-        mcp = MCPToolset(ConnectionParams())
-        wishlist_count_query = f"""
-        UNWIND $product_ids AS pid
-        MATCH (w:Wishlist)-[:CONTAINS]->(p:Product {{productId: pid}})
-        WITH pid, COUNT(DISTINCT w) AS wishlist_count
-        RETURN pid, wishlist_count
-        ORDER BY wishlist_count DESC
-        LIMIT {state['limit']}
-        """
-        logger.info(f"Wishlist count query parameters: {{'product_ids': {combined_ids}}}")
-        wishlist_results = mcp.run_cypher_query(wishlist_count_query, {"product_ids": combined_ids})
-        logger.info(f"Raw wishlist results: {wishlist_results}")
-        wishlist_top = [r['pid'] for r in wishlist_results]
-        logger.info(f"wishlist_top: {wishlist_top}")
+        limit = state.get('limit', 10)
+        wishlist_top = []
+        purchase_top = []
 
-        # Count purchase quantity
-        logger.info("Executing Cypher query for purchase counts")
-        purchase_count_query = f"""
-        UNWIND $product_ids AS pid
-        MATCH (e:InteractionEvent {{eventType: 'purchase'}})-[:TARGETS]->(p:Product {{productId: pid}})
-        WITH pid, SUM(e.value) AS purchase_quantity
-        RETURN pid, purchase_quantity
-        ORDER BY purchase_quantity DESC
-        LIMIT {state['limit']}
-        """
-        logger.info(f"Purchase count query parameters: {{'product_ids': {combined_ids}}}")
-        purchase_results = mcp.run_cypher_query(purchase_count_query, {"product_ids": combined_ids})
-        logger.info(f"Raw purchase results: {purchase_results}")
-        purchase_top = [r['pid'] for r in purchase_results]
-        logger.info(f"purchase_top: {purchase_top}")
+        if combined_ids:
+            mcp = MCPToolset(ConnectionParams())
+            try:
+                # Count distinct wishlists
+                logger.info("Executing Cypher query for wishlist counts")
+                wishlist_count_query = f"""
+                UNWIND $product_ids AS pid
+                OPTIONAL MATCH (w:Wishlist)-[:CONTAINS]->(p:Product {{productId: pid}})
+                WITH pid, COUNT(DISTINCT w) AS wishlist_count
+                RETURN pid, wishlist_count
+                ORDER BY wishlist_count DESC
+                LIMIT {limit}
+                """
+                logger.info(f"Wishlist count query parameters: {{'product_ids': {combined_ids}}}")
+                wishlist_results = mcp.run_cypher_query(wishlist_count_query, {"product_ids": combined_ids})
+                logger.info(f"Raw wishlist results: {wishlist_results}")
+                wishlist_top = [r['pid'] for r in wishlist_results if r['wishlist_count'] > 0]
+                if not wishlist_top:
+                    logger.warning("No wishlist data found for provided product IDs, setting to empty")
+                logger.info(f"wishlist_top: {wishlist_top}")
 
-        mcp.close()
-        logger.info("Closed MCP connection after wishlist and purchase queries")
+                # Count purchase quantity
+                logger.info("Executing Cypher query for purchase counts")
+                purchase_count_query = f"""
+                UNWIND $product_ids AS pid
+                OPTIONAL MATCH (e:InteractionEvent {{eventType: 'purchase'}})-[:TARGETS]->(p:Product {{productId: pid}})
+                WITH pid, COALESCE(SUM(e.value), 0) AS purchase_quantity
+                RETURN pid, purchase_quantity
+                ORDER BY purchase_quantity DESC
+                LIMIT {limit}
+                """
+                logger.info(f"Purchase count query parameters: {{'product_ids': {combined_ids}}}")
+                purchase_results = mcp.run_cypher_query(purchase_count_query, {"product_ids": combined_ids})
+                logger.info(f"Raw purchase results: {purchase_results}")
+                purchase_top = [r['pid'] for r in purchase_results if r['purchase_quantity'] > 0]
+                if not purchase_top:
+                    logger.warning("No purchase data found for provided product IDs, setting to empty")
+                logger.info(f"purchase_top: {purchase_top}")
+            except Exception as e:
+                logger.error(f"Error in step3_combine_and_rank queries: {e}")
+                wishlist_top = []
+                purchase_top = []
+            finally:
+                mcp.close()
+                logger.info("Closed MCP connection after wishlist and purchase queries")
+        else:
+            logger.warning("No product IDs to process in step3_combine_and_rank")
 
+        logger.info(f"Current state before return in step3: {state}")
         logger.info(f"Returning from step3_combine_and_rank with distinct_combined_product_ids: {combined_ids}, wishlist_top: {wishlist_top}, purchase_top: {purchase_top}")
         return {"distinct_combined_product_ids": combined_ids, "wishlist_top": wishlist_top, "purchase_top": purchase_top}
 
     def step4_final_products(state: GiftingWorkflowState) -> Dict[str, Any]:
         logger.info(f"Entering step4_final_products with state: {state}")
-        combined_ids = state.get("distinct_combined_product_ids", [])[:state['limit'] * 2]  # Arbitrary expansion for details, but not used in response
+        limit = state.get('limit', 10)
+        combined_ids = state.get("distinct_combined_product_ids", [])[:limit * 2]
         logger.info(f"Limited combined_ids: {combined_ids}")
         wishlist_top = state.get("wishlist_top", [])
         purchase_top = state.get("purchase_top", [])
         logger.info(f"wishlist_top: {wishlist_top}, purchase_top: {purchase_top}")
 
-        logger.info("Executing Cypher query to fetch final products")
-        mcp = MCPToolset(ConnectionParams())
-        products_query = """
-        MATCH (p:Product)
-        WHERE p.productId IN $product_ids
-        RETURN p.productId AS id, p.name AS name, p.description AS description, p.price AS price
-        """
-        logger.info(f"Products query parameters: {{'product_ids': {combined_ids}}}")
-        results = mcp.run_cypher_query(products_query, {"product_ids": combined_ids})
-        logger.info(f"Raw results from products query: {results}")
-        mcp.close()
-        logger.info("Closed MCP connection after products query")
-
         final_products = []
-        for r in results:
-            product = {
-                "id": r["id"],
-                "name": r["name"],
-                "description": r["description"],
-                "price": r["price"],
-                "tags": []
-            }
-            if r["id"] in wishlist_top:
-                product["tags"].append("most_added_to_wishlist")
-                logger.info(f"Added 'most_added_to_wishlist' tag to product {r['id']}")
-            if r["id"] in purchase_top:
-                product["tags"].append("most_purchased")
-                logger.info(f"Added 'most_purchased' tag to product {r['id']}")
-            final_products.append(product)
-        logger.info(f"Constructed final_products: {final_products}")
+        if combined_ids:
+            logger.info("Executing Cypher query to fetch final products")
+            mcp = MCPToolset(ConnectionParams())
+            try:
+                products_query = """
+                MATCH (p:Product)
+                WHERE p.productId IN $product_ids
+                RETURN p.productId AS id, p.name AS name, p.description AS description, p.price AS price
+                """
+                logger.info(f"Products query parameters: {{'product_ids': {combined_ids}}}")
+                results = mcp.run_cypher_query(products_query, {"product_ids": combined_ids})
+                logger.info(f"Raw results from products query: {results}")
 
+                for r in results:
+                    product = {
+                        "id": r["id"],
+                        "name": r["name"],
+                        "description": r["description"],
+                        "price": r["price"],
+                        "tags": []
+                    }
+                    if r["id"] in wishlist_top:
+                        product["tags"].append("most_added_to_wishlist")
+                        logger.info(f"Added 'most_added_to_wishlist' tag to product {r['id']}")
+                    if r["id"] in purchase_top:
+                        product["tags"].append("most_purchased")
+                        logger.info(f"Added 'most_purchased' tag to product {r['id']}")
+                    final_products.append(product)
+            except Exception as e:
+                logger.error(f"Error fetching final products: {e}")
+                final_products = []
+            finally:
+                mcp.close()
+                logger.info("Closed MCP connection after products query")
+        else:
+            logger.warning("No product IDs to fetch in step4_final_products")
+
+        logger.info(f"Current state before return in step4: {state}")
+        logger.info(f"Constructed final_products: {final_products}")
         logger.info(f"Returning from step4_final_products with final_products: {final_products}")
         return {"final_products": final_products}
 
@@ -1325,7 +1348,8 @@ async def handle_query(query: SmartSearchRequest):
     workflow = create_gifting_workflow()
     state = {
         "query": query.query,
-        "limit": query.limit,
+        "limit": query.limit or 10,
+        "product_ids": query.product_ids or [],  # Assuming SmartSearchRequest has product_ids: List[int] = Field(default_factory=list)
         "step1_product_ids": [],
         "step2_product_ids": [],
         "distinct_combined_product_ids": [],
@@ -1335,23 +1359,37 @@ async def handle_query(query: SmartSearchRequest):
     }
     try:
         result = workflow.invoke(state)
+        limit = result.get("limit", 10)  # Use result since invoke returns final state
+        # Check for required keys in result
+        required_keys = ["step2_product_ids", "wishlist_top", "purchase_top", "final_products"]
+        missing_keys = [key for key in required_keys if key not in result]
+        if missing_keys:
+            logger.error(f"Missing keys in workflow result: {missing_keys}")
+            raise KeyError(f"Workflow result missing keys: {missing_keys}")
+        
         formatted_recommendations = [
             {
                 "label": "fit_description",
-                "product_ids": result["step2_product_ids"][:result["limit"]]
+                "product_ids": result["step2_product_ids"][:limit]
             },
             {
                 "label": "most_added_to_wishlist",
-                "product_ids": result["wishlist_top"][:result["limit"]]
+                "product_ids": result["wishlist_top"][:limit]
             },
             {
                 "label": "most_purchased",
-                "product_ids": result["purchase_top"][:result["limit"]]
+                "product_ids": result["purchase_top"][:limit]
             }
         ]
+        logger.info(f"Returning formatted recommendations: {formatted_recommendations}")
         return formatted_recommendations
     except Exception as e:
         logger.error(f"Error in gifting workflow: {str(e)}")
+        # Return final_products if available, otherwise empty list
+        final_products = result.get("final_products", [])  # Use result
+        if final_products:
+            logger.info("Returning final_products as fallback")
+            return [{"label": "fit_description", "product_ids": [p["id"] for p in final_products]}]
         return []
     
 # Root and health endpoints
