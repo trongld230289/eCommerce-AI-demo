@@ -741,16 +741,19 @@ class AIService:
             
             print(f"DEBUG find_gifts - search_query: {category}")
 
-   # Use the category for search
-            result = self.semantic_search(category, 5, self.USER_LANG_CODE, searchFromTool="find_gifts")
+            # Use the category for search
+            result = self.semantic_search(user_input, 10, self.USER_LANG_CODE, searchFromTool="find_gifts")
 
             # get product_ids form result
             product_ids = [product["id"] for product in result.get("products", [])]
             # Get external gift products with labels
             external_products = self._get_external_gift_products(user_input, product_ids)
 
-            # result = self.semantic_search(category, 10, self.USER_LANG_CODE, searchFromTool="find_products")
-
+            # if external_products is empty, return original result directly (already has full model)
+            if not external_products:
+                return json.dumps(result, ensure_ascii=False)
+            
+            # Only process further if we have external products
             composed_response = self.make_intro_sentence(user_input, external_products, self.USER_LANG_CODE, displayed_count=3, is_multi_category=False)
             # print(f"DEBUG: Composed response: {composed_response}")
 
