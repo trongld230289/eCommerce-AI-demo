@@ -35,10 +35,34 @@
         "altruismLevel": 0.6,
         "reciprocityExpectation": 0.3
     },
-    {"userId": "user1", "name": "Alice Smith", "email": "alice@example.com"},
-    {"userId": "user2", "name": "Bob Johnson", "email": "bob@example.com"},
-    {"userId": "user3", "name": "Clara Lee", "email": "clara@example.com"},
-    {"userId": "user4", "name": "David Kim", "email": "david@example.com"},
-    {"userId": "user5", "name": "Emma Brown", "email": "emma@example.com"},
-    {"userId": "user6", "name": "Frank Wilson", "email": "frank@example.com"}
+    {
+        "userId": "user1",
+        "name": "Alice Smith",
+        "email": "alice@example.com"
+    },
+    {
+        "userId": "user2",
+        "name": "Bob Johnson",
+        "email": "bob@example.com"
+    },
+    {
+        "userId": "user3",
+        "name": "Clara Lee",
+        "email": "clara@example.com"
+    },
+    {
+        "userId": "user4",
+        "name": "David Kim",
+        "email": "david@example.com"
+    },
+    {
+        "userId": "user5",
+        "name": "Emma Brown",
+        "email": "emma@example.com"
+    },
+    {
+        "userId": "user6",
+        "name": "Frank Wilson",
+        "email": "frank@example.com"
+    }
 ]

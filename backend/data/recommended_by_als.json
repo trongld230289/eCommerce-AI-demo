@@ -1,502 +1,702 @@
 [
-  {
-    "userId": "user1",
-    "productId": 1,
-    "score": 0.98
-  },
-  {
-    "userId": "user1",
-    "productId": 4,
-    "score": 0.83
-  },
-  {
-    "userId": "user1",
-    "productId": 5,
-    "score": 0.7
-  },
-  {
-    "userId": "user1",
-    "productId": 8,
-    "score": 0.92
-  },
-  {
-    "userId": "user1",
-    "productId": 9,
-    "score": 0.87
-  },
-  {
-    "userId": "user1",
-    "productId": 10,
-    "score": 0.75
-  },
-  {
-    "userId": "user1",
-    "productId": 12,
-    "score": 0.26
-  },
-  {
-    "userId": "user1",
-    "productId": 35,
-    "score": 0.55
-  },
-  {
-    "userId": "user1",
-    "productId": 44,
-    "score": 0.29
-  },
-  {
-    "userId": "user1",
-    "productId": 47,
-    "score": 0.5
-  },
-  {
-    "userId": "user10",
-    "productId": 15,
-    "score": 0.19
-  },
-  {
-    "userId": "user10",
-    "productId": 16,
-    "score": 0.27
-  },
-  {
-    "userId": "user10",
-    "productId": 18,
-    "score": 0.49
-  },
-  {
-    "userId": "user10",
-    "productId": 36,
-    "score": 0.13
-  },
-  {
-    "userId": "user10",
-    "productId": 41,
-    "score": 0.85
-  },
-  {
-    "userId": "user10",
-    "productId": 43,
-    "score": 0.84
-  },
-  {
-    "userId": "user10",
-    "productId": 46,
-    "score": 0.79
-  },
-  {
-    "userId": "user10",
-    "productId": 47,
-    "score": 0.88
-  },
-  {
-    "userId": "user10",
-    "productId": 48,
-    "score": 0.9
-  },
-  {
-    "userId": "user10",
-    "productId": 49,
-    "score": 0.8
-  },
-  {
-    "userId": "user2",
-    "productId": 1,
-    "score": 0.9
-  },
-  {
-    "userId": "user2",
-    "productId": 2,
-    "score": 0.96
-  },
-  {
-    "userId": "user2",
-    "productId": 3,
-    "score": 0.73
-  },
-  {
-    "userId": "user2",
-    "productId": 4,
-    "score": 0.98
-  },
-  {
-    "userId": "user2",
-    "productId": 7,
-    "score": 0.8
-  },
-  {
-    "userId": "user2",
-    "productId": 8,
-    "score": 0.89
-  },
-  {
-    "userId": "user2",
-    "productId": 17,
-    "score": 0.11
-  },
-  {
-    "userId": "user2",
-    "productId": 21,
-    "score": 0.13
-  },
-  {
-    "userId": "user2",
-    "productId": 32,
-    "score": 0.4
-  },
-  {
-    "userId": "user2",
-    "productId": 45,
-    "score": 0.58
-  },
-  {
-    "userId": "user3",
-    "productId": 5,
-    "score": 0.31
-  },
-  {
-    "userId": "user3",
-    "productId": 11,
-    "score": 0.86
-  },
-  {
-    "userId": "user3",
-    "productId": 12,
-    "score": 0.96
-  },
-  {
-    "userId": "user3",
-    "productId": 13,
-    "score": 0.76
-  },
-  {
-    "userId": "user3",
-    "productId": 15,
-    "score": 0.9
-  },
-  {
-    "userId": "user3",
-    "productId": 16,
-    "score": 0.91
-  },
-  {
-    "userId": "user3",
-    "productId": 20,
-    "score": 0.99
-  },
-  {
-    "userId": "user3",
-    "productId": 35,
-    "score": 0.31
-  },
-  {
-    "userId": "user3",
-    "productId": 43,
-    "score": 0.24
-  },
-  {
-    "userId": "user3",
-    "productId": 47,
-    "score": 0.17
-  },
-  {
-    "userId": "user4",
-    "productId": 14,
-    "score": 0.89
-  },
-  {
-    "userId": "user4",
-    "productId": 15,
-    "score": 0.76
-  },
-  {
-    "userId": "user4",
-    "productId": 16,
-    "score": 0.9
-  },
-  {
-    "userId": "user4",
-    "productId": 17,
-    "score": 0.78
-  },
-  {
-    "userId": "user4",
-    "productId": 18,
-    "score": 0.87
-  },
-  {
-    "userId": "user4",
-    "productId": 19,
-    "score": 0.82
-  },
-  {
-    "userId": "user4",
-    "productId": 22,
-    "score": 0.42
-  },
-  {
-    "userId": "user4",
-    "productId": 34,
-    "score": 0.21
-  },
-  {
-    "userId": "user4",
-    "productId": 40,
-    "score": 0.18
-  },
-  {
-    "userId": "user4",
-    "productId": 42,
-    "score": 0.56
-  },
-  {
-    "userId": "user5",
-    "productId": 9,
-    "score": 0.16
-  },
-  {
-    "userId": "user5",
-    "productId": 16,
-    "score": 0.57
-  },
-  {
-    "userId": "user5",
-    "productId": 22,
-    "score": 0.98
-  },
-  {
-    "userId": "user5",
-    "productId": 24,
-    "score": 0.98
-  },
-  {
-    "userId": "user5",
-    "productId": 26,
-    "score": 0.98
-  },
-  {
-    "userId": "user5",
-    "productId": 27,
-    "score": 0.92
-  },
-  {
-    "userId": "user5",
-    "productId": 29,
-    "score": 0.74
-  },
-  {
-    "userId": "user5",
-    "productId": 30,
-    "score": 0.81
-  },
-  {
-    "userId": "user5",
-    "productId": 48,
-    "score": 0.4
-  },
-  {
-    "userId": "user5",
-    "productId": 49,
-    "score": 0.38
-  },
-  {
-    "userId": "user6",
-    "productId": 10,
-    "score": 0.13
-  },
-  {
-    "userId": "user6",
-    "productId": 21,
-    "score": 0.86
-  },
-  {
-    "userId": "user6",
-    "productId": 22,
-    "score": 0.71
-  },
-  {
-    "userId": "user6",
-    "productId": 23,
-    "score": 0.75
-  },
-  {
-    "userId": "user6",
-    "productId": 24,
-    "score": 0.72
-  },
-  {
-    "userId": "user6",
-    "productId": 26,
-    "score": 0.72
-  },
-  {
-    "userId": "user6",
-    "productId": 27,
-    "score": 0.72
-  },
-  {
-    "userId": "user6",
-    "productId": 32,
-    "score": 0.25
-  },
-  {
-    "userId": "user6",
-    "productId": 47,
-    "score": 0.25
-  },
-  {
-    "userId": "user6",
-    "productId": 50,
-    "score": 0.28
-  },
-  {
-    "userId": "user7",
-    "productId": 4,
-    "score": 0.13
-  },
-  {
-    "userId": "user7",
-    "productId": 22,
-    "score": 0.22
-  },
-  {
-    "userId": "user7",
-    "productId": 23,
-    "score": 0.56
-  },
-  {
-    "userId": "user7",
-    "productId": 31,
-    "score": 0.97
-  },
-  {
-    "userId": "user7",
-    "productId": 32,
-    "score": 0.86
-  },
-  {
-    "userId": "user7",
-    "productId": 35,
-    "score": 0.78
-  },
-  {
-    "userId": "user7",
-    "productId": 37,
-    "score": 0.87
-  },
-  {
-    "userId": "user7",
-    "productId": 38,
-    "score": 0.83
-  },
-  {
-    "userId": "user7",
-    "productId": 39,
-    "score": 0.72
-  },
-  {
-    "userId": "user7",
-    "productId": 42,
-    "score": 0.12
-  },
-  {
-    "userId": "user8",
-    "productId": 2,
-    "score": 0.25
-  },
-  {
-    "userId": "user8",
-    "productId": 22,
-    "score": 0.42
-  },
-  {
-    "userId": "user8",
-    "productId": 23,
-    "score": 0.2
-  },
-  {
-    "userId": "user8",
-    "productId": 31,
-    "score": 0.99
-  },
-  {
-    "userId": "user8",
-    "productId": 33,
-    "score": 0.71
-  },
-  {
-    "userId": "user8",
-    "productId": 34,
-    "score": 0.73
-  },
-  {
-    "userId": "user8",
-    "productId": 36,
-    "score": 0.9
-  },
-  {
-    "userId": "user8",
-    "productId": 39,
-    "score": 0.8
-  },
-  {
-    "userId": "user8",
-    "productId": 40,
-    "score": 0.8
-  },
-  {
-    "userId": "user8",
-    "productId": 42,
-    "score": 0.24
-  },
-  {
-    "userId": "user9",
-    "productId": 8,
-    "score": 0.6
-  },
-  {
-    "userId": "user9",
-    "productId": 9,
-    "score": 0.47
-  },
-  {
-    "userId": "user9",
-    "productId": 18,
-    "score": 0.48
-  },
-  {
-    "userId": "user9",
-    "productId": 30,
-    "score": 0.18
-  },
-  {
-    "userId": "user9",
-    "productId": 41,
-    "score": 0.84
-  },
-  {
-    "userId": "user9",
-    "productId": 42,
-    "score": 0.95
-  },
-  {
-    "userId": "user9",
-    "productId": 43,
-    "score": 0.99
-  },
-  {
-    "userId": "user9",
-    "productId": 47,
-    "score": 0.74
-  },
-  {
-    "userId": "user9",
-    "productId": 49,
-    "score": 0.91
-  },
-  {
-    "userId": "user9",
-    "productId": 50,
-    "score": 0.86
-  }
+    {
+        "userId": "user1",
+        "productId": 1,
+        "score": 0.98
+    },
+    {
+        "userId": "user1",
+        "productId": 4,
+        "score": 0.83
+    },
+    {
+        "userId": "user1",
+        "productId": 5,
+        "score": 0.7
+    },
+    {
+        "userId": "user1",
+        "productId": 8,
+        "score": 0.92
+    },
+    {
+        "userId": "user1",
+        "productId": 9,
+        "score": 0.87
+    },
+    {
+        "userId": "user1",
+        "productId": 10,
+        "score": 0.75
+    },
+    {
+        "userId": "user1",
+        "productId": 12,
+        "score": 0.26
+    },
+    {
+        "userId": "user1",
+        "productId": 35,
+        "score": 0.55
+    },
+    {
+        "userId": "user1",
+        "productId": 44,
+        "score": 0.29
+    },
+    {
+        "userId": "user1",
+        "productId": 47,
+        "score": 0.5
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 1,
+        "score": 0.98
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 4,
+        "score": 0.83
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 5,
+        "score": 0.7
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 8,
+        "score": 0.92
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 9,
+        "score": 0.87
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 10,
+        "score": 0.75
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 12,
+        "score": 0.26
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 35,
+        "score": 0.55
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 44,
+        "score": 0.29
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "productId": 47,
+        "score": 0.5
+    },
+    {
+        "userId": "user10",
+        "productId": 15,
+        "score": 0.19
+    },
+    {
+        "userId": "user10",
+        "productId": 16,
+        "score": 0.27
+    },
+    {
+        "userId": "user10",
+        "productId": 18,
+        "score": 0.49
+    },
+    {
+        "userId": "user10",
+        "productId": 36,
+        "score": 0.13
+    },
+    {
+        "userId": "user10",
+        "productId": 41,
+        "score": 0.85
+    },
+    {
+        "userId": "user10",
+        "productId": 43,
+        "score": 0.84
+    },
+    {
+        "userId": "user10",
+        "productId": 46,
+        "score": 0.79
+    },
+    {
+        "userId": "user10",
+        "productId": 47,
+        "score": 0.88
+    },
+    {
+        "userId": "user10",
+        "productId": 48,
+        "score": 0.9
+    },
+    {
+        "userId": "user10",
+        "productId": 49,
+        "score": 0.8
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 15,
+        "score": 0.19
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 16,
+        "score": 0.27
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 18,
+        "score": 0.49
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 36,
+        "score": 0.13
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 41,
+        "score": 0.85
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 43,
+        "score": 0.84
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 46,
+        "score": 0.79
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 47,
+        "score": 0.88
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 48,
+        "score": 0.9
+    },
+    {
+        "userId": "ZlRC5hGYvcSpW3Pd3No7pTmaEJk2",
+        "productId": 49,
+        "score": 0.8
+    },
+    {
+        "userId": "user2",
+        "productId": 1,
+        "score": 0.9
+    },
+    {
+        "userId": "user2",
+        "productId": 2,
+        "score": 0.96
+    },
+    {
+        "userId": "user2",
+        "productId": 3,
+        "score": 0.73
+    },
+    {
+        "userId": "user2",
+        "productId": 4,
+        "score": 0.98
+    },
+    {
+        "userId": "user2",
+        "productId": 7,
+        "score": 0.8
+    },
+    {
+        "userId": "user2",
+        "productId": 8,
+        "score": 0.89
+    },
+    {
+        "userId": "user2",
+        "productId": 17,
+        "score": 0.11
+    },
+    {
+        "userId": "user2",
+        "productId": 21,
+        "score": 0.13
+    },
+    {
+        "userId": "user2",
+        "productId": 32,
+        "score": 0.4
+    },
+    {
+        "userId": "user2",
+        "productId": 45,
+        "score": 0.58
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 1,
+        "score": 0.9
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 2,
+        "score": 0.96
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 3,
+        "score": 0.73
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 4,
+        "score": 0.98
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 7,
+        "score": 0.8
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 8,
+        "score": 0.89
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 17,
+        "score": 0.11
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 21,
+        "score": 0.13
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 32,
+        "score": 0.4
+    },
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "productId": 45,
+        "score": 0.58
+    },
+    {
+        "userId": "user3",
+        "productId": 5,
+        "score": 0.31
+    },
+    {
+        "userId": "user3",
+        "productId": 11,
+        "score": 0.86
+    },
+    {
+        "userId": "user3",
+        "productId": 12,
+        "score": 0.96
+    },
+    {
+        "userId": "user3",
+        "productId": 13,
+        "score": 0.76
+    },
+    {
+        "userId": "user3",
+        "productId": 15,
+        "score": 0.9
+    },
+    {
+        "userId": "user3",
+        "productId": 16,
+        "score": 0.91
+    },
+    {
+        "userId": "user3",
+        "productId": 20,
+        "score": 0.99
+    },
+    {
+        "userId": "user3",
+        "productId": 35,
+        "score": 0.31
+    },
+    {
+        "userId": "user3",
+        "productId": 43,
+        "score": 0.24
+    },
+    {
+        "userId": "user3",
+        "productId": 47,
+        "score": 0.17
+    },
+    {
+        "userId": "user4",
+        "productId": 14,
+        "score": 0.89
+    },
+    {
+        "userId": "user4",
+        "productId": 15,
+        "score": 0.76
+    },
+    {
+        "userId": "user4",
+        "productId": 16,
+        "score": 0.9
+    },
+    {
+        "userId": "user4",
+        "productId": 17,
+        "score": 0.78
+    },
+    {
+        "userId": "user4",
+        "productId": 18,
+        "score": 0.87
+    },
+    {
+        "userId": "user4",
+        "productId": 19,
+        "score": 0.82
+    },
+    {
+        "userId": "user4",
+        "productId": 22,
+        "score": 0.42
+    },
+    {
+        "userId": "user4",
+        "productId": 34,
+        "score": 0.21
+    },
+    {
+        "userId": "user4",
+        "productId": 40,
+        "score": 0.18
+    },
+    {
+        "userId": "user4",
+        "productId": 42,
+        "score": 0.56
+    },
+    {
+        "userId": "user5",
+        "productId": 9,
+        "score": 0.16
+    },
+    {
+        "userId": "user5",
+        "productId": 16,
+        "score": 0.57
+    },
+    {
+        "userId": "user5",
+        "productId": 22,
+        "score": 0.98
+    },
+    {
+        "userId": "user5",
+        "productId": 24,
+        "score": 0.98
+    },
+    {
+        "userId": "user5",
+        "productId": 26,
+        "score": 0.98
+    },
+    {
+        "userId": "user5",
+        "productId": 27,
+        "score": 0.92
+    },
+    {
+        "userId": "user5",
+        "productId": 29,
+        "score": 0.74
+    },
+    {
+        "userId": "user5",
+        "productId": 30,
+        "score": 0.81
+    },
+    {
+        "userId": "user5",
+        "productId": 48,
+        "score": 0.4
+    },
+    {
+        "userId": "user5",
+        "productId": 49,
+        "score": 0.38
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 9,
+        "score": 0.16
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 16,
+        "score": 0.57
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 22,
+        "score": 0.98
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 24,
+        "score": 0.98
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 26,
+        "score": 0.98
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 27,
+        "score": 0.92
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 29,
+        "score": 0.74
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 30,
+        "score": 0.81
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 48,
+        "score": 0.4
+    },
+    {
+        "userId": "G5G7J0kdi1hrHtRx4xynLCXxtad2",
+        "productId": 49,
+        "score": 0.38
+    },
+    {
+        "userId": "user6",
+        "productId": 10,
+        "score": 0.13
+    },
+    {
+        "userId": "user6",
+        "productId": 21,
+        "score": 0.86
+    },
+    {
+        "userId": "user6",
+        "productId": 22,
+        "score": 0.71
+    },
+    {
+        "userId": "user6",
+        "productId": 23,
+        "score": 0.75
+    },
+    {
+        "userId": "user6",
+        "productId": 24,
+        "score": 0.72
+    },
+    {
+        "userId": "user6",
+        "productId": 26,
+        "score": 0.72
+    },
+    {
+        "userId": "user6",
+        "productId": 27,
+        "score": 0.72
+    },
+    {
+        "userId": "user6",
+        "productId": 32,
+        "score": 0.25
+    },
+    {
+        "userId": "user6",
+        "productId": 47,
+        "score": 0.25
+    },
+    {
+        "userId": "user6",
+        "productId": 50,
+        "score": 0.28
+    },
+    {
+        "userId": "user7",
+        "productId": 4,
+        "score": 0.13
+    },
+    {
+        "userId": "user7",
+        "productId": 22,
+        "score": 0.22
+    },
+    {
+        "userId": "user7",
+        "productId": 23,
+        "score": 0.56
+    },
+    {
+        "userId": "user7",
+        "productId": 31,
+        "score": 0.97
+    },
+    {
+        "userId": "user7",
+        "productId": 32,
+        "score": 0.86
+    },
+    {
+        "userId": "user7",
+        "productId": 35,
+        "score": 0.78
+    },
+    {
+        "userId": "user7",
+        "productId": 37,
+        "score": 0.87
+    },
+    {
+        "userId": "user7",
+        "productId": 38,
+        "score": 0.83
+    },
+    {
+        "userId": "user7",
+        "productId": 39,
+        "score": 0.72
+    },
+    {
+        "userId": "user7",
+        "productId": 42,
+        "score": 0.12
+    },
+    {
+        "userId": "user8",
+        "productId": 2,
+        "score": 0.25
+    },
+    {
+        "userId": "user8",
+        "productId": 22,
+        "score": 0.42
+    },
+    {
+        "userId": "user8",
+        "productId": 23,
+        "score": 0.2
+    },
+    {
+        "userId": "user8",
+        "productId": 31,
+        "score": 0.99
+    },
+    {
+        "userId": "user8",
+        "productId": 33,
+        "score": 0.71
+    },
+    {
+        "userId": "user8",
+        "productId": 34,
+        "score": 0.73
+    },
+    {
+        "userId": "user8",
+        "productId": 36,
+        "score": 0.9
+    },
+    {
+        "userId": "user8",
+        "productId": 39,
+        "score": 0.8
+    },
+    {
+        "userId": "user8",
+        "productId": 40,
+        "score": 0.8
+    },
+    {
+        "userId": "user8",
+        "productId": 42,
+        "score": 0.24
+    },
+    {
+        "userId": "user9",
+        "productId": 8,
+        "score": 0.6
+    },
+    {
+        "userId": "user9",
+        "productId": 9,
+        "score": 0.47
+    },
+    {
+        "userId": "user9",
+        "productId": 18,
+        "score": 0.48
+    },
+    {
+        "userId": "user9",
+        "productId": 30,
+        "score": 0.18
+    },
+    {
+        "userId": "user9",
+        "productId": 41,
+        "score": 0.84
+    },
+    {
+        "userId": "user9",
+        "productId": 42,
+        "score": 0.95
+    },
+    {
+        "userId": "user9",
+        "productId": 43,
+        "score": 0.99
+    },
+    {
+        "userId": "user9",
+        "productId": 47,
+        "score": 0.74
+    },
+    {
+        "userId": "user9",
+        "productId": 49,
+        "score": 0.91
+    },
+    {
+        "userId": "user9",
+        "productId": 50,
+        "score": 0.86
+    }
 ]

@@ -4,7 +4,12 @@
         "userId": "user1",
         "name": "user1's Wishlist",
         "note": "Premium smartphones",
-        "preferredRelationshipTypes": ["family", "friends", "romantic", "colleagues"],
+        "preferredRelationshipTypes": [
+            "family",
+            "friends",
+            "romantic",
+            "colleagues"
+        ],
         "isHedonic": true,
         "isAltruistic": false,
         "expectsReciprocity": false,
@@ -18,7 +23,11 @@
         "userId": "user2",
         "name": "user2's Wishlist",
         "note": "Gaming laptops",
-        "preferredRelationshipTypes": ["friends", "family", "romantic"],
+        "preferredRelationshipTypes": [
+            "friends",
+            "family",
+            "romantic"
+        ],
         "isHedonic": true,
         "isAltruistic": false,
         "expectsReciprocity": false,
@@ -32,7 +41,10 @@
         "userId": "user10",
         "name": "user10's Wishlist",
         "note": "Gaming items",
-        "preferredRelationshipTypes": ["friends", "family"],
+        "preferredRelationshipTypes": [
+            "friends",
+            "family"
+        ],
         "isHedonic": true,
         "isAltruistic": false,
         "expectsReciprocity": false,
@@ -46,7 +58,10 @@
         "userId": "user5",
         "name": "user5's Wishlist",
         "note": "Family camping gear",
-        "preferredRelationshipTypes": ["family", "friends"],
+        "preferredRelationshipTypes": [
+            "family",
+            "friends"
+        ],
         "isHedonic": false,
         "isAltruistic": true,
         "expectsReciprocity": false,
