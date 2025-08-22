@@ -744,37 +744,34 @@ def create_workflow():
         logger.info(f"Validating results for query: {state['query']}, state: {state}")
         if not state.get("product_ids", []):
             logger.info("No product_ids found, attempting RAG search")
-            if llm:
-                try:
-                    rag_result = llm.invoke(f"Perform RAG search for query: {state['query']} and return a JSON object wrapped in ```json\n...\n``` with a 'product_ids' key containing a list of product IDs.")
-                    raw_content = rag_result.content
-                    logger.info(f"Raw RAG response: {raw_content}")
-                    
-                    # Strip markdown code block markers if present
-                    content = raw_content.strip()
-                    if content.startswith("```json\n") and content.endswith("\n```"):
-                        content = content[8:-4].strip()
-                    elif content.startswith("```") and content.endswith("```"):
-                        content = content[3:-3].strip()
-                    
-                    # Check if content is empty
-                    if not content:
-                        logger.error("RAG response is empty after stripping")
-                        return {"product_ids": []}
-                    
-                    # Attempt to parse JSON
-                    result = json.loads(content)
-                    product_ids = result.get("product_ids", [])
-                    logger.info(f"RAG search found product_ids: {product_ids}")
-                    return {"product_ids": product_ids}
-                except json.JSONDecodeError as e:
-                    logger.error(f"Failed to parse RAG response as JSON: {e}, content: {content}")
+            try:
+                import httpx
+                import json
+                from urllib.parse import quote
+
+                query = quote(state['query'])
+                url = f"http://localhost:8000/middleware/search?q={query}&limit=10"
+                response = httpx.get(url)
+                response.raise_for_status()
+
+                content = response.text.strip()
+                if not content:
+                    logger.error("RAG response is empty")
                     return {"product_ids": []}
-                except Exception as e:
-                    logger.error(f"Error during RAG search: {e}")
-                    return {"product_ids": []}
-            logger.warning("LLM not available for RAG search")
-            return {"product_ids": []}
+
+                result = json.loads(content)
+                if result.get("status") != "success":
+                    raise Exception(f"Search failed: {result.get('detail', 'Unknown error')}")
+
+                product_ids = result.get("product_ids", [])
+                logger.info(f"RAG search found product_ids: {product_ids}")
+                return {"product_ids": product_ids}
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse RAG response as JSON: {e}, content: {content}")
+                return {"product_ids": []}
+            except Exception as e:
+                logger.error(f"Error during RAG search: {e}")
+                return {"product_ids": []}
         logger.info("Results validated, using existing product_ids")
         return {"product_ids": state.get("product_ids", [])}
 
@@ -1090,29 +1087,36 @@ def create_gifting_workflow():
         refined_query = response.content.strip()
         logger.info(f"Refined query from LLM: {refined_query}")
 
-        # Perform RAG (implemented as keyword search in product descriptions via Cypher)
-        mcp = MCPToolset(ConnectionParams())
+        # Perform RAG using curl to the endpoint
         try:
-            keywords = [word.lower() for word in refined_query.split() if len(word) > 2]  # Filter short words
-            if keywords:
-                where_clauses = [f"toLower(p.description) CONTAINS '{word}'" for word in keywords]
-                where = " OR ".join(where_clauses)
+            import subprocess
+            import json
+            from urllib.parse import quote
+
+            query_quoted = quote(refined_query)
+            url = f"http://localhost:8000/middleware/search?q={query_quoted}&limit={state['limit']}"
+            response = subprocess.run(['curl', '-s', url], capture_output=True, text=True)
+            if response.returncode != 0:
+                raise Exception(f"Curl failed with code {response.returncode}: {response.stderr}")
+
+            content = response.stdout.strip()
+            if not content:
+                logger.error("RAG response is empty")
+                similarities = []
             else:
-                where = "true"
-            query = f"""
-            MATCH (p:Product)
-            WHERE {where}
-            RETURN p.productId AS pid, 1.0 AS score  # Dummy score since no embeddings
-            ORDER BY score DESC, p.productId  # Sort by dummy score then ID
-            LIMIT {state['limit']}
-            """
-            logger.info(f"RAG Cypher query: {query}")
-            results = mcp.run_cypher_query(query)
-            logger.info(f"Raw RAG results: {results}")
-            similarities = [(r['pid'], r['score']) for r in results]
-        finally:
-            mcp.close()
-            logger.info("Closed MCP connection after RAG query")
+                result = json.loads(content)
+                if result.get("status") != "success":
+                    raise Exception(f"Search failed: {result.get('detail', 'Unknown error')}")
+
+                product_ids = result.get("product_ids", [])
+                similarities = [(pid, 1.0) for pid in product_ids]  # Dummy score since no embeddings
+                logger.info(f"RAG search found product_ids: {product_ids}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse RAG response as JSON: {e}, content: {content}")
+            similarities = []
+        except Exception as e:
+            logger.error(f"Error during RAG search: {e}")
+            similarities = []
 
         similarities.sort(key=lambda x: x[1], reverse=True)
         logger.info(f"Sorted similarities: {similarities}")
