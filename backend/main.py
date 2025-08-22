@@ -208,7 +208,7 @@ class RecommendationRequest(BaseModel):
     context: Optional[str] = None  # "homepage", "product_detail", "cart", etc.
 
 class AlgoRecommendationRequest(BaseModel):
-    product_ids: List[int]
+    product_ids: Optional[List[int]]
     user_id: Optional[str] = None
 
 class RecommendationResponse(BaseModel):

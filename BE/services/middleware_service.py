@@ -110,7 +110,7 @@ class MiddlewareService:
         
         url = "http://localhost:8003/get-recommendations"
         payload = {
-            "product_ids": product_ids,
+            "product_ids": product_ids or [],
             "user_id": user_id
         }
         
