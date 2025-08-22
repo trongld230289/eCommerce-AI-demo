@@ -666,5 +666,98 @@ async def get_user_events(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching user events: {str(e)}")
 
+# ===== PRODUCT RELATIONSHIP ENDPOINTS =====
+
+@app.post("/api/products/relationships/suggestions")
+async def get_product_suggestions(request: dict):
+    """Get product suggestions based on user query and purchased items"""
+    try:
+        from services.product_relationship_service import ProductRelationshipService
+        
+        user_query = request.get("query", "")
+        purchased_items = request.get("purchased_items", [])
+        
+        if not user_query:
+            raise HTTPException(status_code=400, detail="Query is required")
+        
+        # Initialize relationship service
+        relationship_service = ProductRelationshipService()
+        
+        # Get suggestions
+        suggestions = relationship_service.get_smart_suggestions(user_query, purchased_items)
+        
+        # Close connection
+        relationship_service.close()
+        
+        return {
+            "status": "success",
+            "query": user_query,
+            "purchased_items": purchased_items,
+            "suggestions": suggestions,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except ImportError:
+        return {
+            "status": "error",
+            "message": "Product relationship service not available. Please check Neo4j configuration."
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting product suggestions: {str(e)}")
+
+@app.post("/api/products/relationships/initialize")
+async def initialize_relationships():
+    """Initialize product relationships in Neo4j"""
+    try:
+        from services.product_relationship_service import initialize_product_relationships
+        
+        success = initialize_product_relationships()
+        
+        if success:
+            return {
+                "status": "success",
+                "message": "Product relationships initialized successfully"
+            }
+        else:
+            return {
+                "status": "error",
+                "message": "Failed to initialize product relationships"
+            }
+    except ImportError:
+        return {
+            "status": "error",
+            "message": "Product relationship service not available. Please install neo4j driver: pip install neo4j"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error initializing relationships: {str(e)}")
+
+@app.get("/api/products/relationships/context/{context}")
+async def get_context_products(context: str):
+    """Get core products for a specific context (camping, livestream, etc.)"""
+    try:
+        from services.product_relationship_service import ProductRelationshipService
+        
+        relationship_service = ProductRelationshipService()
+        
+        # Get context-based suggestions
+        suggestions = relationship_service.get_complementary_products([], context)
+        
+        relationship_service.close()
+        
+        return {
+            "status": "success",
+            "context": context,
+            "suggestions": suggestions,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except ImportError:
+        return {
+            "status": "error", 
+            "message": "Product relationship service not available"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting context products: {str(e)}")
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
