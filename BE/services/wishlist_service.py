@@ -115,10 +115,10 @@ class WishlistService:
                     "user_id": wishlist_dict["user_id"],
                     "note": None,  # Assuming note is not provided in WishlistCreate
                 }
-            response = client.post("http://localhost:8003/api/wishlist", json=neo_data)
-            if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"Failed to sync create with external service: {response.text}")
-            
+                response = client.post("http://localhost:8003/api/wishlist", json=neo_data)
+                if response.status_code != 200:
+                    raise HTTPException(status_code=500, detail=f"Failed to sync create with external service: {response.text}")
+            # ...existing code...
             return Wishlist(**wishlist_dict)
             
         except Exception as e:
