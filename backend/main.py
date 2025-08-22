@@ -2389,7 +2389,7 @@ async def track_user_event(event: UserEventCreate):
             "user_id": event.user_id,
             "product_id": int(event.product_id),  # Convert to int for Neo4j
             "event_id": str(uuid.uuid4()),
-            "event_type": event.event_type,  # Assuming event_type is a string, not an Enum with .value
+            "event_type": event.event_type.value,  # Use .value to get the string from Enum
             "timestamp": datetime.now().timestamp() * 1000,
             "value": event.metadata.get("quantity", 1) if event.metadata else 1,
             "expires_at": datetime.now().timestamp() * 1000 + 30 * 24 * 60 * 60 * 1000,
@@ -2409,6 +2409,7 @@ async def track_user_event(event: UserEventCreate):
         SET u.hedonicBias = hedonicRatio,
             u.surprisePreference = surpriseRatio,
             u.altruismLevel = altruismRatio
+        WITH u
         MATCH (u)-[:INTERACTED_WITH]->(e2:InteractionEvent {eventType: 'reciprocity_response'})
         WHERE e2.timestamp > $timestamp_threshold
         WITH u, COUNT(e2) AS reciprocityCount
@@ -2430,6 +2431,7 @@ async def track_user_event(event: UserEventCreate):
         WHERE recentCount > 10
         SET p.giftingUtilitarianScore = CASE WHEN avgUtilityRating IS NOT NULL THEN avgUtilityRating / 5 ELSE p.giftingUtilitarianScore END,
             p.giftingNoveltyScore = CASE WHEN avgNoveltyRating IS NOT NULL THEN avgNoveltyRating / 5 ELSE p.giftingNoveltyScore END
+        WITH p
         MATCH (p)<-[:TARGETS]-(e2:InteractionEvent {eventType: 'purchase'})<-[:INTERACTED_WITH]-(u:User)-[r:HAS_RELATIONSHIP]->(u2:User)
         WHERE e2.timestamp > $timestamp_threshold
         WITH p, COLLECT(DISTINCT r.type) AS relTypes
