@@ -227,7 +227,11 @@ class GiftingRecommendationResponse(BaseModel):
     products: List[Dict[str, Any]]
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, 
+                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                   handlers=[
+                       logging.StreamHandler()
+                   ])
 logger = logging.getLogger(__name__)
 
 # FastAPI app
@@ -1224,6 +1228,7 @@ def create_gifting_workflow():
 @app.post("/register-user")
 async def register_user(user: Neo4jUser):
     logger.info(f"Registering user in Neo4j: {user.userId}, {user.name}, {user.email}")
+    print(f"DEBUG: Register user API called for: {user.userId}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     
     try:
@@ -1277,6 +1282,7 @@ async def register_user(user: Neo4jUser):
 @app.post("/query")
 async def handle_query(query: SmartSearchRequest):
     logger.info(f"Received query: {query.query}")
+    print(f"DEBUG: Query API called with: {query.query}", flush=True)
     workflow = create_workflow()
     state = {
         "query": query.query,
@@ -1310,8 +1316,8 @@ async def handle_query(query: SmartSearchRequest):
 
 @app.post("/gift")
 async def handle_query(query: SmartSearchRequest):
-    logger.info(f"Received query: {query.query}")
-    
+    logger.info(f"Received gift query: {query.query}")
+    print(f"DEBUG: Gift API called with query: {query.query}", flush=True)
     workflow = create_gifting_workflow()
     state = {
         "query": query.query,
@@ -1347,15 +1353,18 @@ async def handle_query(query: SmartSearchRequest):
 # Root and health endpoints
 @app.get("/")
 async def root():
+    print("DEBUG: Root endpoint called", flush=True)
     return {"message": "eCommerce Backend API", "version": "1.0.0"}
 
 @app.get("/health")
 async def health_check():
+    print("DEBUG: Health check endpoint called", flush=True)
     return {"status": "healthy", "message": "API is running"}
 
 # Product endpoints
 @app.get("/products", response_model=List[Product])
 async def get_products(skip: int = Query(0, ge=0), limit: int = Query(10, ge=1, le=100)):
+    print(f"DEBUG: Get products called - skip: {skip}, limit: {limit}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         query = """
@@ -1394,6 +1403,7 @@ async def get_products(skip: int = Query(0, ge=0), limit: int = Query(10, ge=1, 
 
 @app.get("/products/{product_id}", response_model=Product)
 async def get_product(product_id: int):
+    print(f"DEBUG: Get product called for ID: {product_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         query = """
@@ -1438,6 +1448,7 @@ async def search_products(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100)
 ):
+    print(f"DEBUG: Search products called - category: {category}, keywords: {keywords}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         query = """
@@ -1495,6 +1506,7 @@ async def search_products(
 # Wishlist endpoints
 @app.get("/api/wishlist", response_model=List[Wishlist])
 async def get_wishlist(user_id: str = Query(...)):
+    print(f"DEBUG: Get wishlist called for user: {user_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         query = """
@@ -1626,6 +1638,7 @@ async def get_wishlist(user_id: str = Query(...)):
 
 @app.post("/api/wishlist", response_model=Wishlist)
 async def create_wishlist(wishlist_data: WishlistCreate):
+    print(f"DEBUG: Create wishlist called for user: {wishlist_data.user_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         # Check if wishlist with same name exists for the user
@@ -1695,6 +1708,7 @@ async def create_wishlist(wishlist_data: WishlistCreate):
 
 @app.put("/api/wishlist/{wishlist_id}", response_model=Wishlist)
 async def update_wishlist(wishlist_id: str, update_data: WishlistUpdate, user_id: str = Query(...)):
+    print(f"DEBUG: Update wishlist called - ID: {wishlist_id}, user: {user_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         # Check if wishlist exists and belongs to user
@@ -1756,6 +1770,7 @@ async def update_wishlist(wishlist_id: str, update_data: WishlistUpdate, user_id
 
 @app.get("/api/wishlist/{wishlist_id}", response_model=Wishlist)
 async def get_wishlist_by_id(wishlist_id: str, user_id: str = Query(...)):
+    print(f"DEBUG: Get wishlist by ID called - ID: {wishlist_id}, user: {user_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         query = """
@@ -1806,6 +1821,7 @@ async def get_wishlist_by_id(wishlist_id: str, user_id: str = Query(...)):
 
 @app.post("/api/wishlist/{wishlist_id}/products", response_model=Wishlist)
 async def add_product_to_wishlist(wishlist_id: str, product_data: WishlistAddProduct, user_id: str = Query(...)):
+    print(f"DEBUG: Add product to wishlist called - wishlist: {wishlist_id}, product: {product_data.product_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         timestamp = datetime.now().timestamp() * 1000
@@ -1956,142 +1972,9 @@ async def add_product_to_wishlist(wishlist_id: str, product_data: WishlistAddPro
     finally:
         mcp.close()
 
-@app.delete("/api/wishlist/{wishlist_id}/products/{product_id}", response_model=Wishlist)
-async def remove_product_from_wishlist(wishlist_id: str, product_id: int, user_id: str = Query(...)):
-    mcp = MCPToolset(ConnectionParams())
-    try:
-        timestamp = datetime.now().timestamp() * 1000
-        query = """
-        MATCH (u:User {userId: $user_id})-[:OWNS_WISHLIST]->(w:Wishlist {wishlistId: $wishlist_id})
-        MATCH (w)-[r:CONTAINS]->(p:Product {productId: $product_id})
-        DELETE r
-        SET w.updatedAt = $timestamp
-        WITH w
-        OPTIONAL MATCH (w)-[r2:CONTAINS]->(p2:Product)
-        RETURN w.wishlistId AS id, w.userId AS user_id, w.name AS name, w.note AS note,
-               collect({
-                   product_id: p2.productId,
-                   added_at: r2.addedAt,
-                   product_details: {
-                       id: p2.productId,
-                       name: p2.name,
-                       price: p2.price,
-                       imageUrl: p2.image,
-                       category: (CASE WHEN 'giftingCategories' IN keys(p2) AND p2.giftingCategories IS NOT NULL AND size(p2.giftingCategories) > 0 THEN p2.giftingCategories[0] ELSE null END),
-                       description: p2.description,
-                       rating: (CASE WHEN 'rating' IN keys(p2) THEN p2.rating ELSE null END),
-                       discount: (CASE WHEN 'discount' IN keys(p2) THEN p2.discount ELSE null END),
-                       created_at: (CASE WHEN 'created_at' IN keys(p2) THEN p2.created_at ELSE null END),
-                       updated_at: (CASE WHEN 'updated_at' IN keys(p2) THEN p2.updated_at ELSE null END)
-                   }
-               }) AS products,
-               w.createdAt AS created_at, w.updatedAt AS updated_at
-        """
-        result = mcp.run_cypher_query(query, {"user_id": user_id, "wishlist_id": wishlist_id, "product_id": product_id, "timestamp": timestamp})
-        if not result:
-            raise HTTPException(status_code=404, detail="Wishlist or product not found")
-        
-        update_query = """
-        MATCH (w:Wishlist {wishlistId: $wishlistId})
-        OPTIONAL MATCH (w)-[:HAS_PRODUCT]->(p:Product)
-        WITH w, COLLECT(p) AS products
-        WITH w, products,
-        [ p IN products WHERE p.giftingSymbolicValue IS NOT NULL | p.giftingSymbolicValue ] AS symbolicValues,
-        REDUCE(allRel = [], p IN products | allRel + COALESCE(p.giftingRelationshipTypes, [])) AS allRelTypes,
-        [ p IN products WHERE p.giftingAltruismSuitability IS NOT NULL | p.giftingAltruismSuitability ] AS altruismSuits,
-        [ p IN products WHERE p.giftingReciprocityFit IS NOT NULL | p.giftingReciprocityFit ] AS reciprocityFits,
-        [ p IN products WHERE p.giftingSelfGiftingSuitability IS NOT NULL | p.giftingSelfGiftingSuitability ] AS selfGiftingSuits
-        WITH w, products, symbolicValues,
-        [ type IN allRelTypes WHERE type IS NOT NULL | type ] AS relTypes,
-        altruismSuits, reciprocityFits, selfGiftingSuits
-        WITH w, products, symbolicValues, relTypes, altruismSuits, reciprocityFits, selfGiftingSuits,
-        SIZE([p IN products | CASE WHEN p.giftingUtilitarianScore IS NOT NULL THEN 1 END]) AS nonNullUtil,
-        SIZE([p IN products | CASE WHEN p.giftingNoveltyScore IS NOT NULL THEN 1 END]) AS nonNullNov,
-        CASE WHEN SIZE(altruismSuits) > 0 THEN
-        REDUCE(sumA = 0.0, s IN altruismSuits | sumA + CASE s WHEN 'high' THEN 1.0 WHEN 'medium' THEN 0.5 ELSE 0.0 END) / SIZE(altruismSuits)
-        ELSE 0.0 END AS avgAltruism,
-        CASE WHEN SIZE(reciprocityFits) > 0 THEN
-        REDUCE(sumR = 0.0, s IN reciprocityFits | sumR + CASE s WHEN 'high' THEN 1.0 WHEN 'medium' THEN 0.5 ELSE 0.0 END) / SIZE(reciprocityFits)
-        ELSE 0.0 END AS avgReciprocity,
-        CASE WHEN SIZE(selfGiftingSuits) > 0 THEN
-        REDUCE(sumS = 0.0, s IN selfGiftingSuits | sumS + CASE s WHEN 'high' THEN 1.0 WHEN 'medium' THEN 0.5 ELSE 0.0 END) / SIZE(selfGiftingSuits)
-        ELSE 0.0 END AS avgSelfGifting
-        WITH w, products, symbolicValues, relTypes, avgAltruism, avgReciprocity, avgSelfGifting,
-        CASE WHEN nonNullUtil > 0 THEN
-        REDUCE(sumU = 0.0, p IN products | sumU + COALESCE(p.giftingUtilitarianScore, 0.0)) / nonNullUtil
-        ELSE null END AS avgUtilitarian,
-        CASE WHEN nonNullNov > 0 THEN
-        REDUCE(sumN = 0.0, p IN products | sumN + COALESCE(p.giftingNoveltyScore, 0.0)) / nonNullNov
-        ELSE null END AS avgNovelty
-        SET w.isHedonic = 
-        CASE 
-            WHEN COALESCE(avgUtilitarian, 0) < 0.5 OR 
-                COALESCE(avgNovelty, 0) > 0.6 OR 
-                'high' IN symbolicValues OR 
-                'romantic' IN relTypes 
-            THEN true 
-            ELSE false 
-        END,
-        w.isAltruistic = 
-        CASE 
-            WHEN avgAltruism > 0.5 OR 
-                (COALESCE(avgUtilitarian, 0) < 0.5 AND 
-                'high' IN symbolicValues AND 
-                ('family' IN relTypes OR 'romantic' IN relTypes)) 
-            THEN true 
-            ELSE false 
-        END,
-        w.expectsReciprocity = 
-        CASE 
-            WHEN avgReciprocity > 0.5 OR 
-                (COALESCE(avgUtilitarian, 0) >= 0.3 AND 
-                COALESCE(avgUtilitarian, 0) <= 0.7 AND 
-                ('friend' IN relTypes OR 'colleague' IN relTypes)) 
-            THEN true 
-            ELSE false 
-        END,
-        w.isSurprising = 
-        CASE 
-            WHEN COALESCE(avgNovelty, 0) > 0.6 AND 
-                ('romantic' IN relTypes OR 'family' IN relTypes) 
-            THEN true 
-            ELSE false 
-        END,
-        w.isSelfGifting = 
-        CASE 
-            WHEN avgSelfGifting > 0.5 OR 
-                (COALESCE(avgUtilitarian, 0) > 0.7 OR 
-                'high' IN symbolicValues) 
-            THEN true 
-            ELSE false 
-        END
-        RETURN w.wishlistId
-        """
-        mcp.run_cypher_query(update_query, {"wishlistId": wishlist_id})
-
-        r = result[0]
-        return Wishlist(
-            id=r["id"],
-            user_id=r["user_id"],
-            name=r["name"],
-            note=r["note"],
-            products=[
-                WishlistItemWithDetails(
-                    product_id=item["product_id"],
-                    added_at=item["added_at"],
-                    product_details=item["product_details"]
-                )
-                for item in r["products"] if item["product_id"] is not None
-            ],
-            item_count=len([item for item in r["products"] if item["product_id"] is not None]),
-            created_at=r["created_at"],
-            updated_at=r["updated_at"]
-        )
-    finally:
-        mcp.close()
-
 @app.delete("/api/wishlist/{wishlist_id}")
 async def delete_wishlist(wishlist_id: str, user_id: str = Query(...)):
+    print(f"DEBUG: Delete wishlist called - ID: {wishlist_id}, user: {user_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         query = """
@@ -2109,6 +1992,7 @@ async def delete_wishlist(wishlist_id: str, user_id: str = Query(...)):
 # Cart endpoints
 @app.get("/api/cart", response_model=Cart)
 async def get_cart(user_id: str = Query(...)):
+    print(f"DEBUG: Get cart called for user: {user_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         query = """
@@ -2177,6 +2061,7 @@ async def get_cart(user_id: str = Query(...)):
 
 @app.post("/api/cart/add", response_model=Cart)
 async def add_item_to_cart(cart_item: CartAddItem, user_id: str = Query(...)):
+    print(f"DEBUG: Add item to cart called - product: {cart_item.product_id}, quantity: {cart_item.quantity}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         cart_id = f"cart-{user_id}"
@@ -2262,6 +2147,7 @@ async def add_item_to_cart(cart_item: CartAddItem, user_id: str = Query(...)):
 
 @app.put("/api/cart/update", response_model=Cart)
 async def update_item_in_cart(cart_item: CartUpdateItem, user_id: str = Query(...)):
+    print(f"DEBUG: Update cart item called - product: {cart_item.product_id}, quantity: {cart_item.quantity}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         cart_id = f"cart-{user_id}"
@@ -2291,7 +2177,7 @@ async def update_item_in_cart(cart_item: CartUpdateItem, user_id: str = Query(..
                collect({
                    product_id: p2.productId,
                    quantity: r2.quantity,
-                   added_at: r2.added_at,
+                   added_at: r2.addedAt,
                    product_details: {
                        id: p2.productId,
                        name: p2.name,
@@ -2348,6 +2234,7 @@ async def update_item_in_cart(cart_item: CartUpdateItem, user_id: str = Query(..
 
 @app.delete("/api/cart/remove", response_model=Cart)
 async def remove_item_from_cart(cart_item: CartRemoveItem, user_id: str = Query(...)):
+    print(f"DEBUG: Remove item from cart called - product: {cart_item.product_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         cart_id = f"cart-{user_id}"
@@ -2374,7 +2261,7 @@ async def remove_item_from_cart(cart_item: CartRemoveItem, user_id: str = Query(
             collect({
                 product_id: p2.productId,
                 quantity: r2.quantity,
-                added_at: r2.added_at,
+                added_at: r2.addedAt,
                 product_details: {
                     id: p2.productId,
                     name: p2.name,
@@ -2430,6 +2317,7 @@ async def remove_item_from_cart(cart_item: CartRemoveItem, user_id: str = Query(
 
 @app.delete("/api/cart/clear", response_model=Cart)
 async def clear_cart(user_id: str = Query(...)):
+    print(f"DEBUG: Clear cart called for user: {user_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         cart_id = f"cart-{user_id}"
@@ -2476,6 +2364,7 @@ async def clear_cart(user_id: str = Query(...)):
 
 @app.post("/api/events")
 async def track_user_event(event: UserEventCreate):
+    print(f"DEBUG: Track event called - user: {event.user_id}, event: {event.event_type}, product: {event.product_id}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         query = """
@@ -2554,6 +2443,7 @@ async def track_user_event(event: UserEventCreate):
 
 @app.post("/get-recommendations")
 async def get_recommendations(request: AlgoRecommendationRequest):
+    print(f"DEBUG: Get recommendations called - user: {request.user_id}, products: {request.product_ids}", flush=True)
     mcp = MCPToolset(ConnectionParams())
     try:
         logger.info(f"Running recommendation query for user_id: {request.user_id}, product_ids: {request.product_ids}")

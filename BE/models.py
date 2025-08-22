@@ -18,6 +18,7 @@ class ShareType(str, Enum):
 
 class RecommendationSourceEnum(str, Enum):
     PERSONALIZED = "personalized"
+    TOGETHER = "together"
     CATEGORY = "category"
     TRENDING = "trending"
     RATING = "rating"
@@ -27,6 +28,16 @@ class RecommendationSourceEnum(str, Enum):
     SAME_TASTE = "same_taste"
     PRODUCT = "product"
     GIFT = "gift"
+
+# Centralized mapping from algorithm label to RecommendationSourceEnum
+ALGORITHM_TO_REC_SOURCE = {
+    "top_item_to_item": RecommendationSourceEnum.PERSONALIZED.value,
+    "top_als": RecommendationSourceEnum.SAME_TASTE.value,
+    "top_pagerank": RecommendationSourceEnum.SAME_TASTE.value,
+    "fit_description": RecommendationSourceEnum.DESCRIPTION.value,
+    "most_added_to_wishlist": RecommendationSourceEnum.WISHLIST.value,
+    "most_purchased": RecommendationSourceEnum.PURCHASE.value,
+}
 
 class Product(BaseModel):
     id: Optional[int] = None
