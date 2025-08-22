@@ -258,8 +258,10 @@ class RecommendationService:
                     for product in recommendations:
                         product['rec_source'] = RecommendationSourceEnum.PERSONALIZED.value
 
+                # get product_ids from personalized recommendations
+                product_ids = [p['id'] for p in personalized]
                 # implement get_recommendations_external input user id
-                external_recs = await get_recommendations_external(user_id=request.user_id)
+                external_recs = await get_recommendations_external(product_ids=product_ids, user_id=request.user_id)
                 print(f"External recommendations for user {request.user_id}: {len(external_recs)} found")
                 for recommendation in external_recs:
                     label = recommendation.get("label")
