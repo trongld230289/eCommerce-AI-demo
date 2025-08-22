@@ -1,487 +1,487 @@
 [
-  {
-    "productId1": 1,
-    "productId2": 2,
-    "score": 0.85
-  },
-  {
-    "productId1": 1,
-    "productId2": 3,
-    "score": 0.78
-  },
-  {
-    "productId1": 1,
-    "productId2": 4,
-    "score": 0.92
-  },
-  {
-    "productId1": 1,
-    "productId2": 7,
-    "score": 0.88
-  },
-  {
-    "productId1": 1,
-    "productId2": 21,
-    "score": 0.45
-  },
-  {
-    "productId1": 1,
-    "productId2": 24,
-    "score": 0.52
-  },
-  {
-    "productId1": 2,
-    "productId2": 3,
-    "score": 0.82
-  },
-  {
-    "productId1": 2,
-    "productId2": 5,
-    "score": 0.75
-  },
-  {
-    "productId1": 2,
-    "productId2": 6,
-    "score": 0.68
-  },
-  {
-    "productId1": 2,
-    "productId2": 8,
-    "score": 0.72
-  },
-  {
-    "productId1": 3,
-    "productId2": 9,
-    "score": 0.79
-  },
-  {
-    "productId1": 3,
-    "productId2": 10,
-    "score": 0.65
-  },
-  {
-    "productId1": 4,
-    "productId2": 5,
-    "score": 0.9
-  },
-  {
-    "productId1": 4,
-    "productId2": 6,
-    "score": 0.82
-  },
-  {
-    "productId1": 4,
-    "productId2": 21,
-    "score": 0.62
-  },
-  {
-    "productId1": 4,
-    "productId2": 22,
-    "score": 0.58
-  },
-  {
-    "productId1": 5,
-    "productId2": 6,
-    "score": 0.87
-  },
-  {
-    "productId1": 5,
-    "productId2": 23,
-    "score": 0.55
-  },
-  {
-    "productId1": 7,
-    "productId2": 8,
-    "score": 0.84
-  },
-  {
-    "productId1": 7,
-    "productId2": 9,
-    "score": 0.76
-  },
-  {
-    "productId1": 8,
-    "productId2": 10,
-    "score": 0.7
-  },
-  {
-    "productId1": 9,
-    "productId2": 10,
-    "score": 0.81
-  },
-  {
-    "productId1": 11,
-    "productId2": 12,
-    "score": 0.74
-  },
-  {
-    "productId1": 11,
-    "productId2": 13,
-    "score": 0.68
-  },
-  {
-    "productId1": 11,
-    "productId2": 14,
-    "score": 0.85
-  },
-  {
-    "productId1": 11,
-    "productId2": 17,
-    "score": 0.82
-  },
-  {
-    "productId1": 11,
-    "productId2": 20,
-    "score": 0.79
-  },
-  {
-    "productId1": 12,
-    "productId2": 15,
-    "score": 0.77
-  },
-  {
-    "productId1": 12,
-    "productId2": 18,
-    "score": 0.72
-  },
-  {
-    "productId1": 13,
-    "productId2": 16,
-    "score": 0.88
-  },
-  {
-    "productId1": 13,
-    "productId2": 19,
-    "score": 0.84
-  },
-  {
-    "productId1": 14,
-    "productId2": 15,
-    "score": 0.8
-  },
-  {
-    "productId1": 14,
-    "productId2": 16,
-    "score": 0.76
-  },
-  {
-    "productId1": 14,
-    "productId2": 20,
-    "score": 0.83
-  },
-  {
-    "productId1": 15,
-    "productId2": 18,
-    "score": 0.75
-  },
-  {
-    "productId1": 16,
-    "productId2": 19,
-    "score": 0.86
-  },
-  {
-    "productId1": 17,
-    "productId2": 18,
-    "score": 0.7
-  },
-  {
-    "productId1": 17,
-    "productId2": 20,
-    "score": 0.78
-  },
-  {
-    "productId1": 18,
-    "productId2": 19,
-    "score": 0.73
-  },
-  {
-    "productId1": 21,
-    "productId2": 22,
-    "score": 0.89
-  },
-  {
-    "productId1": 21,
-    "productId2": 23,
-    "score": 0.82
-  },
-  {
-    "productId1": 21,
-    "productId2": 4,
-    "score": 0.6
-  },
-  {
-    "productId1": 21,
-    "productId2": 5,
-    "score": 0.55
-  },
-  {
-    "productId1": 22,
-    "productId2": 23,
-    "score": 0.78
-  },
-  {
-    "productId1": 22,
-    "productId2": 27,
-    "score": 0.65
-  },
-  {
-    "productId1": 22,
-    "productId2": 28,
-    "score": 0.7
-  },
-  {
-    "productId1": 24,
-    "productId2": 25,
-    "score": 0.87
-  },
-  {
-    "productId1": 24,
-    "productId2": 26,
-    "score": 0.84
-  },
-  {
-    "productId1": 24,
-    "productId2": 1,
-    "score": 0.5
-  },
-  {
-    "productId1": 25,
-    "productId2": 26,
-    "score": 0.9
-  },
-  {
-    "productId1": 27,
-    "productId2": 28,
-    "score": 0.88
-  },
-  {
-    "productId1": 27,
-    "productId2": 29,
-    "score": 0.82
-  },
-  {
-    "productId1": 27,
-    "productId2": 30,
-    "score": 0.79
-  },
-  {
-    "productId1": 28,
-    "productId2": 30,
-    "score": 0.85
-  },
-  {
-    "productId1": 29,
-    "productId2": 30,
-    "score": 0.76
-  },
-  {
-    "productId1": 31,
-    "productId2": 32,
-    "score": 0.91
-  },
-  {
-    "productId1": 31,
-    "productId2": 35,
-    "score": 0.85
-  },
-  {
-    "productId1": 31,
-    "productId2": 37,
-    "score": 0.88
-  },
-  {
-    "productId1": 32,
-    "productId2": 33,
-    "score": 0.82
-  },
-  {
-    "productId1": 32,
-    "productId2": 38,
-    "score": 0.84
-  },
-  {
-    "productId1": 33,
-    "productId2": 35,
-    "score": 0.7
-  },
-  {
-    "productId1": 34,
-    "productId2": 35,
-    "score": 0.87
-  },
-  {
-    "productId1": 34,
-    "productId2": 36,
-    "score": 0.8
-  },
-  {
-    "productId1": 35,
-    "productId2": 36,
-    "score": 0.75
-  },
-  {
-    "productId1": 37,
-    "productId2": 38,
-    "score": 0.89
-  },
-  {
-    "productId1": 37,
-    "productId2": 39,
-    "score": 0.72
-  },
-  {
-    "productId1": 38,
-    "productId2": 40,
-    "score": 0.68
-  },
-  {
-    "productId1": 39,
-    "productId2": 40,
-    "score": 0.78
-  },
-  {
-    "productId1": 41,
-    "productId2": 42,
-    "score": 0.92
-  },
-  {
-    "productId1": 41,
-    "productId2": 43,
-    "score": 0.9
-  },
-  {
-    "productId1": 41,
-    "productId2": 44,
-    "score": 0.85
-  },
-  {
-    "productId1": 41,
-    "productId2": 45,
-    "score": 0.82
-  },
-  {
-    "productId1": 41,
-    "productId2": 46,
-    "score": 0.88
-  },
-  {
-    "productId1": 41,
-    "productId2": 47,
-    "score": 0.84
-  },
-  {
-    "productId1": 41,
-    "productId2": 50,
-    "score": 0.75
-  },
-  {
-    "productId1": 42,
-    "productId2": 43,
-    "score": 0.89
-  },
-  {
-    "productId1": 42,
-    "productId2": 44,
-    "score": 0.78
-  },
-  {
-    "productId1": 42,
-    "productId2": 45,
-    "score": 0.72
-  },
-  {
-    "productId1": 42,
-    "productId2": 49,
-    "score": 0.65
-  },
-  {
-    "productId1": 42,
-    "productId2": 50,
-    "score": 0.7
-  },
-  {
-    "productId1": 43,
-    "productId2": 44,
-    "score": 0.8
-  },
-  {
-    "productId1": 43,
-    "productId2": 45,
-    "score": 0.76
-  },
-  {
-    "productId1": 43,
-    "productId2": 46,
-    "score": 0.82
-  },
-  {
-    "productId1": 44,
-    "productId2": 45,
-    "score": 0.85
-  },
-  {
-    "productId1": 44,
-    "productId2": 48,
-    "score": 0.68
-  },
-  {
-    "productId1": 44,
-    "productId2": 49,
-    "score": 0.74
-  },
-  {
-    "productId1": 45,
-    "productId2": 50,
-    "score": 0.62
-  },
-  {
-    "productId1": 46,
-    "productId2": 47,
-    "score": 0.87
-  },
-  {
-    "productId1": 46,
-    "productId2": 48,
-    "score": 0.8
-  },
-  {
-    "productId1": 46,
-    "productId2": 49,
-    "score": 0.82
-  },
-  {
-    "productId1": 46,
-    "productId2": 50,
-    "score": 0.78
-  },
-  {
-    "productId1": 47,
-    "productId2": 48,
-    "score": 0.75
-  },
-  {
-    "productId1": 47,
-    "productId2": 49,
-    "score": 0.8
-  },
-  {
-    "productId1": 47,
-    "productId2": 50,
-    "score": 0.72
-  },
-  {
-    "productId1": 48,
-    "productId2": 49,
-    "score": 0.85
-  },
-  {
-    "productId1": 48,
-    "productId2": 50,
-    "score": 0.68
-  },
-  {
-    "productId1": 49,
-    "productId2": 50,
-    "score": 0.7
-  }
+    {
+        "productId1": 1,
+        "productId2": 2,
+        "score": 0.85
+    },
+    {
+        "productId1": 1,
+        "productId2": 3,
+        "score": 0.78
+    },
+    {
+        "productId1": 1,
+        "productId2": 4,
+        "score": 0.92
+    },
+    {
+        "productId1": 1,
+        "productId2": 7,
+        "score": 0.88
+    },
+    {
+        "productId1": 1,
+        "productId2": 21,
+        "score": 0.45
+    },
+    {
+        "productId1": 1,
+        "productId2": 24,
+        "score": 0.52
+    },
+    {
+        "productId1": 2,
+        "productId2": 3,
+        "score": 0.82
+    },
+    {
+        "productId1": 2,
+        "productId2": 5,
+        "score": 0.75
+    },
+    {
+        "productId1": 2,
+        "productId2": 6,
+        "score": 0.68
+    },
+    {
+        "productId1": 2,
+        "productId2": 8,
+        "score": 0.72
+    },
+    {
+        "productId1": 3,
+        "productId2": 9,
+        "score": 0.79
+    },
+    {
+        "productId1": 3,
+        "productId2": 10,
+        "score": 0.65
+    },
+    {
+        "productId1": 4,
+        "productId2": 5,
+        "score": 0.9
+    },
+    {
+        "productId1": 4,
+        "productId2": 6,
+        "score": 0.82
+    },
+    {
+        "productId1": 4,
+        "productId2": 21,
+        "score": 0.62
+    },
+    {
+        "productId1": 4,
+        "productId2": 22,
+        "score": 0.58
+    },
+    {
+        "productId1": 5,
+        "productId2": 6,
+        "score": 0.87
+    },
+    {
+        "productId1": 5,
+        "productId2": 23,
+        "score": 0.55
+    },
+    {
+        "productId1": 7,
+        "productId2": 8,
+        "score": 0.84
+    },
+    {
+        "productId1": 7,
+        "productId2": 9,
+        "score": 0.76
+    },
+    {
+        "productId1": 8,
+        "productId2": 10,
+        "score": 0.7
+    },
+    {
+        "productId1": 9,
+        "productId2": 10,
+        "score": 0.81
+    },
+    {
+        "productId1": 11,
+        "productId2": 12,
+        "score": 0.74
+    },
+    {
+        "productId1": 11,
+        "productId2": 13,
+        "score": 0.68
+    },
+    {
+        "productId1": 11,
+        "productId2": 14,
+        "score": 0.85
+    },
+    {
+        "productId1": 11,
+        "productId2": 17,
+        "score": 0.82
+    },
+    {
+        "productId1": 11,
+        "productId2": 20,
+        "score": 0.79
+    },
+    {
+        "productId1": 12,
+        "productId2": 15,
+        "score": 0.77
+    },
+    {
+        "productId1": 12,
+        "productId2": 18,
+        "score": 0.72
+    },
+    {
+        "productId1": 13,
+        "productId2": 16,
+        "score": 0.88
+    },
+    {
+        "productId1": 13,
+        "productId2": 19,
+        "score": 0.84
+    },
+    {
+        "productId1": 14,
+        "productId2": 15,
+        "score": 0.8
+    },
+    {
+        "productId1": 14,
+        "productId2": 16,
+        "score": 0.76
+    },
+    {
+        "productId1": 14,
+        "productId2": 20,
+        "score": 0.83
+    },
+    {
+        "productId1": 15,
+        "productId2": 18,
+        "score": 0.75
+    },
+    {
+        "productId1": 16,
+        "productId2": 19,
+        "score": 0.86
+    },
+    {
+        "productId1": 17,
+        "productId2": 18,
+        "score": 0.7
+    },
+    {
+        "productId1": 17,
+        "productId2": 20,
+        "score": 0.78
+    },
+    {
+        "productId1": 18,
+        "productId2": 19,
+        "score": 0.73
+    },
+    {
+        "productId1": 21,
+        "productId2": 22,
+        "score": 0.89
+    },
+    {
+        "productId1": 21,
+        "productId2": 23,
+        "score": 0.82
+    },
+    {
+        "productId1": 21,
+        "productId2": 4,
+        "score": 0.6
+    },
+    {
+        "productId1": 21,
+        "productId2": 5,
+        "score": 0.55
+    },
+    {
+        "productId1": 22,
+        "productId2": 23,
+        "score": 0.78
+    },
+    {
+        "productId1": 22,
+        "productId2": 27,
+        "score": 0.65
+    },
+    {
+        "productId1": 22,
+        "productId2": 28,
+        "score": 0.7
+    },
+    {
+        "productId1": 24,
+        "productId2": 25,
+        "score": 0.87
+    },
+    {
+        "productId1": 24,
+        "productId2": 26,
+        "score": 0.84
+    },
+    {
+        "productId1": 24,
+        "productId2": 1,
+        "score": 0.5
+    },
+    {
+        "productId1": 25,
+        "productId2": 26,
+        "score": 0.9
+    },
+    {
+        "productId1": 27,
+        "productId2": 28,
+        "score": 0.88
+    },
+    {
+        "productId1": 27,
+        "productId2": 29,
+        "score": 0.82
+    },
+    {
+        "productId1": 27,
+        "productId2": 30,
+        "score": 0.79
+    },
+    {
+        "productId1": 28,
+        "productId2": 30,
+        "score": 0.85
+    },
+    {
+        "productId1": 29,
+        "productId2": 30,
+        "score": 0.76
+    },
+    {
+        "productId1": 31,
+        "productId2": 32,
+        "score": 0.91
+    },
+    {
+        "productId1": 31,
+        "productId2": 35,
+        "score": 0.85
+    },
+    {
+        "productId1": 31,
+        "productId2": 37,
+        "score": 0.88
+    },
+    {
+        "productId1": 32,
+        "productId2": 33,
+        "score": 0.82
+    },
+    {
+        "productId1": 32,
+        "productId2": 38,
+        "score": 0.84
+    },
+    {
+        "productId1": 33,
+        "productId2": 35,
+        "score": 0.7
+    },
+    {
+        "productId1": 34,
+        "productId2": 35,
+        "score": 0.87
+    },
+    {
+        "productId1": 34,
+        "productId2": 36,
+        "score": 0.8
+    },
+    {
+        "productId1": 35,
+        "productId2": 36,
+        "score": 0.75
+    },
+    {
+        "productId1": 37,
+        "productId2": 38,
+        "score": 0.89
+    },
+    {
+        "productId1": 37,
+        "productId2": 39,
+        "score": 0.72
+    },
+    {
+        "productId1": 38,
+        "productId2": 40,
+        "score": 0.68
+    },
+    {
+        "productId1": 39,
+        "productId2": 40,
+        "score": 0.78
+    },
+    {
+        "productId1": 41,
+        "productId2": 42,
+        "score": 0.92
+    },
+    {
+        "productId1": 41,
+        "productId2": 43,
+        "score": 0.9
+    },
+    {
+        "productId1": 41,
+        "productId2": 44,
+        "score": 0.85
+    },
+    {
+        "productId1": 41,
+        "productId2": 45,
+        "score": 0.82
+    },
+    {
+        "productId1": 41,
+        "productId2": 46,
+        "score": 0.88
+    },
+    {
+        "productId1": 41,
+        "productId2": 47,
+        "score": 0.84
+    },
+    {
+        "productId1": 41,
+        "productId2": 50,
+        "score": 0.75
+    },
+    {
+        "productId1": 42,
+        "productId2": 43,
+        "score": 0.89
+    },
+    {
+        "productId1": 42,
+        "productId2": 44,
+        "score": 0.78
+    },
+    {
+        "productId1": 42,
+        "productId2": 45,
+        "score": 0.72
+    },
+    {
+        "productId1": 42,
+        "productId2": 49,
+        "score": 0.65
+    },
+    {
+        "productId1": 42,
+        "productId2": 50,
+        "score": 0.7
+    },
+    {
+        "productId1": 43,
+        "productId2": 44,
+        "score": 0.8
+    },
+    {
+        "productId1": 43,
+        "productId2": 45,
+        "score": 0.76
+    },
+    {
+        "productId1": 43,
+        "productId2": 46,
+        "score": 0.82
+    },
+    {
+        "productId1": 44,
+        "productId2": 45,
+        "score": 0.85
+    },
+    {
+        "productId1": 44,
+        "productId2": 48,
+        "score": 0.68
+    },
+    {
+        "productId1": 44,
+        "productId2": 49,
+        "score": 0.74
+    },
+    {
+        "productId1": 45,
+        "productId2": 50,
+        "score": 0.62
+    },
+    {
+        "productId1": 46,
+        "productId2": 47,
+        "score": 0.87
+    },
+    {
+        "productId1": 46,
+        "productId2": 48,
+        "score": 0.8
+    },
+    {
+        "productId1": 46,
+        "productId2": 49,
+        "score": 0.82
+    },
+    {
+        "productId1": 46,
+        "productId2": 50,
+        "score": 0.78
+    },
+    {
+        "productId1": 47,
+        "productId2": 48,
+        "score": 0.75
+    },
+    {
+        "productId1": 47,
+        "productId2": 49,
+        "score": 0.8
+    },
+    {
+        "productId1": 47,
+        "productId2": 50,
+        "score": 0.72
+    },
+    {
+        "productId1": 48,
+        "productId2": 49,
+        "score": 0.85
+    },
+    {
+        "productId1": 48,
+        "productId2": 50,
+        "score": 0.68
+    },
+    {
+        "productId1": 49,
+        "productId2": 50,
+        "score": 0.7
+    }
 ]
