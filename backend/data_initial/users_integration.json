@@ -1,0 +1,44 @@
+[
+    {
+        "userId": "x0CSEK3k5RhM1dWNOyXNH8Z9gZy2",
+        "name": "Khắc Hiếu",
+        "email": "bkhieu92@gmail.com",
+        "hedonicBias": 0.7,
+        "surprisePreference": 0.5,
+        "altruismLevel": 0.3,
+        "reciprocityExpectation": 0.2
+    },
+    {
+        "userId": "MR4beXfa4rOx5vLbmTXdts3eFeH2",
+        "name": "Lan Anh",
+        "email": "test.user@gmail.com",
+        "hedonicBias": 0.6,
+        "surprisePreference": 0.4,
+        "altruismLevel": 0.4,
+        "reciprocityExpectation": 0.3
+    },
+    {
+        "userId": "bWn5vC8uHrXeFGkSg6L50nevm1n1",
+        "name": "Đức Trọng",
+        "email": "trongld232@gmail.com",
+        "hedonicBias": 0.4,
+        "surprisePreference": 0.7,
+        "altruismLevel": 0.2,
+        "reciprocityExpectation": 0.3
+    },
+    {
+        "userId": "eGbRI6cefdVXfqFtQiBtantWgUm1",
+        "name": "Tâm An",
+        "email": "thangnaozay@gmail.com",
+        "hedonicBias": 0.7,
+        "surprisePreference": 0.7,
+        "altruismLevel": 0.6,
+        "reciprocityExpectation": 0.3
+    },
+    {"userId": "user1", "name": "Alice Smith", "email": "alice@example.com"},
+    {"userId": "user2", "name": "Bob Johnson", "email": "bob@example.com"},
+    {"userId": "user3", "name": "Clara Lee", "email": "clara@example.com"},
+    {"userId": "user4", "name": "David Kim", "email": "david@example.com"},
+    {"userId": "user5", "name": "Emma Brown", "email": "emma@example.com"},
+    {"userId": "user6", "name": "Frank Wilson", "email": "frank@example.com"}
+]

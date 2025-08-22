@@ -1,7 +1,7 @@
 [
     {
         "wishlistId": "wishlist-user1",
-        "productId": 2,
+        "productId": 1,
         "addedAt": 1724122140000
     },
     {
@@ -10,68 +10,43 @@
         "addedAt": 1724122140000
     },
     {
-        "wishlistId": "wishlist-user2",
-        "productId": 15,
+        "wishlistId": "wishlist-user1",
+        "productId": 7,
         "addedAt": 1724122140000
     },
     {
         "wishlistId": "wishlist-user2",
-        "productId": 21,
+        "productId": 13,
         "addedAt": 1724122140000
     },
     {
-        "wishlistId": "wishlist-user3",
-        "productId": 1,
-        "addedAt": 1724122140000
-    },
-    {
-        "wishlistId": "wishlist-user3",
-        "productId": 12,
-        "addedAt": 1724122140000
-    },
-    {
-        "wishlistId": "wishlist-user4",
+        "wishlistId": "wishlist-user2",
         "productId": 16,
         "addedAt": 1724122140000
     },
     {
-        "wishlistId": "wishlist-user5",
-        "productId": 23,
-        "addedAt": 1724122140000
-    },
-    {
-        "wishlistId": "wishlist-user5",
-        "productId": 27,
-        "addedAt": 1724122140000
-    },
-    {
-        "wishlistId": "wishlist-user6",
-        "productId": 25,
-        "addedAt": 1724122140000
-    },
-    {
-        "wishlistId": "wishlist-user7",
-        "productId": 8,
-        "addedAt": 1724122140000
-    },
-    {
-        "wishlistId": "wishlist-user7",
-        "productId": 4,
-        "addedAt": 1724122140000
-    },
-    {
-        "wishlistId": "wishlist-user8",
+        "wishlistId": "wishlist-user2",
         "productId": 19,
-        "addedAt": 1724122140000
-    },
-    {
-        "wishlistId": "wishlist-user9",
-        "productId": 8,
         "addedAt": 1724122140000
     },
     {
         "wishlistId": "wishlist-user10",
         "productId": 16,
+        "addedAt": 1724122140000
+    },
+    {
+        "wishlistId": "wishlist-user5",
+        "productId": 46,
+        "addedAt": 1724122140000
+    },
+    {
+        "wishlistId": "wishlist-user5",
+        "productId": 47,
+        "addedAt": 1724122140000
+    },
+    {
+        "wishlistId": "wishlist-user5",
+        "productId": 48,
         "addedAt": 1724122140000
     }
 ]

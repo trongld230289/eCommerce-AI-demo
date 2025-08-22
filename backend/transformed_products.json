@@ -1,0 +1,652 @@
+[
+    {
+        "productId": 1,
+        "name": "Samsung Galaxy S24 Ultra",
+        "price": 1299.99,
+        "original_price": 1499.99,
+        "image": "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=500&h=500&fit=crop&crop=center",
+        "description": "Flagship Samsung phone with 200MP camera, S Pen support, and AI features.",
+        "created_at": 1755786281506,
+        "updated_at": 1755786281506,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 10,
+        "name": "Xiaomi Poco X6 Pro",
+        "price": 299.99,
+        "original_price": 349.99,
+        "image": "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=500&h=500&fit=crop&crop=center",
+        "description": "Gaming-focused Xiaomi phone with powerful processor and fast display.",
+        "created_at": 1755786281509,
+        "updated_at": 1755786281509,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 11,
+        "name": "Dell XPS 13 Plus",
+        "price": 1299.99,
+        "original_price": 1499.99,
+        "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&h=500&fit=crop&crop=center",
+        "description": "Premium Dell ultrabook with InfinityEdge display and Intel Core processors.",
+        "created_at": 1755786281509,
+        "updated_at": 1755786281509,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 12,
+        "name": "Dell Inspiron 16",
+        "price": 899.99,
+        "original_price": 999.99,
+        "image": "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=500&h=500&fit=crop&crop=center",
+        "description": "Versatile Dell laptop for work and entertainment with large display.",
+        "created_at": 1755786281510,
+        "updated_at": 1755786281510,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 13,
+        "name": "Dell G15 Gaming",
+        "price": 1199.99,
+        "original_price": 1399.99,
+        "image": "https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=500&h=500&fit=crop&crop=center",
+        "description": "Dell gaming laptop with dedicated graphics and high-refresh display.",
+        "created_at": 1755786281510,
+        "updated_at": 1755786281510,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 14,
+        "name": "HP Spectre x360 14",
+        "price": 1399.99,
+        "original_price": 1599.99,
+        "image": "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=500&h=500&fit=crop&crop=center",
+        "description": "Premium HP convertible laptop with OLED display and stylus support.",
+        "created_at": 1755786281510,
+        "updated_at": 1755786281510,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 15,
+        "name": "HP Pavilion 15",
+        "price": 699.99,
+        "original_price": 799.99,
+        "image": "https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=500&h=500&fit=crop&crop=center",
+        "description": "Reliable HP laptop for everyday computing with modern design.",
+        "created_at": 1755786281510,
+        "updated_at": 1755786281510,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 16,
+        "name": "HP OMEN 16",
+        "price": 1299.99,
+        "original_price": 1499.99,
+        "image": "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=500&h=500&fit=crop&crop=center",
+        "description": "HP gaming laptop with powerful graphics and advanced cooling system.",
+        "created_at": 1755786281511,
+        "updated_at": 1755786281511,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 17,
+        "name": "Lenovo ThinkPad X1 Carbon",
+        "price": 1599.99,
+        "original_price": 1799.99,
+        "image": "https://images.unsplash.com/photo-1484788984921-03950022c9ef?w=500&h=500&fit=crop&crop=center",
+        "description": "Premium business laptop with legendary ThinkPad durability and performance.",
+        "created_at": 1755786281511,
+        "updated_at": 1755786281511,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 18,
+        "name": "Lenovo IdeaPad 5 Pro",
+        "price": 899.99,
+        "original_price": 1099.99,
+        "image": "https://no1computer.vn/images/products/2024/02/24/large/ideapad-5-pro-2023-rtx-4050-1_1700021341_1708402921_1708738877.jpg",
+        "description": "Versatile Lenovo laptop with 2.5K display and AMD Ryzen processors.",
+        "created_at": 1755786281511,
+        "updated_at": 1755786281511,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 19,
+        "name": "Lenovo Legion 5 Pro",
+        "price": 1399.99,
+        "original_price": 1599.99,
+        "image": "https://images.unsplash.com/photo-1587831990711-23ca6441447b?w=500&h=500&fit=crop&crop=center",
+        "description": "High-performance gaming laptop with RTX graphics and RGB keyboard.",
+        "created_at": 1755786281511,
+        "updated_at": 1755786281511,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 2,
+        "name": "Samsung Galaxy S24",
+        "price": 899.99,
+        "original_price": 999.99,
+        "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&h=500&fit=crop&crop=center",
+        "description": "Compact Samsung flagship with advanced camera and premium build quality.",
+        "created_at": 1755786281506,
+        "updated_at": 1755786281506,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 20,
+        "name": "Lenovo Yoga 9i",
+        "price": 1299.99,
+        "original_price": 1499.99,
+        "image": "https://mac24h.vn/images/detailed/95/Yoga-Slim-9-14ILL10-mac24h-1.png",
+        "description": "Premium convertible laptop with leather design and excellent audio system.",
+        "created_at": 1755786281511,
+        "updated_at": 1755786281511,
+        "tags": [
+            "Laptop"
+        ]
+    },
+    {
+        "productId": 21,
+        "name": "Apple Watch Series 9",
+        "price": 399.99,
+        "original_price": 449.99,
+        "image": "https://images.unsplash.com/photo-1551816230-ef5deaed4a26?w=500&h=500&fit=crop&crop=center",
+        "description": "Advanced Apple smartwatch with health monitoring and fitness tracking.",
+        "created_at": 1755786281512,
+        "updated_at": 1755786281512,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 22,
+        "name": "Apple Watch Ultra 2",
+        "price": 799.99,
+        "original_price": 899.99,
+        "image": "https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?w=500&h=500&fit=crop&crop=center",
+        "description": "Rugged Apple watch for extreme sports with titanium case and precision GPS.",
+        "created_at": 1755786281512,
+        "updated_at": 1755786281512,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 23,
+        "name": "Apple Watch SE",
+        "price": 249.99,
+        "original_price": 299.99,
+        "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop&crop=center",
+        "description": "Affordable Apple smartwatch with essential features and fitness tracking.",
+        "created_at": 1755786281512,
+        "updated_at": 1755786281512,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 24,
+        "name": "Samsung Galaxy Watch6",
+        "price": 329.99,
+        "original_price": 379.99,
+        "image": "https://thetekcoffee.com/wp-content/uploads/2024/04/samsung-watch-6-44mm.jpg",
+        "description": "Samsung smartwatch with comprehensive health tracking and long battery life.",
+        "created_at": 1755786281512,
+        "updated_at": 1755786281512,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 25,
+        "name": "Samsung Galaxy Watch6 Classic",
+        "price": 429.99,
+        "original_price": 499.99,
+        "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&h=500&fit=crop&crop=center",
+        "description": "Premium Samsung smartwatch with rotating bezel and classic design.",
+        "created_at": 1755786281513,
+        "updated_at": 1755786281513,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 26,
+        "name": "Samsung Galaxy Watch5 Pro",
+        "price": 379.99,
+        "original_price": 449.99,
+        "image": "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&h=500&fit=crop&crop=center",
+        "description": "Rugged Samsung smartwatch with titanium case and extended battery life.",
+        "created_at": 1755786281513,
+        "updated_at": 1755786281513,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 27,
+        "name": "Garmin Forerunner 965",
+        "price": 599.99,
+        "original_price": 699.99,
+        "image": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=500&h=500&fit=crop&crop=center",
+        "description": "Advanced Garmin running watch with AMOLED display and training metrics.",
+        "created_at": 1755786281513,
+        "updated_at": 1755786281513,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 28,
+        "name": "Garmin Fenix 7X",
+        "price": 799.99,
+        "original_price": 899.99,
+        "image": "https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=500&h=500&fit=crop&crop=center",
+        "description": "Ultimate multisport GPS watch with solar charging and mapping features.",
+        "created_at": 1755786281513,
+        "updated_at": 1755786281513,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 29,
+        "name": "Garmin Venu 3",
+        "price": 449.99,
+        "original_price": 499.99,
+        "image": "https://images.unsplash.com/photo-1544117519-31a4b719223d?w=500&h=500&fit=crop&crop=center",
+        "description": "Lifestyle GPS smartwatch with bright AMOLED display and health insights.",
+        "created_at": 1755786281513,
+        "updated_at": 1755786281513,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 3,
+        "name": "Samsung Galaxy A55",
+        "price": 449.99,
+        "original_price": 499.99,
+        "image": "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=500&h=500&fit=crop&crop=center",
+        "description": "Mid-range Samsung phone with excellent camera and long battery life.",
+        "created_at": 1755786281507,
+        "updated_at": 1755786281507,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 30,
+        "name": "Garmin Instinct 2X Solar",
+        "price": 399.99,
+        "original_price": 449.99,
+        "image": "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=500&h=500&fit=crop&crop=center",
+        "description": "Rugged GPS watch with solar charging and military-grade durability.",
+        "created_at": 1755786281514,
+        "updated_at": 1755786281514,
+        "tags": [
+            "Watch"
+        ]
+    },
+    {
+        "productId": 31,
+        "name": "Sony Alpha 7R V",
+        "price": 3899.99,
+        "original_price": 4299.99,
+        "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&h=500&fit=crop&crop=center",
+        "description": "High-resolution full-frame mirrorless camera with 61MP sensor and advanced AI autofocus.",
+        "created_at": 1755786281514,
+        "updated_at": 1755786281514,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 32,
+        "name": "Sony Alpha 7 IV",
+        "price": 2499.99,
+        "original_price": 2799.99,
+        "image": "https://mayanhshop.com/wp-content/uploads/2024/04/techradar_1280x720-800-resize.png",
+        "description": "Versatile full-frame camera perfect for photo and video with excellent image quality.",
+        "created_at": 1755786281514,
+        "updated_at": 1755786281514,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 33,
+        "name": "Sony Alpha FX30",
+        "price": 1799.99,
+        "original_price": 1999.99,
+        "image": "https://promotion.sony.com.vn:5001/storage/2024/10/04/FX3_t%20(1).png",
+        "description": "Cinema-focused APS-C camera with 4K recording and professional video features.",
+        "created_at": 1755786281514,
+        "updated_at": 1755786281514,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 34,
+        "name": "Fujifilm X-T5",
+        "price": 1699.99,
+        "original_price": 1899.99,
+        "image": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=500&fit=crop&crop=center",
+        "description": "High-resolution APS-C mirrorless camera with classic design and film simulations.",
+        "created_at": 1755786281514,
+        "updated_at": 1755786281514,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 35,
+        "name": "Fujifilm X-H2S",
+        "price": 2499.99,
+        "original_price": 2799.99,
+        "image": "https://product.hstatic.net/200000396087/product/fujifilm_frame_camera_x-h2s_body_3b8e11c917be421083e9c00580b0635c_grande.jpg",
+        "description": "Professional APS-C camera with advanced video capabilities and fast shooting speeds.",
+        "created_at": 1755786281515,
+        "updated_at": 1755786281515,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 36,
+        "name": "Fujifilm X100V",
+        "price": 1399.99,
+        "original_price": 1599.99,
+        "image": "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=500&h=500&fit=crop&crop=center",
+        "description": "Premium compact camera with fixed 35mm lens and hybrid viewfinder.",
+        "created_at": 1755786281515,
+        "updated_at": 1755786281515,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 37,
+        "name": "Canon EOS R5",
+        "price": 3899.99,
+        "original_price": 4299.99,
+        "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&h=500&fit=crop&crop=center",
+        "description": "Professional full-frame mirrorless camera with 8K video and advanced image stabilization.",
+        "created_at": 1755786281515,
+        "updated_at": 1755786281515,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 38,
+        "name": "Canon EOS R6 Mark II",
+        "price": 2499.99,
+        "original_price": 2799.99,
+        "image": "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=500&h=500&fit=crop&crop=center",
+        "description": "Versatile full-frame camera with excellent low-light performance and fast autofocus.",
+        "created_at": 1755786281515,
+        "updated_at": 1755786281515,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 39,
+        "name": "Canon EOS R10",
+        "price": 979.99,
+        "original_price": 1079.99,
+        "image": "https://vn.canon/media/image/2022/05/22/3fdc4ae7f41d47fe9d1e01729527ef32_EOS+R10+Front+Body.png",
+        "description": "Entry-level APS-C mirrorless camera perfect for beginners and content creators.",
+        "created_at": 1755786281516,
+        "updated_at": 1755786281516,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 4,
+        "name": "iPhone 15 Pro Max",
+        "price": 1199.99,
+        "original_price": 1299.99,
+        "image": "https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?w=500&h=500&fit=crop&crop=center",
+        "description": "Premium iPhone with titanium design, advanced cameras, and A17 Pro chip.",
+        "created_at": 1755786281507,
+        "updated_at": 1755786281507,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 40,
+        "name": "Canon PowerShot G7X Mark III",
+        "price": 749.99,
+        "original_price": 849.99,
+        "image": "https://m.media-amazon.com/images/I/71FxOAGHqtL.__AC_SX300_SY300_QL70_FMwebp_.jpg",
+        "description": "Compact camera with 4K video, live streaming capabilities, and flip-up touchscreen.",
+        "created_at": 1755786281516,
+        "updated_at": 1755786281516,
+        "tags": [
+            "Camera"
+        ]
+    },
+    {
+        "productId": 41,
+        "name": "Nature Hike Cloud-Up 2 Tent",
+        "price": 169.99,
+        "original_price": 199.99,
+        "image": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&h=500&fit=crop&crop=center",
+        "description": "Ultralight 2-person tent with double-wall design, perfect for backpacking adventures.",
+        "created_at": 1755786281516,
+        "updated_at": 1755786281516,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 42,
+        "name": "Nature Hike Ultralight Sleeping Pad",
+        "price": 79.99,
+        "original_price": 99.99,
+        "image": "https://m.media-amazon.com/images/I/71XkNJI9QSL.__AC_SX300_SY300_QL70_FMwebp_.jpg",
+        "description": "Lightweight inflatable sleeping pad with R-value 4.2 for excellent insulation.",
+        "created_at": 1755786281516,
+        "updated_at": 1755786281516,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 43,
+        "name": "Nature Hike Down Sleeping Bag",
+        "price": 149.99,
+        "original_price": 179.99,
+        "image": "https://m.media-amazon.com/images/I/71dYJdShMgL.__AC_SX300_SY300_QL70_FMwebp_.jpg",
+        "description": "Compact down sleeping bag rated for 32\u00b0F, ideal for three-season camping.",
+        "created_at": 1755786281517,
+        "updated_at": 1755786281517,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 44,
+        "name": "Quechua MH100 Hiking Backpack 60L",
+        "price": 129.99,
+        "original_price": 159.99,
+        "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500&h=500&fit=crop&crop=center",
+        "description": "Large capacity hiking backpack with adjustable fit and multiple compartments.",
+        "created_at": 1755786281517,
+        "updated_at": 1755786281517,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 45,
+        "name": "Quechua NH100 Hiking Boots",
+        "price": 89.99,
+        "original_price": 109.99,
+        "image": "https://rukminim2.flixcart.com/image/832/832/xif0q/shoe/j/4/7/-original-imagg3a8q7f56tdd.jpeg?q=70&crop=false",
+        "description": "Waterproof hiking boots with excellent grip and ankle support for mountain trails.",
+        "created_at": 1755786281517,
+        "updated_at": 1755786281517,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 46,
+        "name": "Quechua Base Camp Tent 4.1",
+        "price": 199.99,
+        "original_price": 249.99,
+        "image": "https://images.unsplash.com/photo-1487730116645-74489c95b41b?w=500&h=500&fit=crop&crop=center",
+        "description": "Family camping tent for 4 people with easy setup and weather protection.",
+        "created_at": 1755786281517,
+        "updated_at": 1755786281517,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 47,
+        "name": "Coleman Sundome 6-Person Tent",
+        "price": 159.99,
+        "original_price": 189.99,
+        "image": "https://images.unsplash.com/photo-1445308394109-4ec2920981b1?w=500&h=500&fit=crop&crop=center",
+        "description": "Spacious dome tent with WeatherTec system for reliable weather protection.",
+        "created_at": 1755786281517,
+        "updated_at": 1755786281517,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 48,
+        "name": "Coleman Dual Fuel Stove",
+        "price": 119.99,
+        "original_price": 139.99,
+        "image": "https://images.unsplash.com/photo-1511593358241-7eea1f3c84e5?w=500&h=500&fit=crop&crop=center",
+        "description": "Powerful two-burner stove that runs on Coleman fuel or unleaded gasoline.",
+        "created_at": 1755786281518,
+        "updated_at": 1755786281518,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 49,
+        "name": "Coleman Xtreme 70-Quart Cooler",
+        "price": 89.99,
+        "original_price": 109.99,
+        "image": "https://m.media-amazon.com/images/I/71XYt4u8-vL.__AC_SX300_SY300_QL70_FMwebp_.jpg?w=500&h=500&fit=crop&crop=center",
+        "description": "Large capacity cooler with Xtreme technology for 5-day ice retention.",
+        "created_at": 1755786281518,
+        "updated_at": 1755786281518,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 5,
+        "name": "iPhone 15",
+        "price": 799.99,
+        "original_price": 899.99,
+        "image": "https://images.unsplash.com/photo-1556656793-08538906a9f8?w=500&h=500&fit=crop&crop=center",
+        "description": "Latest iPhone with Dynamic Island, advanced camera system, and USB-C.",
+        "created_at": 1755786281508,
+        "updated_at": 1755786281508,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 50,
+        "name": "Coleman Rechargeable LED Lantern",
+        "price": 49.99,
+        "original_price": 59.99,
+        "image": "https://newellbrands.imgix.net/b4cd0864-ca99-3be0-bbb8-8d7dc07d51a2/b4cd0864-ca99-3be0-bbb8-8d7dc07d51a2.tif?auto=format,compress&w=500",
+        "description": "Bright LED lantern with USB charging port and 300-hour runtime on low setting.",
+        "created_at": 1755786281518,
+        "updated_at": 1755786281518,
+        "tags": [
+            "Camping Gear"
+        ]
+    },
+    {
+        "productId": 6,
+        "name": "iPhone 14",
+        "price": 599.99,
+        "original_price": 699.99,
+        "image": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=500&h=500&fit=crop&crop=center",
+        "description": "Reliable iPhone with excellent camera performance and iOS experience.",
+        "created_at": 1755786281508,
+        "updated_at": 1755786281508,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 7,
+        "name": "Xiaomi 14 Ultra",
+        "price": 1199.99,
+        "original_price": 1399.99,
+        "image": "https://i02.appmifile.com/334_operator_sg/22/02/2024/d36105f6de5a716a1c0737352c2827be.png",
+        "description": "Flagship Xiaomi with Leica cameras, premium design, and fast performance.",
+        "created_at": 1755786281508,
+        "updated_at": 1755786281508,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 8,
+        "name": "Xiaomi 13T Pro",
+        "price": 699.99,
+        "original_price": 799.99,
+        "image": "https://images.unsplash.com/photo-1567581935884-3349723552ca?w=500&h=500&fit=crop&crop=center",
+        "description": "High-performance Xiaomi phone with fast charging and premium camera system.",
+        "created_at": 1755786281509,
+        "updated_at": 1755786281509,
+        "tags": [
+            "Phone"
+        ]
+    },
+    {
+        "productId": 9,
+        "name": "Xiaomi Redmi Note 13 Pro",
+        "price": 349.99,
+        "original_price": 399.99,
+        "image": "https://images.unsplash.com/photo-1585060544812-6b45742d762f?w=500&h=500&fit=crop&crop=center",
+        "description": "Affordable Xiaomi phone with great camera and long battery life.",
+        "created_at": 1755786281509,
+        "updated_at": 1755786281509,
+        "tags": [
+            "Phone"
+        ]
+    }
+]
