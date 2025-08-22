@@ -105,41 +105,107 @@
 
         /* Highlight NLP-Powered Chatbot card */
         .feature-card.nlp-chatbot {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%);
-            border: 2px solid rgba(255, 215, 0, 0.6);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 165, 0, 0.15) 100%);
+            border: 3px solid rgba(255, 215, 0, 0.8);
             position: relative;
             overflow: visible;
             animation: glow 2s ease-in-out infinite alternate;
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.4),
+                0 0 60px rgba(255, 165, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
 
         .feature-card.nlp-chatbot:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.4);
-            border-color: rgba(255, 215, 0, 0.8);
+            transform: translateY(-12px) scale(1.05);
+            box-shadow: 
+                0 20px 50px rgba(255, 215, 0, 0.6),
+                0 0 80px rgba(255, 165, 0, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 215, 0, 1);
         }
 
         .feature-card.nlp-chatbot::before {
             content: "🌟 FEATURED";
             position: absolute;
-            top: -12px;
-            right: -8px;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
+            top: -15px;
+            right: -10px;
+            background: linear-gradient(135deg, #FFD700, #FFA500, #FFFF00);
             color: #000;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            box-shadow: 0 3px 10px rgba(255, 165, 0, 0.4);
+            padding: 6px 16px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 900;
+            box-shadow: 
+                0 5px 20px rgba(255, 165, 0, 0.6),
+                0 0 30px rgba(255, 215, 0, 0.4);
             z-index: 10;
+            animation: badge-pulse 3s ease-in-out infinite;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes badge-pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 
+                    0 5px 20px rgba(255, 165, 0, 0.6),
+                    0 0 30px rgba(255, 215, 0, 0.4);
+            }
+            50% { 
+                transform: scale(1.1);
+                box-shadow: 
+                    0 8px 30px rgba(255, 165, 0, 0.8),
+                    0 0 50px rgba(255, 215, 0, 0.6);
+            }
         }
 
         .feature-card.nlp-chatbot .feature-icon {
-            font-size: 3rem;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
+            font-size: 4.5rem;
+            background: linear-gradient(135deg, #FFD700, #FFA500, #FFFF00, #FFD700);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: pulse 2s infinite;
+            animation: pulse 2s infinite, glow-rotate 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 30px rgba(255, 165, 0, 0.6));
+            position: relative;
+            display: inline-block;
+            transform-origin: center;
+        }
+
+        .feature-card.nlp-chatbot .feature-icon::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+            animation: pulse-glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow-rotate {
+            0%, 100% { 
+                transform: scale(1) rotate(0deg);
+                filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 30px rgba(255, 165, 0, 0.6));
+            }
+            50% { 
+                transform: scale(1.1) rotate(10deg);
+                filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1)) drop-shadow(0 0 45px rgba(255, 165, 0, 0.8));
+            }
+        }
+
+        @keyframes pulse-glow {
+            0% { 
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            100% { 
+                opacity: 0.7;
+                transform: scale(1.2);
+            }
         }
 
         .feature-card.nlp-chatbot h3 {
@@ -150,10 +216,16 @@
 
         @keyframes glow {
             from {
-                box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+                box-shadow: 
+                    0 0 30px rgba(255, 215, 0, 0.4),
+                    0 0 60px rgba(255, 165, 0, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
             }
             to {
-                box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+                box-shadow: 
+                    0 0 50px rgba(255, 215, 0, 0.8),
+                    0 0 100px rgba(255, 165, 0, 0.4),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.4);
             }
         }
 
