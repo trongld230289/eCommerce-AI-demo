@@ -186,10 +186,19 @@ const WishlistSearch: React.FC<WishlistSearchProps> = ({ userWishlists, onAddPro
                           </div>
                           <div className="product-info">
                             <h5>{item.product_details?.name || `Product #${item.product_id}`}</h5>
-                            <p className="product-price">${item.product_details?.price?.toFixed(2) || '0.00'}</p>
+                            <div className="price-section">
+                              {item.product_details?.original_price && item.product_details?.original_price !== item.product_details?.price ? (
+                                <>
+                                  <span className="product-price">${item.product_details?.price?.toFixed(2) || '0.00'}</span>
+                                  <span className="original-price">${item.product_details?.original_price?.toFixed(2)}</span>
+                                </>
+                              ) : (
+                                <span className="product-price">${item.product_details?.price?.toFixed(2) || '0.00'}</span>
+                              )}
+                            </div>
                             <p className="product-description">
-                              {item.product_details?.description?.substring(0, 80)}
-                              {item.product_details?.description?.length > 80 && '...'}
+                              {item.product_details?.description?.substring(0, 60)}
+                              {item.product_details?.description?.length > 60 && '...'}
                             </p>
                             {currentUser && (
                               <button

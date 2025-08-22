@@ -1,17 +1,19 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLightbulb, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faLightbulb, faStar, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { WishlistRecommendation } from '../../services/wishlistRecommendationsService';
 import './WishlistRecommendationTooltip.css';
 
 interface WishlistRecommendationTooltipProps {
-  recommendation: WishlistRecommendation;
+  recommendation?: WishlistRecommendation;
   children: React.ReactNode;
+  isLoading?: boolean;
 }
 
 const WishlistRecommendationTooltip: React.FC<WishlistRecommendationTooltipProps> = ({
   recommendation,
-  children
+  children,
+  isLoading = false
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -99,10 +101,10 @@ const WishlistRecommendationTooltip: React.FC<WishlistRecommendationTooltipProps
     return Math.round(((originalPrice - price) / originalPrice) * 100);
   };
 
-  const discount = calculateDiscount(
+  const discount = recommendation ? calculateDiscount(
     recommendation.product_suggestion.price, 
     recommendation.product_suggestion.original_price
-  );
+  ) : null;
 
   return (
     <div 
@@ -110,16 +112,24 @@ const WishlistRecommendationTooltip: React.FC<WishlistRecommendationTooltipProps
       ref={containerRef}
     >
       {children}
-      <div 
-        className="wishlist-recommendation-icon"
-        onMouseEnter={handleMouseEnter}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
-        <FontAwesomeIcon icon={faLightbulb} />
-      </div>
+      {/* Always show the icon when loading or when there's a recommendation */}
+      {(isLoading || recommendation) && (
+        <div 
+          className={`wishlist-recommendation-icon ${isLoading ? 'loading' : ''}`}
+          onMouseEnter={handleMouseEnter}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
+          {isLoading ? (
+            <FontAwesomeIcon icon={faSpinner} spin />
+          ) : (
+            <FontAwesomeIcon icon={faLightbulb} />
+          )}
+        </div>
+      )}
       
-      {isVisible && (
+      {/* Show tooltip when hovering and there's something to display */}
+      {isVisible && (isLoading || recommendation) && (
         <div 
           className="wishlist-recommendation-tooltip wishlist-recommendation-tooltip-positioned"
           style={{
@@ -127,68 +137,81 @@ const WishlistRecommendationTooltip: React.FC<WishlistRecommendationTooltipProps
             '--tooltip-y': `${position.y}px`
           } as React.CSSProperties}
         >
-          <div className="recommendation-header">
-            <FontAwesomeIcon icon={faLightbulb} className="icon" />
-            <span className="title">Upgrade Suggestion</span>
-          </div>
-          
-          <div className="recommendation-content">
-            <p className="suggestion-text">{recommendation.suggestion}</p>
-            
-            <div className="product-suggestion">
-              <div className="product-image">
-                <img 
-                  src={recommendation.product_suggestion.imageUrl} 
-                  alt={recommendation.product_suggestion.name}
-                  onError={(e) => {
-                    e.currentTarget.src = '/images/placeholder.jpg';
-                  }}
-                />
+          {isLoading ? (
+            <div className="loading-content">
+              <FontAwesomeIcon icon={faSpinner} spin className="loading-spinner" />
+              <p>Loading recommendation...</p>
+            </div>
+          ) : recommendation ? (
+            <>
+              <div className="recommendation-header">
+                <FontAwesomeIcon icon={faLightbulb} className="icon" />
+                <span className="title">Upgrade Suggestion</span>
               </div>
               
-              <div className="product-info">
-                <h4 className="product-name">{recommendation.product_suggestion.name}</h4>
-                <p className="product-category">{recommendation.product_suggestion.category}</p>
+              <div className="recommendation-content">
+                <p className="suggestion-text">{recommendation.suggestion}</p>
                 
-                <div className="price-section">
-                  <div className="current-price">
-                    {formatPrice(recommendation.product_suggestion.price)}
+                <div className="product-suggestion">
+                  <div className="product-image">
+                    <img 
+                      src={recommendation.product_suggestion.imageUrl} 
+                      alt={recommendation.product_suggestion.name}
+                      onError={(e) => {
+                        e.currentTarget.src = '/images/placeholder.jpg';
+                      }}
+                    />
                   </div>
                   
-                  {recommendation.product_suggestion.original_price && (
-                    <div className="original-price">
-                      {formatPrice(recommendation.product_suggestion.original_price)}
+                  <div className="product-info">
+                    <h4 className="product-name">{recommendation.product_suggestion.name}</h4>
+                    <p className="product-category">{recommendation.product_suggestion.category}</p>
+                    
+                    <div className="price-section">
+                      <div className="current-price">
+                        {formatPrice(recommendation.product_suggestion.price)}
+                      </div>
+                      
+                      {recommendation.product_suggestion.original_price && (
+                        <div className="original-price">
+                          {formatPrice(recommendation.product_suggestion.original_price)}
+                        </div>
+                      )}
+                      
+                      {discount && (
+                        <div className="discount-badge">
+                          -{discount}%
+                        </div>
+                      )}
                     </div>
-                  )}
-                  
-                  {discount && (
-                    <div className="discount-badge">
-                      -{discount}%
+                    
+                    <div className="product-meta">
+                      {recommendation.product_suggestion.rating && (
+                        <div className="rating">
+                          <FontAwesomeIcon icon={faStar} className="star-icon" />
+                          <span>{formatRating(recommendation.product_suggestion.rating)}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    
+                    {recommendation.product_suggestion.description && (
+                      <p className="product-description">
+                        {recommendation.product_suggestion.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                
-                <div className="product-meta">
-                  {recommendation.product_suggestion.rating && (
-                    <div className="rating">
-                      <FontAwesomeIcon icon={faStar} className="star-icon" />
-                      <span>{formatRating(recommendation.product_suggestion.rating)}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {recommendation.product_suggestion.description && (
-                  <p className="product-description">
-                    {recommendation.product_suggestion.description}
-                  </p>
-                )}
               </div>
+              
+              <div className="recommendation-footer">
+                <small>Based on shared wishlists</small>
+              </div>
+            </>
+          ) : (
+            <div className="no-recommendation">
+              <p>No recommendations available</p>
             </div>
-          </div>
-          
-          <div className="recommendation-footer">
-            <small>Based on shared wishlists</small>
-          </div>
+          )}
         </div>
       )}
     </div>

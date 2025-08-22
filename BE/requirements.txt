@@ -2,8 +2,6 @@ openai>=1.0.0
 chromadb>=0.4.0
 python-dotenv>=1.0.0
 pydub>=0.25.0
-fastapi>=0.100.0
-uvicorn[standard]>=0.20.0
 setuptools>=68.0.0
 wheel>=0.40.0
 firebase-admin>=6.0.0
@@ -13,14 +11,16 @@ langchain>=0.0.1
 langchain-openai>=0.0.1
 langgraph>=0.0.1
 faiss-cpu>=1.7.0
+uvicorn[standard]>=0.20.0
+fastapi>=0.100.0
 
 
-#py -3.12 -m venv venv312
-#venv312\Scripts\Activate
-#pip install setuptools wheel
- 
+# py -3.12 -m venv venv312
+# venv312\Scripts\Activate
 # # Upgrade pip trước
 # pip install --upgrade pip
+
+# pip install setuptools wheel
 
 # pip install --force-reinstall --no-cache-dir -r requirements.txt
 

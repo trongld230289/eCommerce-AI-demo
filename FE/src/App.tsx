@@ -487,6 +487,7 @@ const AppContent = () => {
           pauseOnFocusLoss
           draggable
           pauseOnHover
+          aria-label="Notifications"
           style={{ zIndex: 9999999 }}
           toastStyle={{
             zIndex: 9999999
