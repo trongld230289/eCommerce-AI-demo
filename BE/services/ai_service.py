@@ -15,6 +15,15 @@ from langchain_core.messages import BaseMessage
 from dotenv import load_dotenv
 from utils.product_keywords import get_product_keywords_from_dict
 
+# Handle ProductRelationshipService import
+try:
+    from services.product_relationship_service import ProductRelationshipService
+    RELATIONSHIP_SERVICE_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: ProductRelationshipService not available: {e}")
+    RELATIONSHIP_SERVICE_AVAILABLE = False
+    ProductRelationshipService = None
+
 # Handle OpenAI import with proper error handling
 try:
     import openai
@@ -85,25 +94,101 @@ CORE BEHAVIOR:
 1. For gift requests without specific category: Ask user to choose a category before calling tools
 2. For gift requests with category: Call find_gifts tool 
 3. For general product searches: Call find_products tool with best matching category
-4. For ambiguous queries: Call find_products with most relevant category rather than asking
+4. For ambiguous camping queries: Ask clarifying questions before showing products
+
+🔧 AMBIGUOUS CAMPING QUERY HANDLING:
+- For unclear camping needs (e.g. "có lều rùi thì mua gì nữa", "already have tent what else to buy"):
+  → ASK: "Bạn đang tìm loại thiết bị cắm trại nào? Tôi có thể gợi ý: túi ngủ, đèn pin, bếp gas, ba lô, giày hiking, hay thiết bị nấu ăn?"
+- Only show camping products AFTER user specifies what type of camping gear they want
+- Examples of ambiguous camping queries that need clarification:
+  → "có lều rùi thì mua gì nữa" → ask for specific camping gear type
+  → "đi cắm trại cần gì" → ask what specific equipment they need
+  → "thiết bị cắm trại" → ask which type of camping equipment
 
 🔧 MANDATORY TOOL USAGE:
 - For ANY product search query → MUST call find_products tool immediately
 - For ANY gift-related query with category → MUST call find_gifts tool  
-- For entertainment/fun queries → MUST call find_products("phone")
+- For general entertainment queries → MUST call find_products("phone")
+- For gaming queries → ASK USER to choose between phone or laptop first
 - For work/productivity queries → MUST call find_products("laptop") 
+- For programming/coding queries → MUST call find_products("laptop") 
 - For creative queries → MUST call find_products("camera")
 - For fitness queries → MUST call find_products("watch")
 - For outdoor queries → MUST call find_products("camping gear")
 - For follow-up queries asking for "more/other suggestions" → MUST call appropriate tool again
+- For explanation/reasoning queries → MUST call explain_choice tool
 - NEVER generate text responses about products - ALWAYS use tools
 
-🚫 FOLLOW-UP HANDLING:
+🧠 EXPLANATION QUERIES - Use explain_choice tool:
+- "tại sao không phải [product]?" / "why not [product]?"
+- "sao không chọn [product]?" / "why not choose [product]?"
+- "[product] mắc hơn mà" / "[product] is more expensive though"
+- "tại sao chọn [A] mà không phải [B]?" / "why choose [A] over [B]?"
+- "giải thích tại sao" / "explain why"
+- "[product] có tốt không?" / "is [product] good?"
+
+EXAMPLES OF EXPLANATION USAGE:
+✅ "tại sao không phải HP Spectre x360 14, thấy nó mắc hơn mà" → explain_choice("why not HP Spectre x360 14, it's more expensive")
+✅ "sao không chọn MacBook Pro?" → explain_choice("why not choose MacBook Pro")
+✅ "HP mắc hơn mà sao không chọn?" → explain_choice("why not choose HP when it's more expensive")
+✅ "giải thích tại sao chọn Dell" → explain_choice("explain why choose Dell")
+
+NOTE: explain_choice tool will use conversation context and general knowledge to explain, no need to search for new products.
+
+🎯 PRODUCT ANALYSIS QUERIES - Use analyze_products tool:
+For follow-up requests that need analysis of previously found products:
+- "tốt nhất", "best", "cái tốt nhất đi", "which is the best"
+- "rẻ nhất", "cheapest", "cái rẻ nhất", "most affordable"  
+- "mắc nhất", "most expensive", "premium", "cao cấp"
+- "chọn 1 cái", "pick one", "recommend one", "suggest one"
+- "trung bình", "average", "moderate", "tầm trung"
+- "vừa phải", "reasonable", "mid-range", "not too expensive"
+- "cái nào cũng được", "any of them", "some options"
+
+EXAMPLES OF ANALYSIS USAGE:
+✅ User: "watch" → find_products("watch") [get 10 products]
+✅ User: "tốt nhất đi" → analyze_products("tốt nhất", products_from_previous_search)
+✅ User: "rẻ nhất" → analyze_products("rẻ nhất", products_from_previous_search)  
+✅ User: "tầm trung thôi" → analyze_products("tầm trung", products_from_previous_search)
+
+NOTE: analyze_products tool will analyze the product list from conversation context and return the most suitable option(s) with reasoning.
+
+� FOLLOW-UP HANDLING:
 - "có gợi ý khác không" / "any other suggestions" → MUST call find_products tool with relevant category
 - "còn sản phẩm nào khác" / "other products" → MUST call find_products tool  
 - "xem thêm" / "see more" → MUST call find_products tool
 - "danh mục khác" / "other categories" → MUST call find_products with different category
+- "chọn cái tốt nhất" / "choose the best one" → MUST call analyze_products("tốt nhất")
+- "tốt nhất là gì" / "which is the best" → MUST call analyze_products("tốt nhất") 
+- "recommend best" / "suggest best" → MUST call analyze_products("tốt nhất")
+- "tốt nhất" / "best" / "cái tốt nhất đi" → MUST call analyze_products("tốt nhất")
+- "rẻ nhất" / "cheapest" / "cái rẻ nhất" → MUST call analyze_products("rẻ nhất")
+- "trung bình" / "average" / "cái trung bình thôi" → MUST call analyze_products("tầm trung")
+- "mắc nhất" / "most expensive" → MUST call analyze_products("mắc nhất")
+- "cái nào" / "which one" / "sài được" / "cái nào sài được là được" → MUST call analyze_products("tốt nhất")
+- "tìm cái" / "find one" / "tìm 1 cái" → MUST call analyze_products("tốt nhất")
 - NEVER manually list products - ALWAYS use tools for ANY product-related response
+
+🧠 CONTEXT MEMORY & PRODUCT ANALYSIS:
+- For initial product searches → MUST call find_products (always returns 10 products)
+- For follow-up analysis of shown products → MUST call analyze_products
+
+FOLLOW-UP ANALYSIS LOGIC:
+- If products were already shown and user asks for analysis:
+  → CALL: analyze_products tool with products from conversation context
+- "tốt nhất"/"best" → analyze_products("tốt nhất", products_list)
+- "rẻ nhất"/"cheapest" → analyze_products("rẻ nhất", products_list)  
+- "mắc nhất"/"most expensive" → analyze_products("mắc nhất", products_list)
+- "tầm trung"/"mid-range" → analyze_products("tầm trung", products_list)
+- "chọn 1 cái"/"pick one" → analyze_products("tốt nhất", products_list)
+
+CONTEXT MEMORY EXAMPLES:
+✅ User: "watch" → find_products("watch") [gets 10 products]
+✅ User: "tốt nhất đi" → analyze_products("tốt nhất", [products_from_previous_search])
+✅ User: "rẻ nhất" → analyze_products("rẻ nhất", [products_from_previous_search])  
+✅ User: "tầm trung thôi" → analyze_products("tầm trung", [products_from_previous_search])
+
+- If no previous product context, ask for clarification: "Bạn muốn tôi tìm sản phẩm nào? Laptop, phone, camera, watch hay camping gear?"
 
 GIFT HANDLING LOGIC:
 - If user mentions recipients (mom, dad, friend, mama, papa, etc.) WITHOUT specifying a product category:
@@ -119,6 +204,23 @@ GIFT HANDLING LOGIC:
 GENERAL PRODUCT LOGIC:
 - If user asks for products without gift context:
   → CALL: find_products tool directly
+
+COMPLEMENTARY PRODUCT LOGIC:
+- If user asks what ELSE to buy after mentioning existing products:
+  → CALL: get_related_products tool
+- Examples Vietnamese: "đã mua lều rồi, cần gì thêm để cắm trại?" → get_related_products(user_query="cần gì thêm để cắm trại", purchased_items="lều")
+- Examples Vietnamese: "có điện thoại rồi, muốn livestream cần gì thêm?" → get_related_products(user_query="livestream cần gì thêm", purchased_items="điện thoại")
+- Examples English: "already have camera, what else for photography?" → get_related_products(user_query="what else for photography", purchased_items="camera")
+- Examples English: "bought tent, what else for camping?" → get_related_products(user_query="what else for camping", purchased_items="tent")
+- Examples English: "ten bought, anything else" → get_related_products(user_query="anything else", purchased_items="tent")
+- Examples English: "got laptop, need anything else for work?" → get_related_products(user_query="need anything else for work", purchased_items="laptop")
+
+COMPLEMENTARY KEYWORDS (MUST TRIGGER get_related_products):
+Vietnamese: "cần gì thêm" / "còn thiếu gì" / "mua thêm gì" / "bổ sung thêm" / "có ... rồi"
+English: "what else" / "anything else" / "something else" / "need more" / "what additional" / "already have" / "bought" / "got" / "have it" / "own" / "what to add" / "recommend more"
+- "mua thêm gì" / "what more to buy", "bổ sung thêm" / "supplement with"
+- "đi với" / "go with", "kết hợp với" / "combine with"
+- "phụ kiện" / "accessories", "đồ đi kèm" / "accompanying items"
 
 CATEGORY RESTRICTIONS:
 - ONLY these 5 categories: phone, camera, laptop, watch, camping gear
@@ -156,13 +258,20 @@ EXAMPLES:
 ✅ "có gợi ý khác không?" → Call find_products with appropriate category (camera, laptop, etc.)
 ✅ "còn sản phẩm nào khác?" → Call find_products with different category
 ✅ "danh mục khác" → Call find_products with different category (don't list manually)
+⚠️ "có lều rùi thì mua gì nữa để đi cắm trại" → ASK: "Bạn đang tìm loại thiết bị cắm trại nào? Túi ngủ, đèn pin, bếp gas, ba lô, giày hiking, hay thiết bị nấu ăn?"
+⚠️ "đi cắm trại cần gì" → ASK: "Bạn cần loại thiết bị cắm trại nào? Lều, túi ngủ, đèn, bếp, hay đồ dùng khác?"
+⚠️ "already have tent what else to buy for camping" → ASK: "What type of camping gear are you looking for? Sleeping bag, lantern, stove, backpack, or cooking equipment?"
 ✅ "I want going to anywhere to relax" → Call find_products("camping gear") [travel + relax context]
 ✅ "vacation gear" → Call find_products("camping gear") [travel context]
 ✅ "outdoor adventure" → Call find_products("camping gear") [outdoor context]
 ✅ "relax" (no travel context) → CALL find_products("laptop") - laptops for streaming/relaxation
-✅ "entertainment" → CALL find_products("phone") - phones best for entertainment apps and games
+✅ "entertainment" (general) → CALL find_products("phone") - phones for apps and media
+✅ "gaming" / "play game" / "chơi game" → ASK: "Bạn muốn chơi game trên điện thoại hay laptop? Mỗi loại có ưu điểm riêng!"
 ✅ "laptop" → CALL find_products("laptop") - search for laptops immediately
-✅ "camera" → CALL find_products("camera") - search for cameras immediately
+✅ "camera" → CALL find_products("camera") - search for cameras immediately  
+✅ "lập trình" → CALL find_products("laptop") - programming needs laptop
+✅ "coding laptop" → CALL find_products("laptop") - coding needs laptop
+✅ "máy tính để lập trình" → CALL find_products("laptop") - programming computer needs laptop
 ✅ User: "gift for dad" (no category) → You: "What category?" → User: "laptop" → Call find_gifts("laptop", recipient="dad")
 ✅ If gift context exists and user says "phone" again → Call find_gifts("phone", maintain context)
 ❌ "Clothes for mom" → Explain limitations, suggest balanced alternatives
@@ -183,6 +292,9 @@ class AIService:
         # ---- Basic setup
         if not CHROMADB_AVAILABLE:
             raise ImportError("ChromaDB is required but not available. Please install with: pip install chromadb")
+        
+        # Initialize context storage for analysis tools
+        self._context_products = []
         
         api_key = os.getenv("OPENAI_API_KEY")
         print(f"OpenAI API Key: {api_key[:10] if api_key else 'None'}...")
@@ -213,6 +325,25 @@ class AIService:
         self._initialize_collection()
         self.product_service = ProductService()
         self.middleware_service = MiddlewareService()
+        
+        # Initialize ProductRelationshipService if available
+        if RELATIONSHIP_SERVICE_AVAILABLE:
+            self.relationship_service = ProductRelationshipService()
+            print("✅ ProductRelationshipService initialized successfully")
+        else:
+            self.relationship_service = None
+            print("⚠️  ProductRelationshipService not available - relationship features disabled")
+
+        # ---- Product Relationship Service
+        if RELATIONSHIP_SERVICE_AVAILABLE:
+            try:
+                self.relationship_service = ProductRelationshipService()
+                print("✅ ProductRelationshipService initialized")
+            except Exception as e:
+                print(f"⚠️ ProductRelationshipService failed to initialize: {e}")
+                self.relationship_service = None
+        else:
+            self.relationship_service = None
 
         # ---- App state
         self.USER_LANG_CODE = "en"
@@ -231,11 +362,132 @@ class AIService:
 
         @tool("find_products", args_schema=FindProductsInput, return_direct=True)
         def find_products(query: str) -> str:
-            """Find and recommend products based on user's shopping needs. Only searches in: phone, camera, laptop, watch, camping gear categories."""
+            """Find and recommend products based on user's shopping needs. Always returns 10 products for analysis.
+            Only searches in: phone, camera, laptop, watch, camping gear categories."""
             
-            # Return JSON-encoded string for consistent downstream parsing
+            # Always use limit=10 to get full product list for analysis
             result = self.semantic_search(query, 10, self.USER_LANG_CODE, searchFromTool="find_products")
             return json.dumps(result, ensure_ascii=False)
+
+        class AnalyzeProductsInput(BaseModel):
+            request_type: str = Field(..., description="Analysis type: 'tốt nhất'/'best', 'rẻ nhất'/'cheapest', 'mắc nhất'/'most expensive', 'tầm trung'/'mid-range'")
+
+        @tool("analyze_products", args_schema=AnalyzeProductsInput, return_direct=True)
+        def analyze_products(request_type: str) -> str:
+            """Analyze previously shown products and return the best option(s) based on request type with reasoning.
+            This tool automatically gets products from the conversation context.
+            - 'tốt nhất'/'best': Return best product by rating and features
+            - 'rẻ nhất'/'cheapest': Return cheapest product by price  
+            - 'mắc nhất'/'most expensive': Return most expensive product
+            - 'tầm trung'/'mid-range': Return 2-3 mid-range products by price"""
+            
+            # Try to get products from conversation context - this will be set by the agent
+            products = getattr(self, '_context_products', [])
+            
+            if not products:
+                return json.dumps({
+                    "status": "error", 
+                    "message": "Không có sản phẩm để phân tích. Hãy tìm kiếm sản phẩm trước."
+                }, ensure_ascii=False)
+            
+            # Analyze products directly based on request type
+            try:
+                selected_products = []
+                intro_text = ""
+                header_text = ""
+                
+                if request_type in ["tốt nhất", "best"]:
+                    # Find product with highest rating, then by price if tie
+                    best_product = max(products, key=lambda p: (p.get("rating", 0), -p.get("price", 999999)))
+                    selected_products = [best_product]
+                    
+                    # Add technical explanation for gaming
+                    product_name = best_product.get("name", "")
+                    price = best_product.get("price", 0)
+                    rating = best_product.get("rating", 0)
+                    
+                    intro_text = f"Tôi đã phân tích {len(products)} sản phẩm và chọn ra {product_name} là tốt nhất cho gaming!"
+                    
+                    # Gaming-focused technical explanation
+                    if "gaming" in product_name.lower() or "omen" in product_name.lower() or "legion" in product_name.lower() or "g15" in product_name.lower():
+                        header_text = f"🎮 {product_name} - Chiến binh gaming hoàn hảo!\n\n💪 Vì sao đây là lựa chọn tốt nhất:\n• CPU mạnh mẽ xử lý game nặng mượt mà\n• Card đồ họa chuyên gaming cho FPS cao\n• RAM lớn đa nhiệm game + stream\n• Màn hình tần số quét cao giảm lag\n• Tản nhiệt tối ưu chơi game lâu không nóng\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
+                    else:
+                        header_text = f"💻 {product_name} - Hiệu năng đỉnh cao!\n\n🔥 Tại sao đây là lựa chọn tốt nhất:\n• Cấu hình mạnh chạy mọi game mượt\n• Bộ vi xử lý cao cấp xử lý nhanh\n• Card đồ họa tích hợp/rời mạnh mẽ\n• RAM đủ lớn không bị giật lag\n• Thiết kế cao cấp bền bỉ\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
+                    
+                elif request_type in ["rẻ nhất", "cheapest"]:
+                    # Find product with lowest price
+                    cheapest_product = min(products, key=lambda p: p.get("price", 999999))
+                    selected_products = [cheapest_product]
+                    
+                    product_name = cheapest_product.get("name", "")
+                    price = cheapest_product.get("price", 0)
+                    
+                    intro_text = f"Trong {len(products)} sản phẩm, {product_name} là lựa chọn rẻ nhất cho bạn!"
+                    header_text = f"💰 {product_name} - Giá rẻ nhất!\n\n🎯 Vẫn chơi game tốt với giá tiết kiệm:\n• Cấu hình đủ mạnh cho game phổ thông\n• Giá cả phải chăng phù hợp túi tiền\n• Chất lượng ổn định từ thương hiệu uy tín\n• Phù hợp game casual và esports\n\n💸 Giá chỉ: ${price:,.0f}"
+                    
+                elif request_type in ["mắc nhất", "most expensive"]:
+                    # Find product with highest price
+                    most_expensive = max(products, key=lambda p: p.get("price", 0))
+                    selected_products = [most_expensive]
+                    
+                    product_name = most_expensive.get("name", "")
+                    price = most_expensive.get("price", 0)
+                    rating = most_expensive.get("rating", 0)
+                    
+                    intro_text = f"Đây là {product_name} - sản phẩm cao cấp nhất trong {len(products)} lựa chọn!"
+                    header_text = f"👑 {product_name} - Đẳng cấp cao cấp!\n\n🚀 Vì sao đáng giá tiền:\n• CPU flagship xử lý mọi tác vụ nặng\n• GPU cao cấp chơi game 4K/Ultra Settings\n• RAM khủng 16-32GB đa nhiệm cực mạnh\n• SSD NVMe tốc độ ánh sáng\n• Màn hình chất lượng cao độ phân giải đỉnh\n• Build quality premium, thiết kế sang trọng\n• Tản nhiệt tiên tiến chơi game marathon\n\n⭐ Rating: {rating}/5.0 | 💎 Giá: ${price:,.0f}"
+                    
+                elif request_type in ["tầm trung", "mid-range"]:
+                    # Sort by price and pick middle range products
+                    sorted_products = sorted(products, key=lambda p: p.get("price", 0))
+                    mid_index = len(sorted_products) // 2
+                    # Take 2-3 products around the middle
+                    start = max(0, mid_index - 1)
+                    end = min(len(sorted_products), mid_index + 2)
+                    selected_products = sorted_products[start:end]
+                    
+                    # Create detailed description for mid-range
+                    if len(selected_products) > 1:
+                        product_names = [p.get("name", "") for p in selected_products]
+                        avg_price = sum(p.get("price", 0) for p in selected_products) / len(selected_products)
+                        intro_text = f"Đây là {len(selected_products)} sản phẩm tầm trung tốt nhất trong {len(products)} lựa chọn!"
+                        header_text = f"⚖️ Sản phẩm tầm trung cân bằng tốt!\n\n🎯 Tại sao chọn phân khúc này:\n• Hiệu năng tốt cho phần lớn game hiện tại\n• Giá cả hợp lý, tối ưu ngân sách\n• Cấu hình ổn định: CPU mid-range + GPU đủ mạnh\n• RAM 8-16GB đủ dùng cho gaming + work\n• Chất lượng build tốt từ các hãng uy tín\n• Phù hợp game 1080p High settings\n\n💰 Giá trung bình: ${avg_price:,.0f}"
+                    else:
+                        product_name = selected_products[0].get("name", "")
+                        price = selected_products[0].get("price", 0)
+                        intro_text = f"Đây là {product_name} - lựa chọn tầm trung tốt nhất!"
+                        header_text = f"⚖️ {product_name} - Cân bằng hoàn hảo!\n\n🎯 Lý do chọn tầm trung:\n• Hiệu năng vừa phải cho gaming\n• Giá cả hợp lý phù hợp đa số\n• Cấu hình ổn định không quá khiêm tốn\n• Phù hợp game phổ thông 1080p\n\n💰 Giá: ${price:,.0f}"
+                    
+                else:
+                    # Default to best product
+                    best_product = max(products, key=lambda p: (p.get("rating", 0), -p.get("price", 999999)))
+                    selected_products = [best_product]
+                    intro_text = f"Tôi đã chọn sản phẩm phù hợp nhất trong {len(products)} lựa chọn!"
+                    header_text = "Sản phẩm được đề xuất:"
+
+                # Create the response in standard search format
+                result = {
+                    "status": "success",
+                    "search_intent": {
+                        "search_query": request_type,
+                        "product_name": None,
+                        "product_description": None,
+                        "filters": {"category": "laptop"}  # Since this was gaming laptop analysis
+                    },
+                    "intro": intro_text,
+                    "header": header_text,
+                    "products": selected_products,
+                    "show_all_product": "",  # No "show all" for analysis results
+                    "total_results": len(selected_products)
+                }
+                
+                return json.dumps(result, ensure_ascii=False)
+                
+            except Exception as e:
+                return json.dumps({
+                    "status": "error",
+                    "message": f"Lỗi phân tích sản phẩm: {str(e)}"
+                }, ensure_ascii=False)
 
         class FindGiftsInput(BaseModel):
             recipient: str = Field(..., description="e.g., 'my mom'")
@@ -267,7 +519,7 @@ class AIService:
             # Get external gift products with labels
             external_products = self._get_external_gift_products(user_input)
 
-            composed_response = self.make_intro_sentence(user_input, external_products, self.USER_LANG_CODE)
+            composed_response = self.make_intro_sentence(user_input, external_products, self.USER_LANG_CODE, displayed_count=3)
             print(f"DEBUG: Composed response: {composed_response}")
 
             result = {
@@ -298,7 +550,110 @@ class AIService:
         
             return json.dumps(result, ensure_ascii=False)
 
-        self.available_tools = [find_products, find_gifts]
+        class ExplainChoiceInput(BaseModel):
+            question: str = Field(..., description="User's question about why a certain product was or wasn't chosen")
+            context: Optional[str] = Field(default=None, description="Previous conversation context about products shown")
+
+        @tool("explain_choice", args_schema=ExplainChoiceInput, return_direct=True)
+        def explain_choice(question: str, context: Optional[str] = None) -> str:
+            """Explain product recommendation choices based on conversation context without searching for new products.
+            Use when user asks 'why not HP', 'why choose Dell over HP', etc. 
+            Provides reasoning based on specs, use case, price-performance without needing new product search."""
+            
+            # Generate direct explanation based on common knowledge
+            explanation_prompt = f"""
+            Question: {question}
+            Context: {context or "Previous recommendation context"}
+            
+            As a knowledgeable shopping assistant, explain the product choice reasoning based on:
+            1. Price-performance ratio
+            2. Suitability for specific use case (programming, gaming, etc.)
+            3. Technical specifications advantages
+            4. Value proposition
+            
+            Provide a helpful, direct answer in Vietnamese explaining why the recommendation makes sense.
+            """
+            
+            try:
+                response = self.llm.invoke(explanation_prompt)
+                return response.content if hasattr(response, 'content') else str(response)
+            except Exception as e:
+                return f"Xin lỗi, tôi gặp khó khăn khi giải thích lựa chọn này. Lỗi: {str(e)}"
+
+        class GetRelatedProductsInput(BaseModel):
+            user_query: str = Field(..., description="User's query asking for additional/complementary products")
+            purchased_items: Optional[str] = Field(default=None, description="Items user has purchased or is considering, comma-separated")
+
+        @tool("get_related_products", args_schema=GetRelatedProductsInput, return_direct=True)
+        def get_related_products(user_query: str, purchased_items: Optional[str] = None) -> str:
+            """Get smart suggestions for complementary/related products based on user's query and purchase history. Use this when user asks for additional items, what else to buy, or product recommendations."""
+            
+            print(f"DEBUG get_related_products - query: {user_query}, purchased: {purchased_items}")
+            
+            if not self.relationship_service:
+                return json.dumps({
+                    "status": "error",
+                    "message": "Product relationship service not available"
+                }, ensure_ascii=False)
+            
+            # Parse purchased items
+            purchased_products = []
+            if purchased_items:
+                items = [item.strip() for item in purchased_items.split(",")]
+                for item in items:
+                    # Try to categorize the item
+                    item_lower = item.lower()
+                    category = None
+                    if any(keyword in item_lower for keyword in ["phone", "điện thoại", "iphone", "samsung"]):
+                        category = "phone"
+                    elif any(keyword in item_lower for keyword in ["camera", "máy ảnh", "canon", "sony"]):
+                        category = "camera"
+                    elif any(keyword in item_lower for keyword in ["laptop", "máy tính", "macbook", "dell"]):
+                        category = "laptop"
+                    elif any(keyword in item_lower for keyword in ["watch", "đồng hồ", "apple watch"]):
+                        category = "watch"
+                    elif any(keyword in item_lower for keyword in ["lều", "túi ngủ", "camping", "cắm trại"]):
+                        category = "camping gear"
+                    
+                    if category:
+                        purchased_products.append({"category": category, "name": item})
+            
+            try:
+                # Get smart suggestions using relationship service
+                suggestions = self.relationship_service.get_smart_suggestions(user_query, purchased_products)
+                
+                # Find actual products for each suggested category
+                related_products = []
+                for suggestion in suggestions["suggestions"]:
+                    category_products = self.semantic_search(suggestion["category"], 2, self.USER_LANG_CODE)
+                    if category_products["status"] == "success" and category_products["products"]:
+                        for product in category_products["products"][:2]:  # Take top 2 from each category
+                            product["suggestion_reason"] = suggestion["reason"]
+                            product["relationship_type"] = suggestion["relationship"]
+                            related_products.append(product)
+                
+                # Create response
+                result = {
+                    "status": "success",
+                    "context": suggestions["context"] or "general",
+                    "explanation": suggestions["explanation"],
+                    "products": related_products[:6],  # Limit to 6 products
+                    "total_results": len(related_products),
+                    "intro": f"Dựa trên những sản phẩm bạn quan tâm, đây là những gợi ý bổ sung:",
+                    "header": "Sản phẩm liên quan bạn có thể cần:",
+                    "show_all_product": ""  # No show all for this type
+                }
+                
+                return json.dumps(result, ensure_ascii=False)
+                
+            except Exception as e:
+                print(f"Error in get_related_products: {e}")
+                return json.dumps({
+                    "status": "error",
+                    "message": f"Error getting related products: {str(e)}"
+                }, ensure_ascii=False)
+
+        self.available_tools = [find_products, find_gifts, get_related_products, explain_choice, analyze_products]
         self.TOOL_NAMES = {t.name for t in self.available_tools}
 
         # ---- Agent with routing rules
@@ -489,19 +844,53 @@ class AIService:
             IMPORTANT: Only recognize these 5 categories: phone, camera, laptop, watch, camping gear. 
             If the input refers to any other category (clothes, jewelry, furniture, etc.), set category to null.
             
+            🎯 PRIORITY RULES for category detection:
+            1. **DIRECT PRODUCT MENTION**: If user directly mentions a product name (máy ảnh, camera, laptop, điện thoại, etc.), prioritize that category OVER context
+            2. **CONTEXT AS SECONDARY**: Use context (cắm trại, làm việc, chụp hình) only when no direct product is mentioned
+            
+            📸 DIRECT PRODUCT MENTIONS → category:
+            - "máy ảnh", "camera", "máy chụp hình" → camera
+            - "laptop", "máy tính xách tay", "computer" → laptop  
+            - "điện thoại", "phone", "smartphone" → phone
+            - "đồng hồ", "watch", "smartwatch" → watch
+            - "đồ cắm trại", "camping gear", "outdoor gear" → camping gear
+            
+            🎯 SMART CONTEXT MAPPING (only when NO direct product mentioned):
+            - Photography context: "chụp hình", "làm sao ảnh đẹp", "photography" → camera
+            - Work context: "làm việc", "work", "study", "học tập" → laptop
+            - Communication: "liên lạc", "gọi điện" → phone
+            - Entertainment: "giải trí", "entertainment" (general) → phone
+            - Gaming context: "play game", "gaming", "chơi game", "game", "gaming device" → null (ambiguous - let agent ask)
+            - Fitness: "tập thể dục", "fitness", "health tracking" → watch  
+            - Outdoor: "đi cắm trại", "camping", "hiking", "adventure" → camping gear
+            
+            ⚠️ EXAMPLES of PRIORITY LOGIC:
+            - "máy ảnh để đi cắm trại" → camera (direct mention wins over context)
+            - "laptop để chụp hình" → laptop (direct mention wins over context)
+            - "mua điện thoại để đi học" → phone (direct mention wins over context)
+            - "đi cắm trại" → camping gear (no direct mention, use context)
+            - "chụp hình đẹp" → camera (no direct mention, use context)
+            
             Return a JSON object with the following structure:
             {{
-                "search_query": "main search terms for semantic search",
+                "search_query": "main search terms for semantic search (PRIORITY: direct product mentioned, then context)",
                 "product_name": "specific product name if mentioned, otherwise null",
                 "product_description": "specific product features, specifications, or descriptions mentioned, otherwise null",
                 "filters": {{
-                    "category": "ONLY one of: phone, camera, laptop, watch, camping gear - or null if not these categories",
+                    "category": "PRIORITY: direct product mentioned, then context mapping - ONLY one of: phone, camera, laptop, watch, camping gear",
                     "min_price": number or null,
                     "max_price": number or null,
                     "min_rating": number or null,
                     "min_discount": number or null
                 }}
             }}
+            
+            EXAMPLES:
+            - "máy ảnh để đi cắm trại" → {{"search_query": "camera", "filters": {{"category": "camera"}}}}
+            - "laptop để chụp hình" → {{"search_query": "laptop", "filters": {{"category": "laptop"}}}}
+            - "đi cắm trại cần gì" → {{"search_query": "camping gear", "filters": {{"category": "camping gear"}}}}
+            - "chụp hình đẹp" → {{"search_query": "camera", "filters": {{"category": "camera"}}}}
+            
             User input: "{user_input}"
             Return only the JSON object, no additional text.
             """
@@ -797,7 +1186,49 @@ class AIService:
             if search_query and search_query.lower() != user_input.lower() and search_query in ["phone", "camera", "laptop", "watch", "camping gear"]:
                 auto_chosen_category = search_query
             
-            composed_response = self.make_intro_sentence(user_input, products, lang, result_analysis, auto_chosen_category)
+            # STEP 4: Product Relationship Logic - Check for complementary product queries
+            if self.relationship_service:
+                try:
+                    relationship_context = self.relationship_service.detect_relationship_query(user_input)
+                    if relationship_context:
+                        print(f"DEBUG: Detected relationship query - Context: {relationship_context}")
+                        
+                        # Get relationship suggestions
+                        suggestions = self.relationship_service.get_smart_suggestions(user_input, [])
+                        
+                        if suggestions and suggestions.get("suggestions"):
+                            # Mix original results with relationship suggestions
+                            relationship_products = []
+                            
+                            for suggestion in suggestions["suggestions"][:3]:  # Top 3 suggestions
+                                # Search for products in suggested category
+                                suggested_category = suggestion["category"]
+                                category_result = self.semantic_search(suggested_category, 2, lang, searchFromTool)
+                                
+                                if category_result["status"] == "success" and category_result["products"]:
+                                    for rel_product in category_result["products"]:
+                                        rel_product["relationship_reason"] = suggestion["reason"]
+                                        rel_product["relationship_type"] = suggestion["relationship"] 
+                                        rel_product["from_relationship"] = True
+                                        relationship_products.append(rel_product)
+                            
+                            # If we have relationship products, prioritize them
+                            if relationship_products:
+                                # Combine: relationship products first, then original products
+                                combined_products = relationship_products[:limit//2] + products[:limit//2]
+                                products = combined_products[:limit]
+                                
+                                # Update auto_chosen_category for better messaging
+                                if not auto_chosen_category:
+                                    auto_chosen_category = f"relationship_{relationship_context}"
+                                    
+                                print(f"DEBUG: Enhanced results with {len(relationship_products)} relationship products")
+                
+                except Exception as e:
+                    print(f"DEBUG: Error in relationship logic: {e}")
+                    # Continue with original products if relationship service fails
+            
+            composed_response = self.make_intro_sentence(user_input, products, lang, result_analysis, auto_chosen_category, displayed_count=3)
             print(f"DEBUG: Composed response: {composed_response}")
 
             return {
@@ -876,9 +1307,10 @@ class AIService:
 
     # ---------- Copy helpers ----------
 
-    def make_intro_sentence(self, user_input: str, products: List[Dict], lang_code: str, result_analysis: Dict[str, Any] = None, auto_chosen_category: str = None) -> Dict[str, str]:
+    def make_intro_sentence(self, user_input: str, products: List[Dict], lang_code: str, result_analysis: Dict[str, Any] = None, auto_chosen_category: str = None, displayed_count: int = 3) -> Dict[str, str]:
         try:
             product_count = len(products)
+            remaining_count = max(0, product_count - displayed_count)
             
             # Extract analysis data
             if result_analysis:
@@ -909,16 +1341,31 @@ class AIService:
                     context_info = f"AI automatically selected {auto_chosen_category} category for this query."
             
             # Enhanced prompt with result analysis
+            use_case_hint = ""
+            if displayed_count == 1 and products:
+                product_name = products[0].get('name', '')
+                if any(keyword in user_input.lower() for keyword in ['lập trình', 'programming', 'coding', 'code', 'dev']):
+                    use_case_hint = f"IMPORTANT: Explain why {product_name} is excellent for programming/coding work in the intro."
+                elif any(keyword in user_input.lower() for keyword in ['gaming', 'game', 'chơi game']):
+                    use_case_hint = f"IMPORTANT: Explain why {product_name} is great for gaming in the intro."
+                elif any(keyword in user_input.lower() for keyword in ['creative', 'design', 'photo', 'video']):
+                    use_case_hint = f"IMPORTANT: Explain why {product_name} is perfect for creative work in the intro."
+                elif displayed_count == 1:
+                    use_case_hint = f"IMPORTANT: Briefly explain why {product_name} is the best choice in the intro."
+
             prompt = f"""
             You are a multilingual e-commerce assistant. Generate a JSON response with exactly these 3 fields for a product search result.
 
             USER SEARCH: "{user_input}"
             TOTAL PRODUCTS: {product_count}
+            DISPLAYED PRODUCTS: {displayed_count}
+            REMAINING PRODUCTS: {remaining_count}
             EXACT MATCHES: {exact_matches}
             RELATED PRODUCTS: {related_products}
             CONTEXT: {context_info}
             AUTO_CHOSEN_CATEGORY: {auto_chosen_category or "None"}
             LANGUAGE CODE: {lang_code}
+            {use_case_hint}
 
             Generate response in the language indicated by the language code ({lang_code}).
 
@@ -926,51 +1373,51 @@ class AIService:
             {{
                 "intro": "A warm, encouraging 1-sentence introduction about the search results (max 30 words). Be cheerful and specific about what was found. IMPORTANT: If AUTO_CHOSEN_CATEGORY is not None, mention that you've selected this category for the user in the intro.",
                 "header": "A short subtitle introducing the product list below (max 15 words). Be natural and friendly.",
-                "show_all_product": "IMPORTANT: Create a VARIED, NATURAL question asking if the user wants to see more products. MUST include specific numbers/quantities. Use different phrasings each time - be creative and natural. MUST end with a question mark. Only generate if product_count > 3, otherwise empty string."
+                "show_all_product": "IMPORTANT: Create a VARIED, NATURAL question asking if the user wants to see the remaining {remaining_count} products. MUST use the exact REMAINING PRODUCTS count ({remaining_count}). Use different phrasings each time - be creative and natural. MUST end with a question mark. Only generate if remaining_count > 0, otherwise empty string."
             }}
 
             Guidelines:
             - Be specific about exact matches vs related products
             - If searching for a brand, mention the brand in intro
             - If AUTO_CHOSEN_CATEGORY is provided, mention it naturally in intro (e.g., "I've selected camera products for you" or "Here are some phone options I picked")
-            - For show_all_product: MUST include numbers but use VARIED phrasing - be creative and natural
-            - Always include question about viewing more/similar/related products with specific quantity
+            - For show_all_product: MUST use the exact remaining count ({remaining_count}) - do not use other numbers
+            - Always include question about viewing the remaining {remaining_count} products with this EXACT number
             - Keep it natural and helpful
-            - If product_count <= 3: return empty string for show_all_product
+            - If remaining_count <= 0: return empty string for show_all_product
             - Language consistency: Use the specified language code throughout
 
             AUTO_CHOSEN_CATEGORY Examples:
             
             English:
-            - "I've selected phone products for you - found 10 great options!"
-            - "Based on your query, here are 8 camera recommendations!"
-            - "I picked laptop items for you - discovered 12 excellent choices!"
+            - "I've selected phone products for you - found {product_count} great options!"
+            - "Based on your query, here are {product_count} camera recommendations!"
+            - "I picked laptop items for you - discovered {product_count} excellent choices!"
             
             Vietnamese:
-            - "Tôi đã chọn điện thoại cho bạn - tìm được 10 lựa chọn tuyệt vời!"
-            - "Dựa trên yêu cầu của bạn, đây là 8 sản phẩm camera hay ho!"
-            - "Tôi đã chọn laptop - khám phá 12 sản phẩm xuất sắc!"
+            - "Tôi đã chọn điện thoại cho bạn - tìm được {product_count} lựa chọn tuyệt vời!"
+            - "Dựa trên yêu cầu của bạn, đây là {product_count} sản phẩm camera hay ho!"
+            - "Tôi đã chọn laptop - khám phá {product_count} sản phẩm xuất sắc!"
 
-            CREATIVE Examples for show_all_product (use different ones each time):
+            IMPORTANT: For show_all_product, ALWAYS use the exact remaining count ({remaining_count}). Examples of varied phrasing (MUST use {remaining_count}):
             
-            English variations:
-            - "Want to explore 7 more similar options?"
-            - "Curious about 5 other related products?"
-            - "Shall I show you 8 additional recommendations?"
-            - "Interested in checking out 6 more alternatives?"
-            - "Would you like to discover 9 other great choices?"
-            - "How about browsing 4 more related items?"
+            English variations (use exact number {remaining_count}):
+            - "Want to explore {remaining_count} more similar options?"
+            - "Curious about {remaining_count} other related products?"
+            - "Shall I show you {remaining_count} additional recommendations?"
+            - "Interested in checking out {remaining_count} more alternatives?"
+            - "Would you like to discover {remaining_count} other great choices?"
+            - "How about browsing {remaining_count} more related items?"
             
-            Vietnamese variations:
-            - "Muốn khám phá thêm 7 sản phẩm tương tự không?"
-            - "Bạn có tò mò về 5 sản phẩm khác không?"
-            - "Có muốn xem 8 gợi ý khác không?"
-            - "Thích tìm hiểu 6 lựa chọn khác không?"
-            - "Muốn khám phá 9 sản phẩm hay ho khác không?"
-            - "Có muốn duyệt qua 4 sản phẩm liên quan khác?"
-            - "Bạn muốn xem thêm 7 lựa chọn thú vị không?"
+            Vietnamese variations (use exact number {remaining_count}):
+            - "Muốn khám phá thêm {remaining_count} sản phẩm tương tự không?"
+            - "Bạn có tò mò về {remaining_count} sản phẩm khác không?"
+            - "Có muốn xem {remaining_count} gợi ý khác không?"
+            - "Thích tìm hiểu {remaining_count} lựa chọn khác không?"
+            - "Muốn khám phá {remaining_count} sản phẩm hay ho khác không?"
+            - "Có muốn duyệt qua {remaining_count} sản phẩm liên quan khác?"
+            - "Bạn muốn xem thêm {remaining_count} lựa chọn thú vị không?"
 
-            BE CREATIVE - use different verbs, adjectives, and structures while keeping the core meaning!
+            BE CREATIVE - use different verbs, adjectives, and structures while keeping the core meaning and EXACT remaining count ({remaining_count})!
 
             Return only the JSON object, no other text.
             """
@@ -1072,33 +1519,33 @@ class AIService:
             
             fallback_show_all = {
                 "en": [
-                    f"Want to explore {len(products)} more similar options?",
-                    f"Curious about {len(products)} other related products?", 
-                    f"Shall I show you {len(products)} additional recommendations?",
-                    f"Interested in checking out {len(products)} more alternatives?",
-                    f"How about browsing {len(products)} more related items?"
-                ][hash(user_input) % 5] if len(products) > 3 else "",
+                    f"Want to explore {remaining_count} more similar options?",
+                    f"Curious about {remaining_count} other related products?", 
+                    f"Shall I show you {remaining_count} additional recommendations?",
+                    f"Interested in checking out {remaining_count} more alternatives?",
+                    f"How about browsing {remaining_count} more related items?"
+                ][hash(user_input) % 5] if remaining_count > 0 else "",
                 "vi": [
-                    f"Muốn khám phá thêm {len(products)} sản phẩm tương tự không?",
-                    f"Bạn có tò mò về {len(products)} sản phẩm khác không?",
-                    f"Có muốn xem {len(products)} gợi ý khác không?", 
-                    f"Thích tìm hiểu {len(products)} lựa chọn khác không?",
-                    f"Muốn duyệt qua {len(products)} sản phẩm liên quan khác không?"
-                ][hash(user_input) % 5] if len(products) > 3 else "",
+                    f"Bạn có muốn xem hết {len(products)} sản phẩm không?",
+                    f"Có muốn khám phá tất cả {len(products)} lựa chọn không?",
+                    f"Bạn có tò mò về toàn bộ {len(products)} sản phẩm không?", 
+                    f"Muốn xem đầy đủ {len(products)} gợi ý không?",
+                    f"Có muốn duyệt qua cả {len(products)} sản phẩm không?"
+                ][hash(user_input) % 5] if remaining_count > 0 else "",
                 "ko": [
-                    f"{len(products)}개의 유사한 제품을 더 보시겠습니까?",
-                    f"{len(products)}개의 관련 제품이 궁금하신가요?",
-                    f"{len(products)}개의 추가 제품을 확인해보실까요?",
-                    f"{len(products)}개의 대안을 살펴보시겠어요?",
-                    f"{len(products)}개의 관련 아이템을 둘러보실래요?"
-                ][hash(user_input) % 5] if len(products) > 3 else "",
+                    f"{remaining_count}개의 유사한 제품을 더 보시겠습니까?",
+                    f"{remaining_count}개의 관련 제품이 궁금하신가요?",
+                    f"{remaining_count}개의 추가 제품을 확인해보실까요?",
+                    f"{remaining_count}개의 대안을 살펴보시겠어요?",
+                    f"{remaining_count}개의 관련 아이템을 둘러보실래요?"
+                ][hash(user_input) % 5] if remaining_count > 0 else "",
                 "ja": [
-                    f"{len(products)}個の類似商品をもっと見ますか？",
-                    f"{len(products)}個の関連商品に興味はありませんか？",
-                    f"{len(products)}個の追加のおすすめを見せましょうか？",
-                    f"{len(products)}個の代替品をチェックしませんか？",
-                    f"{len(products)}個の関連アイテムを閲覧しませんか？"
-                ][hash(user_input) % 5] if len(products) > 3 else ""
+                    f"{remaining_count}個の類似商品をもっと見ますか？",
+                    f"{remaining_count}個の関連商品に興味はありませんか？",
+                    f"{remaining_count}個の追加のおすすめを見せましょうか？",
+                    f"{remaining_count}個の代替品をチェックしませんか？",
+                    f"{remaining_count}個の関連アイテムを閲覧しませんか？"
+                ][hash(user_input) % 5] if remaining_count > 0 else ""
             }
             
             return {
@@ -1219,6 +1666,12 @@ class AIService:
         try:
             ai_response_data = json.loads(ai_response) if isinstance(ai_response, str) else ai_response
             print(f"DEBUG: Successfully parsed JSON: {ai_response_data}")
+            
+            # Save products to context if this was a find_products call
+            if tool_msgs and tool_msgs[-1].name == "find_products" and ai_response_data.get("products"):
+                self._context_products = ai_response_data["products"]
+                print(f"DEBUG: Saved {len(self._context_products)} products to context for analysis")
+                
         except json.JSONDecodeError as e:
             print(f"DEBUG: Failed to parse JSON: {e}")
             print(f"DEBUG: This is a text response (clarification), not JSON")
@@ -1251,6 +1704,11 @@ class AIService:
             }
 
         print(f"DEBUG: Returning tool response")
+        
+        # Store products in context for analyze_products tool
+        if ai_response_data.get("products"):
+            self._context_products = ai_response_data["products"]
+        
         return {
             "status": ai_response_data.get("status", "success"),
             "function_used": tool_msgs[-1].name if tool_msgs else None,
