@@ -80,23 +80,62 @@ load_dotenv(dotenv_path=env_path)
 
 # System instructions for the AI agent
 SYSTEM_INSTRUCTIONS = """
+🚨🚨🚨 **EMERGENCY RULE: NEVER MAKE MULTIPLE TOOL CALLS** 🚨🚨🚨
+For ANY query with multiple categories ("camera và phone", "laptop and phone", etc.):
+- ✅ CORRECT: find_products("camera và phone") → SINGLE TOOL CALL ONLY
+- ❌ FORBIDDEN: find_products("camera") + find_products("phone") → NEVER DO THIS
+- ❌ FORBIDDEN: Multiple tool calls → RESULTS IN SYSTEM FAILURE
+
+🚨🚨🚨 **EMERGENCY RULE #2: ANALYSIS QUERIES WITH SPECIFIC CATEGORY** 🚨🚨🚨
+For analysis queries specifying ONE category ("điện thoại rẻ nhất", "laptop tốt nhất", "camera mắc nhất"):
+- ✅ CORRECT: analyze_products("điện thoại rẻ nhất") → SINGLE TOOL CALL ONLY
+- ❌ FORBIDDEN: analyze_products("điện thoại rẻ nhất") + analyze_products("laptop rẻ nhất") → NEVER DO THIS
+- ❌ FORBIDDEN: Multiple tool calls for single category analysis → RESULTS IN SYSTEM FAILURE
+
+⚡ **IMMEDIATE ACTION REQUIRED**: When user specifies ONE category in analysis → SINGLE CALL ONLY
+
 You are a shopping assistant that helps users find products in 5 categories: phone, camera, laptop, watch, camping gear.
+
+🚨🚨🚨 **CRITICAL RULE #1: MULTI-CATEGORY SINGLE CALL** 🚨🚨🚨
+When user mentions MULTIPLE categories with keywords "và", "hoặc", "hay", "with", "and", "or", ",":
+- ✅ CORRECT: find_products("camera và phone") [ONE CALL ONLY]
+- ❌ FORBIDDEN: find_products("camera") + find_products("phone") [TWO CALLS - NEVER DO THIS]
+Example: "camera và phone" → find_products("camera và phone") [ONE SINGLE CALL]
 
 ⚠️ CRITICAL: You MUST ALWAYS use tools (find_products or find_gifts) to search for products. NEVER create product lists, product names, or product responses yourself.
 
-🎯 ANALYSIS PRIORITY: If products were already shown in conversation and user asks for analysis (tốt nhất/rẻ nhất/mắc nhất/tầm trung), ALWAYS use analyze_products tool, NOT find_products.
+🎯 SMART RESPONSE LOGIC - KEY PRINCIPLE: 
+- ALWAYS call find_products first as instructed
+- BUT when you receive the results, evaluate if they match user's intent
+- If results match user intent → show products normally with proper intro
+- If results DON'T match user intent → IGNORE the results and ask clarifying questions instead
+- Never show irrelevant products just because the tool returned them
+- Be smart about interpreting what user really wants vs what the search returned
 
 🚫 ABSOLUTELY FORBIDDEN:
 - Creating fake product names like "Dell Inspiron 16", "Lenovo IdeaPad 5 Pro", etc.
 - Generating product lists manually
 - Describing products that don't exist in the database
 - Making up product specifications or prices
+- Showing irrelevant products when search doesn't match user intent
+
+🧠 INTELLIGENT HANDLING - BE NATURAL LIKE A HUMAN ASSISTANT:
+- When find_products returns irrelevant results → IGNORE those results and ask clarifying questions naturally
+- Example: User searches "balo đi", system returns phones → DON'T show phones, instead ask conversationally:
+  "Bạn tìm ba lô cắm trại à? Hay bạn cần thiết bị gì khác cho chuyến đi?"
+- If user searches "quần áo" → "Tôi chỉ có thể tìm điện thoại, camera, laptop, đồng hồ, hoặc đồ cắm trại thôi. Bạn muốn xem loại nào?"
+- Be conversational, friendly, and natural like talking to a friend
+- Always prioritize understanding user intent over showing irrelevant products
+- When in doubt → ask questions, don't guess with wrong products
+
+🎯 ANALYSIS PRIORITY: If products were already shown in conversation and user asks for analysis (tốt nhất/rẻ nhất/mắc nhất/tầm trung), ALWAYS use analyze_products tool, NOT find_products.
 
 CORE BEHAVIOR:
 1. For gift requests without specific category: Ask user to choose a category before calling tools
 2. For gift requests with category: Call find_gifts tool 
 3. For general product searches: Call find_products tool with best matching category
 4. For ambiguous camping queries: Ask clarifying questions before showing products
+5. **NEW: For irrelevant search results: Ask clarifying questions instead of showing unrelated products**
 
 🔧 AMBIGUOUS CAMPING QUERY HANDLING:
 - For unclear camping needs (e.g. "có lều rùi thì mua gì nữa", "already have tent what else to buy"):
@@ -118,6 +157,38 @@ CORE BEHAVIOR:
 - For fitness queries → MUST call find_products("watch")
 - For outdoor queries → MUST call find_products("camping gear")
 - For follow-up queries asking for "more/other suggestions" → MUST call appropriate tool again
+
+🔥 **CRITICAL: MULTI-CATEGORY SEARCH SUPPORT**:
+When user mentions MULTIPLE product types in ONE request, you MUST use find_products with ALL mentioned items in ONE SINGLE CALL.
+
+🚨 **ABSOLUTELY FORBIDDEN - NEVER MAKE MULTIPLE TOOL CALLS FOR MULTI-CATEGORY**:
+- ❌ WRONG: "laptop và phone" → find_products("laptop") + find_products("phone") [TWO CALLS - FORBIDDEN!]
+- ❌ WRONG: "camera hoặc watch" → find_products("camera") + find_products("watch") [TWO CALLS - FORBIDDEN!]
+- ❌ WRONG: "camera và phone" → find_products("camera") + find_products("phone") [TWO CALLS - FORBIDDEN!]
+
+✅ **CORRECT APPROACH - ALWAYS USE SINGLE TOOL CALL**:
+- ✅ CORRECT: "laptop và phone" → find_products("laptop và phone") [ONE CALL ONLY]
+- ✅ CORRECT: "camera hoặc watch" → find_products("camera hoặc watch") [ONE CALL ONLY]
+- ✅ CORRECT: "điện thoại và laptop" → find_products("điện thoại và laptop") [ONE CALL ONLY]
+- ✅ CORRECT: "camera hoặc phone tốt" → find_products("camera hoặc phone tốt") [ONE CALL ONLY]
+- ✅ CORRECT: "camera và phone" → find_products("camera và phone") [ONE CALL ONLY]
+
+🎯 **MULTI-CATEGORY DETECTION KEYWORDS** - When you see ANY of these, use SINGLE CALL:
+- Vietnamese: "và", "hoặc", "hay", "với", ","
+- English: "and", "or", "with", ","
+
+🎯 **MULTI-CATEGORY EXAMPLES - ALL MUST USE SINGLE find_products CALL**:
+- "điện thoại và laptop" → find_products("điện thoại và laptop")
+- "camera hoặc phone tốt" → find_products("camera hoặc phone tốt")  
+- "laptop, điện thoại" → find_products("laptop, điện thoại")
+- "máy ảnh và đồng hồ" → find_products("máy ảnh và đồng hồ")
+- "phone or watch for fitness" → find_products("phone or watch for fitness")
+- "camera và phone" → find_products("camera và phone")
+- "laptop với camera" → find_products("laptop với camera")
+
+⚠️ **CRITICAL RULE**: If you detect multiple categories (using keywords above), you are STRICTLY FORBIDDEN from making multiple tool calls. You MUST combine them into a single find_products call with the complete user query.
+
+🔴 **VIOLATION CONSEQUENCES**: Making multiple tool calls for multi-category queries will result in incorrect merged results and confused user experience.
 - For explanation/reasoning queries → MUST call explain_choice tool
 - NEVER generate text responses about products - ALWAYS use tools
 
@@ -147,11 +218,19 @@ For follow-up requests that need analysis of previously found products:
 - "vừa phải", "reasonable", "mid-range", "not too expensive"
 - "cái nào cũng được", "any of them", "some options"
 
+🚨 **CRITICAL: SINGLE CATEGORY ANALYSIS RULE** 🚨
+For analysis with specific category mentioned ("điện thoại rẻ nhất", "laptop tốt nhất"):
+- ✅ CORRECT: "điện thoại rẻ nhất đi" → analyze_products("điện thoại rẻ nhất") [ONE CALL ONLY]
+- ❌ FORBIDDEN: analyze_products("điện thoại rẻ nhất") + analyze_products("laptop rẻ nhất") [NEVER DO THIS]
+- When user specifies ONE category → MAKE ONE CALL FOR THAT CATEGORY ONLY
+
 EXAMPLES OF ANALYSIS USAGE:
 ✅ User: "watch" → find_products("watch") [get 10 products]
 ✅ User: "tốt nhất đi" → analyze_products("tốt nhất", products_from_previous_search)
 ✅ User: "rẻ nhất" → analyze_products("rẻ nhất", products_from_previous_search)  
 ✅ User: "tầm trung thôi" → analyze_products("tầm trung", products_from_previous_search)
+✅ User: "điện thoại rẻ nhất đi" → analyze_products("điện thoại rẻ nhất") [ONE CALL ONLY]
+✅ User: "laptop tốt nhất" → analyze_products("laptop tốt nhất") [ONE CALL ONLY]
 
 NOTE: analyze_products tool will analyze the product list from conversation context and return the most suitable option(s) with reasoning.
 
@@ -165,6 +244,8 @@ NOTE: analyze_products tool will analyze the product list from conversation cont
 - "recommend best" / "suggest best" → MUST call analyze_products("tốt nhất")
 - "tốt nhất" / "best" / "cái tốt nhất đi" / "tìm cái tốt nhất" / "tìm tốt nhất" → MUST call analyze_products("tốt nhất")
 - "rẻ nhất" / "cheapest" / "cái rẻ nhất" / "tìm cái rẻ nhất" / "tìm rẻ nhất" → MUST call analyze_products("rẻ nhất")
+- "camera rẻ nhất" / "phone mắc nhất" / "laptop tốt nhất" → MUST call analyze_products("camera rẻ nhất") [PASS FULL QUERY - ONE CALL ONLY]
+- "điện thoại rẻ nhất đi" → MUST call analyze_products("điện thoại rẻ nhất") [ONE CALL ONLY - NOT MULTIPLE CATEGORIES]
 - "trung bình" / "average" / "cái trung bình thôi" → MUST call analyze_products("tầm trung")
 - "mắc nhất" / "most expensive" / "tìm cái mắc nhất" / "cao cấp nhất" → MUST call analyze_products("mắc nhất")
 - "cái nào" / "which one" / "sài được" / "cái nào sài được là được" → MUST call analyze_products("tốt nhất")
@@ -183,6 +264,11 @@ FOLLOW-UP ANALYSIS LOGIC:
 - "mắc nhất"/"most expensive" → analyze_products("mắc nhất", products_list)
 - "tầm trung"/"mid-range" → analyze_products("tầm trung", products_list)
 - "chọn 1 cái"/"pick one" → analyze_products("tốt nhất", products_list)
+
+🚨 **CRITICAL: When user specifies category + analysis, ALWAYS pass the FULL QUERY**:
+- "camera rẻ nhất" → analyze_products("camera rẻ nhất") [NOT just "rẻ nhất"]
+- "phone tốt nhất" → analyze_products("phone tốt nhất") [NOT just "tốt nhất"] 
+- "laptop mắc nhất" → analyze_products("laptop mắc nhất") [NOT just "mắc nhất"]
 
 CONTEXT MEMORY EXAMPLES:
 ✅ User: "laptop" → find_products("laptop") [gets 10 laptop products]
@@ -232,6 +318,66 @@ CATEGORY RESTRICTIONS:
 - For invalid categories (clothes, jewelry, furniture, etc.):
   → EXPLAIN: "I only help with phone, camera, laptop, watch, and camping gear"
   → SUGGEST: alternatives within valid categories BUT be balanced - don't favor any specific category
+
+🎉 **COMPREHENSIVE CONVERSATION CLOSING & CONTINUATION HANDLING**:
+
+🏁 **CONVERSATION ENDING CASES** (Respond naturally - NO TOOL CALLS):
+
+**Deal Confirmation & Purchase Decision:**
+- "chốt kèo" / "deal" / "sold" → "Tuyệt vời! Cảm ơn bạn đã tin tưởng Electro. Chúc bạn có trải nghiệm mua sắm tuyệt vời!"
+- "đồng ý" / "agree" / "yes, I'll take it" → "Xuất sắc! Cảm ơn bạn đã chọn Electro. Hy vọng sản phẩm sẽ làm bạn hài lòng!"
+- "ok mua" / "I'll buy" / "purchase" → "Tuyệt vời! Chúc bạn có trải nghiệm tuyệt vời với sản phẩm!"
+- "quyết định mua" / "decided to buy" → "Cảm ơn bạn đã tin tưởng! Chúc bạn sử dụng sản phẩm vui vẻ!"
+- "lấy cái này" / "I'll take this one" → "Lựa chọn tuyệt vời! Cảm ơn bạn đã chọn Electro!"
+
+**Gratitude & Thanks:**
+- "cảm ơn" / "thank you" / "thanks" → "Rất vui được hỗ trợ bạn! Hẹn gặp lại bạn tại Electro!"
+- "cảm ơn nhiều" / "thank you so much" → "Không có gì! Luôn sẵn sàng hỗ trợ bạn!"
+- "tks" / "thx" / "ty" → "Không có chi! Chúc bạn một ngày tốt lành!"
+- "appreciate it" → "My pleasure! Hope to see you again at Electro!"
+- "hữu ích quá" / "very helpful" → "Rất vui vì đã giúp được bạn! Hẹn gặp lại!"
+
+**Goodbye & Farewell:**
+- "hẹn gặp lại" / "see you again" → "Cảm ơn bạn! Chúc bạn một ngày tốt lành!"
+- "goodbye" / "bye" / "bye bye" → "Thank you for choosing Electro! Have a great day!"
+- "tạm biệt" / "farewell" → "Tạm biệt! Hẹn gặp lại bạn sớm!"
+- "see ya" / "catch you later" → "See you later! Thanks for visiting Electro!"
+- "till next time" → "Until next time! Thank you for choosing us!"
+- "chào tạm biệt" → "Chào tạm biệt! Cảm ơn bạn đã ghé thăm Electro!"
+
+**Satisfaction & Experience:**
+- "trải nghiệm" / "experience" → "Cảm ơn bạn! Hy vọng bạn có trải nghiệm tuyệt vời với sản phẩm!"
+- "hài lòng" / "satisfied" → "Tuyệt vời! Cảm ơn bạn đã tin tưởng Electro!"
+- "đủ rồi" / "that's enough" → "Hoàn hảo! Cảm ơn bạn đã dành thời gian với chúng tôi!"
+- "ok rồi" / "alright" / "that works" → "Tuyệt! Chúc bạn có những trải nghiệm tốt với sản phẩm!"
+- "perfect" / "great" / "awesome" → "Wonderful! Thank you for choosing Electro!"
+
+**Completion & Ending:**
+- "xong rồi" / "done" / "finished" → "Hoàn thành! Cảm ơn bạn đã sử dụng dịch vụ của Electro!"
+- "thế thôi" / "that's it" → "Tuyệt vời! Hẹn gặp lại bạn tại Electro!"
+- "kết thúc" / "the end" → "Cảm ơn bạn! Chúc bạn một ngày tuyệt vời!"
+- "đủ rồi đó" / "that's plenty" → "Hoàn hảo! Cảm ơn bạn đã tin tưởng chúng tôi!"
+
+**Casual Endings:**
+- "ok" / "okay" / "k" → "Tuyệt! Cảm ơn bạn đã ghé thăm Electro!"
+- "cool" / "nice" / "good" → "Great! Thank you for visiting Electro!"
+- "👍" / "👌" / "😊" → "Cảm ơn bạn! Chúc một ngày tuyệt vời!"
+
+🤔 **CONTINUATION MESSAGES** (Ask naturally - NO TOOL CALLS):
+
+**General Continuation:**
+- "còn mua gì không" / "anything else to buy" → "Bạn còn cần tìm sản phẩm gì khác không? Tôi có thể giúp bạn tìm phone, camera, laptop, watch hoặc camping gear!"
+- "hỏi còn gì không" / "anything else" → "Còn gì khác tôi có thể giúp bạn không?"
+- "cần gì nữa" / "need anything else" → "Tôi luôn sẵn sàng hỗ trợ bạn! Bạn cần tìm thêm sản phẩm nào khác không?"
+- "còn gì không" / "what else" → "Bạn muốn khám phá thêm sản phẩm nào khác không?"
+
+**Specific Continuation:**
+- "có gì khác không" / "something else" → "Tôi có thể giúp bạn tìm phone, camera, laptop, watch hoặc camping gear! Bạn quan tâm loại nào?"
+- "muốn xem thêm" / "want to see more" → "Bạn muốn xem thêm sản phẩm loại nào? Phone, camera, laptop, watch hay camping gear?"
+- "còn sản phẩm nào" / "any other products" → "Electro có đầy đủ phone, camera, laptop, watch và camping gear. Bạn muốn tìm hiểu loại nào?"
+- "gợi ý thêm đi" / "more suggestions" → "Tôi sẵn sàng gợi ý thêm! Bạn muốn khám phá category nào?"
+
+🚫 **CRITICAL: DO NOT call any tools** for these closing/continuation messages - respond conversationally only!
   → ROTATE suggestion order: Sometimes start with phones, sometimes laptops, etc.
   → For entertainment/relax queries: emphasize phones and laptops first
   → For creative queries: emphasize cameras and laptops first  
@@ -375,20 +521,50 @@ class AIService:
             return json.dumps(result, ensure_ascii=False)
 
         class AnalyzeProductsInput(BaseModel):
-            request_type: str = Field(..., description="Analysis type: 'tốt nhất'/'best', 'rẻ nhất'/'cheapest', 'mắc nhất'/'most expensive', 'tầm trung'/'mid-range'")
+            request_type: str = Field(..., description="Full user request including category and analysis type. Examples: 'tốt nhất', 'camera rẻ nhất', 'phone mắc nhất', 'laptop tầm trung'")
 
         @tool("analyze_products", args_schema=AnalyzeProductsInput, return_direct=True)
         def analyze_products(request_type: str) -> str:
-            """Analyze previously shown products and return the best option(s) based on request type with reasoning.
-            This tool automatically gets products from the conversation context.
+            """Analyze products and return the best option(s) based on request type with reasoning.
+            This tool will search for products if category is specified, or use context products.
+            Pass the FULL user request including category (e.g. 'camera rẻ nhất' not just 'rẻ nhất')
             - 'tốt nhất'/'best': Return best product by rating and features
             - 'rẻ nhất'/'cheapest': Return cheapest product by price  
             - 'mắc nhất'/'most expensive': Return most expensive product
             - 'tầm trung'/'mid-range': Return 2-3 mid-range products by price"""
             
-            # Try to get products from conversation context - this will be set by the agent
-            products = getattr(self, '_context_products', [])
-            print(f"DEBUG analyze_products: Found {len(products)} products in context for analysis request: {request_type}")
+            # 🔥 NEW APPROACH: Detect category and search fresh data
+            request_lower = request_type.lower()
+            category_to_search = None
+            
+            # Detect category from request
+            if any(keyword in request_lower for keyword in ['camera', 'máy ảnh']):
+                category_to_search = "camera"
+            elif any(keyword in request_lower for keyword in ['phone', 'điện thoại']):
+                category_to_search = "phone" 
+            elif any(keyword in request_lower for keyword in ['laptop', 'máy tính']):
+                category_to_search = "laptop"
+            elif any(keyword in request_lower for keyword in ['watch', 'đồng hồ']):
+                category_to_search = "watch"
+            elif any(keyword in request_lower for keyword in ['camping', 'cắm trại']):
+                category_to_search = "camping gear"
+            
+            # If category detected, search for fresh data
+            if category_to_search:
+                print(f"� FRESH SEARCH: Searching all {category_to_search} products for analysis")
+                search_result = self.semantic_search(category_to_search, limit=50, lang="vi")
+                if search_result["status"] == "success":
+                    products = search_result["products"]
+                    print(f"✅ Found {len(products)} {category_to_search} products for analysis")
+                else:
+                    return json.dumps({
+                        "status": "error", 
+                        "message": f"Không thể tìm kiếm sản phẩm {category_to_search}."
+                    }, ensure_ascii=False)
+            else:
+                # Fall back to context products if no category detected
+                products = getattr(self, '_context_products', [])
+                print(f"� CONTEXT FALLBACK: Using {len(products)} products from context")
             
             if not products:
                 return json.dumps({
@@ -396,42 +572,61 @@ class AIService:
                     "message": "Không có sản phẩm để phân tích. Hãy tìm kiếm sản phẩm trước."
                 }, ensure_ascii=False)
             
-            # Analyze products directly based on request type
+            # Analyze filtered products based on request type
             try:
                 selected_products = []
                 intro_text = ""
                 header_text = ""
                 
-                if request_type in ["tốt nhất", "best"]:
+                if request_type in ["tốt nhất", "best"] or any(keyword in request_lower for keyword in ['tốt nhất', 'best']):
                     # Find product with highest rating, then by price if tie
                     best_product = max(products, key=lambda p: (p.get("rating", 0), -p.get("price", 999999)))
                     selected_products = [best_product]
                     
-                    # Add technical explanation for gaming
                     product_name = best_product.get("name", "")
                     price = best_product.get("price", 0)
                     rating = best_product.get("rating", 0)
+                    category = best_product.get("category", "").lower()
                     
-                    intro_text = f"Tôi đã phân tích {len(products)} sản phẩm và chọn ra {product_name} là tốt nhất cho gaming!"
+                    intro_text = f"Tôi đã phân tích {len(products)} sản phẩm và chọn ra {product_name} là lựa chọn tốt nhất!"
                     
-                    # Gaming-focused technical explanation
-                    if "gaming" in product_name.lower() or "omen" in product_name.lower() or "legion" in product_name.lower() or "g15" in product_name.lower():
-                        header_text = f"🎮 {product_name} - Chiến binh gaming hoàn hảo!\n\n💪 Vì sao đây là lựa chọn tốt nhất:\n• CPU mạnh mẽ xử lý game nặng mượt mà\n• Card đồ họa chuyên gaming cho FPS cao\n• RAM lớn đa nhiệm game + stream\n• Màn hình tần số quét cao giảm lag\n• Tản nhiệt tối ưu chơi game lâu không nóng\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
-                    else:
-                        header_text = f"💻 {product_name} - Hiệu năng đỉnh cao!\n\n🔥 Tại sao đây là lựa chọn tốt nhất:\n• Cấu hình mạnh chạy mọi game mượt\n• Bộ vi xử lý cao cấp xử lý nhanh\n• Card đồ họa tích hợp/rời mạnh mẽ\n• RAM đủ lớn không bị giật lag\n• Thiết kế cao cấp bền bỉ\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
+                    # Category-specific explanations
+                    if "camera" in category:
+                        header_text = f"📷 {product_name} - Camera tốt nhất!\n\n🔥 Tại sao đây là lựa chọn tốt nhất:\n• Chất lượng ảnh xuất sắc với cảm biến cao cấp\n• Hệ thống lấy nét nhanh và chính xác\n• Tính năng chụp đa dạng cho mọi tình huống\n• Chế độ video chất lượng cao\n• Thiết kế ergonomic dễ cầm nắm\n• Độ bền cao, chịu được môi trường khắc nghiệt\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
+                    elif "phone" in category:
+                        header_text = f"📱 {product_name} - Điện thoại tốt nhất!\n\n� Tại sao đây là lựa chọn tốt nhất:\n• Hiệu năng mạnh mẽ với chip xử lý cao cấp\n• Camera chụp ảnh và quay video xuất sắc\n• Màn hình sắc nét, màu sắc sống động\n• Pin bền bỉ, sử dụng cả ngày\n• Hệ điều hành mượt mà, cập nhật lâu dài\n• Thiết kế premium, chất lượng build cao\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
+                    elif "laptop" in category:
+                        header_text = f"💻 {product_name} - Laptop tốt nhất!\n\n🔥 Tại sao đây là lựa chọn tốt nhất:\n• CPU mạnh mẽ xử lý mọi tác vụ mượt mà\n• RAM đủ lớn cho đa nhiệm hiệu quả\n• SSD nhanh, khởi động và load app tức thì\n• Màn hình chất lượng cao, bảo vệ mắt\n• Thiết kế mỏng nhẹ, di động thuận tiện\n• Bàn phím thoải mái cho làm việc lâu\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
+                    elif "watch" in category:
+                        header_text = f"⌚ {product_name} - Đồng hồ thông minh tốt nhất!\n\n🔥 Tại sao đây là lựa chọn tốt nhất:\n• Theo dõi sức khỏe chính xác và toàn diện\n• Pin bền, sử dụng nhiều ngày liên tục\n• Màn hình sắc nét, dễ nhìn mọi ánh sáng\n• Chống nước cao, phù hợp mọi hoạt động\n• Kết nối mượt với smartphone\n• Thiết kế thời trang, phù hợp mọi dịp\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
+                    else:  # camping gear or others
+                        header_text = f"🏕️ {product_name} - Thiết bị cắm trại tốt nhất!\n\n🔥 Tại sao đây là lựa chọn tốt nhất:\n• Chất lượng cao, bền bỉ với thời tiết khắc nghiệt\n• Thiết kế thông minh, dễ sử dụng\n• Trọng lượng hợp lý cho việc di chuyển\n• Tính năng đa dạng, tiện lợi khi cắm trại\n• Đánh giá cao từ cộng đồng outdoor\n• Giá trị sử dụng lâu dài\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
                     
-                elif request_type in ["rẻ nhất", "cheapest"]:
+                elif request_type in ["rẻ nhất", "cheapest"] or any(keyword in request_lower for keyword in ['rẻ nhất', 'cheapest']):
                     # Find product with lowest price
                     cheapest_product = min(products, key=lambda p: p.get("price", 999999))
                     selected_products = [cheapest_product]
                     
                     product_name = cheapest_product.get("name", "")
                     price = cheapest_product.get("price", 0)
+                    rating = cheapest_product.get("rating", 0)
+                    category = cheapest_product.get("category", "").lower()
                     
-                    intro_text = f"Trong {len(products)} sản phẩm, {product_name} là lựa chọn rẻ nhất cho bạn!"
-                    header_text = f"💰 {product_name} - Giá rẻ nhất!\n\n🎯 Vẫn chơi game tốt với giá tiết kiệm:\n• Cấu hình đủ mạnh cho game phổ thông\n• Giá cả phải chăng phù hợp túi tiền\n• Chất lượng ổn định từ thương hiệu uy tín\n• Phù hợp game casual và esports\n\n💸 Giá chỉ: ${price:,.0f}"
+                    intro_text = f"Trong {len(products)} sản phẩm, {product_name} là lựa chọn rẻ nhất nhưng vẫn đảm bảo chất lượng!"
                     
-                elif request_type in ["mắc nhất", "most expensive"]:
+                    # Category-specific explanations for cheapest
+                    if "camera" in category:
+                        header_text = f"💰 {product_name} - Camera rẻ nhất!\n\n🎯 Tại sao vẫn đáng mua dù giá rẻ:\n• Chất lượng ảnh tốt cho người mới bắt đầu\n• Tính năng cơ bản đầy đủ, dễ sử dụng\n• Thương hiệu uy tín đảm bảo chất lượng\n• Phù hợp cho việc học photography\n• Giá cả phải chăng, tiết kiệm ngân sách\n• Vẫn có khả năng chụp ảnh đẹp\n\n⭐ Rating: {rating}/5.0 | 💸 Giá chỉ: ${price:,.0f}"
+                    elif "phone" in category:
+                        header_text = f"💰 {product_name} - Điện thoại rẻ nhất!\n\n🎯 Tại sao vẫn đáng mua dù giá rẻ:\n• Hiệu năng ổn định cho nhu cầu cơ bản\n• Camera đủ dùng cho chụp hình thường ngày\n• Pin bền, sử dụng cả ngày bình thường\n• Thiết kế đẹp không thua kém cao cấp\n• Hệ điều hành mượt mà, ít lag\n• Giá siêu tiết kiệm cho sinh viên, học sinh\n\n⭐ Rating: {rating}/5.0 | 💸 Giá chỉ: ${price:,.0f}"
+                    elif "laptop" in category:
+                        header_text = f"💰 {product_name} - Laptop rẻ nhất!\n\n🎯 Tại sao vẫn đáng mua dù giá rẻ:\n• Cấu hình đủ mạnh cho văn phòng, học tập\n• Thiết kế mỏng nhẹ, dễ mang theo\n• Pin bền cho việc làm việc di động\n• Màn hình đủ sắc nét cho công việc thường ngày\n• Bàn phím thoải mái, gõ lâu không mệt\n• Giá cả phù hợp với túi tiền hạn hẹp\n\n⭐ Rating: {rating}/5.0 | 💸 Giá chỉ: ${price:,.0f}"
+                    elif "watch" in category:
+                        header_text = f"💰 {product_name} - Đồng hồ thông minh rẻ nhất!\n\n🎯 Tại sao vẫn đáng mua dù giá rẻ:\n• Theo dõi sức khỏe cơ bản chính xác\n• Pin bền, không phải sạc quá thường xuyên\n• Kết nối ổn định với điện thoại\n• Thiết kế đẹp, phù hợp nhiều style\n• Chống nước cơ bản cho hoạt động hàng ngày\n• Giá cả cực kỳ hợp lý cho người mới dùng\n\n⭐ Rating: {rating}/5.0 | 💸 Giá chỉ: ${price:,.0f}"
+                    else:  # camping gear or others
+                        header_text = f"💰 {product_name} - Thiết bị cắm trại rẻ nhất!\n\n🎯 Tại sao vẫn đáng mua dù giá rẻ:\n• Chất lượng đủ tốt cho người mới cắm trại\n• Thiết kế đơn giản, dễ sử dụng\n• Trọng lượng hợp lý, không quá nặng\n• Bền bỉ với điều kiện thời tiết thông thường\n• Giá cả phù hợp cho người mới bắt đầu\n• Đánh giá tốt từ người dùng\n\n⭐ Rating: {rating}/5.0 | 💸 Giá chỉ: ${price:,.0f}"
+                    
+                elif request_type in ["mắc nhất", "most expensive"] or any(keyword in request_lower for keyword in ['mắc nhất', 'most expensive']):
                     # Find product with highest price
                     most_expensive = max(products, key=lambda p: p.get("price", 0))
                     selected_products = [most_expensive]
@@ -439,11 +634,23 @@ class AIService:
                     product_name = most_expensive.get("name", "")
                     price = most_expensive.get("price", 0)
                     rating = most_expensive.get("rating", 0)
+                    category = most_expensive.get("category", "").lower()
                     
-                    intro_text = f"Đây là {product_name} - sản phẩm cao cấp nhất trong {len(products)} lựa chọn!"
-                    header_text = f"👑 {product_name} - Đẳng cấp cao cấp!\n\n🚀 Vì sao đáng giá tiền:\n• CPU flagship xử lý mọi tác vụ nặng\n• GPU cao cấp chơi game 4K/Ultra Settings\n• RAM khủng 16-32GB đa nhiệm cực mạnh\n• SSD NVMe tốc độ ánh sáng\n• Màn hình chất lượng cao độ phân giải đỉnh\n• Build quality premium, thiết kế sang trọng\n• Tản nhiệt tiên tiến chơi game marathon\n\n⭐ Rating: {rating}/5.0 | 💎 Giá: ${price:,.0f}"
+                    intro_text = f"Đây là {product_name} - sản phẩm cao cấp nhất và đắt nhất trong {len(products)} lựa chọn!"
                     
-                elif request_type in ["tầm trung", "mid-range"]:
+                    # Category-specific explanations for most expensive
+                    if "camera" in category:
+                        header_text = f"👑 {product_name} - Camera cao cấp nhất!\n\n🚀 Tại sao đáng giá từng đồng:\n• Cảm biến full-frame chất lượng professional\n• Hệ thống lấy nét AI cực nhanh và chính xác\n• Khả năng chụp trong điều kiện ánh sáng yếu tuyệt vời\n• Video 4K/8K chất lượng điện ảnh\n• Build quality kim loại cao cấp, chống thời tiết\n• Hệ thống lens mount đa dạng cho mọi nhu cầu\n• Màn hình cảm ứng lật đa góc tiện lợi\n\n⭐ Rating: {rating}/5.0 | 💎 Giá: ${price:,.0f}"
+                    elif "phone" in category:
+                        header_text = f"👑 {product_name} - Điện thoại flagship cao cấp nhất!\n\n🚀 Tại sao đáng giá từng đồng:\n• Chip xử lý flagship mạnh nhất thị trường\n• Hệ thống camera AI với nhiều lens chuyên biệt\n• Màn hình OLED/AMOLED 120Hz siêu mượt\n• RAM/Storage khủng cho hiệu năng đỉnh cao\n• Pin sạc nhanh, sạc không dây cao cấp\n• Thiết kế premium với vật liệu sang trọng\n• Hỗ trợ 5G và các công nghệ mới nhất\n\n⭐ Rating: {rating}/5.0 | 💎 Giá: ${price:,.0f}"
+                    elif "laptop" in category:
+                        header_text = f"👑 {product_name} - Laptop cao cấp nhất!\n\n🚀 Tại sao đáng giá từng đồng:\n• CPU flagship Intel/AMD performance cao nhất\n• GPU rời cao cấp cho gaming/creative work\n• RAM 16-32GB và SSD NVMe tốc độ cực cao\n• Màn hình 4K/QHD với độ chính xác màu sắc cao\n• Thiết kế kim loại nguyên khối sang trọng\n• Bàn phím cơ học RGB và trackpad lớn\n• Hệ thống tản nhiệt tiên tiến cho hiệu năng bền vững\n\n⭐ Rating: {rating}/5.0 | 💎 Giá: ${price:,.0f}"
+                    elif "watch" in category:
+                        header_text = f"👑 {product_name} - Đồng hồ thông minh cao cấp nhất!\n\n🚀 Tại sao đáng giá từng đồng:\n• Cảm biến sức khỏe y tế cấp professional\n• Màn hình Always-On Display sắc nét\n• Vật liệu premium: Titanium, Sapphire Crystal\n• GPS chính xác cho các hoạt động thể thao\n• Pin bền vượt trội, sạc không dây nhanh\n• Chống nước chuẩn quân đội cho mọi môi trường\n• Ứng dụng và tính năng độc quyền cao cấp\n\n⭐ Rating: {rating}/5.0 | 💎 Giá: ${price:,.0f}"
+                    else:  # camping gear or others
+                        header_text = f"👑 {product_name} - Thiết bị cắm trại cao cấp nhất!\n\n🚀 Tại sao đáng giá từng đồng:\n• Vật liệu cao cấp chịu được mọi điều kiện khắc nghiệt\n• Công nghệ tiên tiến cho hiệu suất tối ưu\n• Thiết kế ergonomic từ chuyên gia outdoor\n• Độ bền vượt trội, sử dụng được nhiều năm\n• Trọng lượng siêu nhẹ nhờ công nghệ tiên tiến\n• Warranty và service hậu mãi tuyệt vời\n• Được các chuyên gia outdoor đánh giá cao\n\n⭐ Rating: {rating}/5.0 | 💎 Giá: ${price:,.0f}"
+                    
+                elif request_type in ["tầm trung", "mid-range"] or any(keyword in request_lower for keyword in ['tầm trung', 'mid-range']):
                     # Sort by price and pick middle range products
                     sorted_products = sorted(products, key=lambda p: p.get("price", 0))
                     mid_index = len(sorted_products) // 2
@@ -454,15 +661,28 @@ class AIService:
                     
                     # Create detailed description for mid-range
                     if len(selected_products) > 1:
-                        product_names = [p.get("name", "") for p in selected_products]
                         avg_price = sum(p.get("price", 0) for p in selected_products) / len(selected_products)
-                        intro_text = f"Đây là {len(selected_products)} sản phẩm tầm trung tốt nhất trong {len(products)} lựa chọn!"
-                        header_text = f"⚖️ Sản phẩm tầm trung cân bằng tốt!\n\n🎯 Tại sao chọn phân khúc này:\n• Hiệu năng tốt cho phần lớn game hiện tại\n• Giá cả hợp lý, tối ưu ngân sách\n• Cấu hình ổn định: CPU mid-range + GPU đủ mạnh\n• RAM 8-16GB đủ dùng cho gaming + work\n• Chất lượng build tốt từ các hãng uy tín\n• Phù hợp game 1080p High settings\n\n💰 Giá trung bình: ${avg_price:,.0f}"
+                        category = selected_products[0].get("category", "").lower()
+                        
+                        intro_text = f"Đây là {len(selected_products)} sản phẩm tầm trung tốt nhất trong {len(products)} lựa chọn - cân bằng giữa chất lượng và giá cả!"
+                        
+                        # Category-specific explanations for mid-range
+                        if "camera" in category:
+                            header_text = f"⚖️ Camera tầm trung - Cân bằng hoàn hảo!\n\n🎯 Tại sao chọn phân khúc tầm trung:\n• Chất lượng ảnh tốt cho đa số người dùng\n• Tính năng đa dạng không thiếu gì so với cao cấp\n• Giá cả hợp lý, tiết kiệm được chi phí\n• Phù hợp cho cả người mới và có kinh nghiệm\n• Lens kit đi kèm đủ cho nhiều tình huống\n• Build quality tốt, tin cậy lâu dài\n• Tỷ lệ giá/hiệu năng tuyệt vời\n\n💰 Giá trung bình: ${avg_price:,.0f}"
+                        elif "phone" in category:
+                            header_text = f"⚖️ Điện thoại tầm trung - Cân bằng hoàn hảo!\n\n🎯 Tại sao chọn phân khúc tầm trung:\n• Hiệu năng mượt mà cho 99% nhu cầu sử dụng\n• Camera chụp ảnh đẹp, đủ cho social media\n• Pin bền bỉ, sử dụng cả ngày không lo\n• Thiết kế đẹp, không thua kém flagship\n• Cập nhật hệ điều hành lâu dài\n• Giá cả phù hợp với đa số người dùng\n• Tỷ lệ giá/hiệu năng vô cùng hấp dẫn\n\n💰 Giá trung bình: ${avg_price:,.0f}"
+                        elif "laptop" in category:
+                            header_text = f"⚖️ Laptop tầm trung - Cân bằng hoàn hảo!\n\n🎯 Tại sao chọn phân khúc tầm trung:\n• Hiệu năng đủ mạnh cho work và entertainment\n• RAM 8-16GB đa nhiệm thoải mái\n• SSD tốc độ cao, khởi động và load app nhanh\n• Màn hình chất lượng tốt bảo vệ mắt\n• Thiết kế mỏng nhẹ, dễ mang theo\n• Pin bền cho cả ngày làm việc\n• Giá cả hợp lý cho phần lớn người dùng\n\n💰 Giá trung bình: ${avg_price:,.0f}"
+                        elif "watch" in category:
+                            header_text = f"⚖️ Đồng hồ thông minh tầm trung - Cân bằng hoàn hảo!\n\n🎯 Tại sao chọn phân khúc tầm trung:\n• Tính năng theo dõi sức khỏe đầy đủ và chính xác\n• Pin bền, sử dụng được vài ngày\n• Màn hình đẹp, dễ nhìn trong mọi điều kiện\n• Chống nước tốt cho thể thao và bơi lội\n• Ứng dụng đa dạng cho lifestyle và fitness\n• Thiết kế thời trang phù hợp mọi dịp\n• Giá cả cực kỳ hợp lý cho tính năng\n\n💰 Giá trung bình: ${avg_price:,.0f}"
+                        else:  # camping gear or others
+                            header_text = f"⚖️ Thiết bị cắm trại tầm trung - Cân bằng hoàn hảo!\n\n🎯 Tại sao chọn phân khúc tầm trung:\n• Chất lượng tốt đủ cho phần lớn chuyến cắm trại\n• Độ bền cao, chịu được điều kiện thời tiết khắc nghiệt\n• Trọng lượng hợp lý cho việc trekking\n• Tính năng đa dạng, tiện dụng\n• Dễ sử dụng cho cả người mới và có kinh nghiệm\n• Giá cả phù hợp với ngân sách của đa số người\n• Được cộng đồng outdoor tin dùng\n\n💰 Giá trung bình: ${avg_price:,.0f}"
                     else:
                         product_name = selected_products[0].get("name", "")
                         price = selected_products[0].get("price", 0)
-                        intro_text = f"Đây là {product_name} - lựa chọn tầm trung tốt nhất!"
-                        header_text = f"⚖️ {product_name} - Cân bằng hoàn hảo!\n\n🎯 Lý do chọn tầm trung:\n• Hiệu năng vừa phải cho gaming\n• Giá cả hợp lý phù hợp đa số\n• Cấu hình ổn định không quá khiêm tốn\n• Phù hợp game phổ thông 1080p\n\n💰 Giá: ${price:,.0f}"
+                        rating = selected_products[0].get("rating", 0)
+                        intro_text = f"Đây là {product_name} - lựa chọn tầm trung cân bằng tốt nhất!"
+                        header_text = f"⚖️ {product_name} - Cân bằng hoàn hảo!\n\n🎯 Lý do chọn tầm trung:\n• Hiệu năng tốt phù hợp đa số nhu cầu\n• Giá cả hợp lý không gây áp lực tài chính\n• Chất lượng ổn định từ thương hiệu uy tín\n• Phù hợp cho cả người mới và có kinh nghiệm\n• Tỷ lệ giá/hiệu năng tuyệt vời\n\n⭐ Rating: {rating}/5.0 | 💰 Giá: ${price:,.0f}"
                     
                 else:
                     # Default to best product
@@ -525,7 +745,7 @@ class AIService:
             # Get external gift products with labels
             external_products = self._get_external_gift_products(user_input)
 
-            composed_response = self.make_intro_sentence(user_input, external_products, self.USER_LANG_CODE, displayed_count=3)
+            composed_response = self.make_intro_sentence(user_input, external_products, self.USER_LANG_CODE, displayed_count=3, is_multi_category=False)
             print(f"DEBUG: Composed response: {composed_response}")
 
             result = {
@@ -850,6 +1070,11 @@ class AIService:
             IMPORTANT: Only recognize these 5 categories: phone, camera, laptop, watch, camping gear. 
             If the input refers to any other category (clothes, jewelry, furniture, etc.), set category to null.
             
+            🔥 **NEW: MULTI-CATEGORY SUPPORT** 🔥
+            - If user mentions MULTIPLE product types (điện thoại và laptop, camera hoặc phone, etc.), return ALL categories in array
+            - Use "và"/"and"/"," for multiple categories: ["phone", "laptop"] 
+            - Use "hoặc"/"or" for alternative categories: ["phone", "laptop"]
+            
             🎯 PRIORITY RULES for category detection:
             1. **DIRECT PRODUCT MENTION**: If user directly mentions a product name (máy ảnh, camera, laptop, điện thoại, etc.), prioritize that category OVER context
             2. **CONTEXT AS SECONDARY**: Use context (cắm trại, làm việc, chụp hình) only when no direct product is mentioned
@@ -877,13 +1102,19 @@ class AIService:
             - "đi cắm trại" → camping gear (no direct mention, use context)
             - "chụp hình đẹp" → camera (no direct mention, use context)
             
+            🔥 **MULTI-CATEGORY EXAMPLES**:
+            - "điện thoại và laptop" → ["phone", "laptop"]
+            - "camera hoặc phone" → ["camera", "phone"]  
+            - "laptop, điện thoại" → ["laptop", "phone"]
+            - "máy ảnh và đồng hồ" → ["camera", "watch"]
+            
             Return a JSON object with the following structure:
             {{
                 "search_query": "main search terms for semantic search (PRIORITY: direct product mentioned, then context)",
                 "product_name": "specific product name if mentioned, otherwise null",
                 "product_description": "specific product features, specifications, or descriptions mentioned, otherwise null",
                 "filters": {{
-                    "category": "PRIORITY: direct product mentioned, then context mapping - ONLY one of: phone, camera, laptop, watch, camping gear",
+                    "category": "SINGLE category string OR ARRAY of categories: [phone, camera, laptop, watch, camping gear]",
                     "min_price": number or null,
                     "max_price": number or null,
                     "min_rating": number or null,
@@ -894,8 +1125,8 @@ class AIService:
             EXAMPLES:
             - "máy ảnh để đi cắm trại" → {{"search_query": "camera", "filters": {{"category": "camera"}}}}
             - "laptop để chụp hình" → {{"search_query": "laptop", "filters": {{"category": "laptop"}}}}
-            - "đi cắm trại cần gì" → {{"search_query": "camping gear", "filters": {{"category": "camping gear"}}}}
-            - "chụp hình đẹp" → {{"search_query": "camera", "filters": {{"category": "camera"}}}}
+            - "điện thoại và laptop" → {{"search_query": "phone laptop", "filters": {{"category": ["phone", "laptop"]}}}}
+            - "camera hoặc phone tốt" → {{"search_query": "camera phone", "filters": {{"category": ["camera", "phone"]}}}}
             
             User input: "{user_input}"
             Return only the JSON object, no additional text.
@@ -946,6 +1177,40 @@ class AIService:
             return clauses[0]
         return {"$and": clauses}
 
+    def _process_search_results(self, results, searchFromTool: str) -> List[Dict[str, Any]]:
+        """Helper function to process ChromaDB search results into product list"""
+        products = []
+        valid_categories = ["phone", "camera", "laptop", "watch", "camping gear"]
+        
+        if results["metadatas"] and results["metadatas"][0]:
+            for i, metadata in enumerate(results["metadatas"][0]):
+                # Only include products from valid categories
+                if metadata["category"].lower() not in valid_categories:
+                    continue
+                    
+                # For cosine distance: distance ranges from 0 (identical) to 2 (opposite)
+                # Convert to similarity: similarity = 1 - (distance / 2) to get range [0, 1]
+                distance = results["distances"][0][i]
+                similarity_score = 1 - (distance / 2)  # Normalize to [0, 1] range
+                
+                # Lower threshold since we're now getting proper similarity scores
+                if similarity_score > 0.3:  # Much lower threshold for better results
+                    product_data = {
+                        "id": metadata["id"],  # Keep as string, don't convert to int
+                        "name": metadata["name"],
+                        "category": metadata["category"],
+                        "price": metadata["price"],
+                        "original_price": metadata["original_price"],
+                        "rating": metadata["rating"],
+                        "discount": metadata["discount"],
+                        "imageUrl": metadata["imageUrl"],
+                        "similarity_score": similarity_score,
+                        "rec_source": RecommendationSourceEnum.PRODUCT if searchFromTool == "find_products" else (RecommendationSourceEnum.GIFT if searchFromTool == "find_gifts" else None)
+                    }
+                    products.append(product_data)
+        
+        return products
+
     def semantic_search(self, user_input: str, limit: int = 10, lang: str = "en", searchFromTool:str = "find_products") -> Dict[str, Any]:
         try:
             search_intent = self.extract_search_intent(user_input)
@@ -956,6 +1221,13 @@ class AIService:
             product_description = search_intent.get("product_description", None)
             search_query = search_intent.get("search_query", user_input)
             
+            # 🔥 **NEW: MULTI-CATEGORY SUPPORT** 🔥
+            # Check if category is a list (multiple categories) or single string
+            is_multi_category = isinstance(product_category, list) and len(product_category) > 1
+            categories_to_search = product_category if isinstance(product_category, list) else ([product_category] if product_category else [])
+            
+            print(f"🔥 MULTI-CATEGORY DEBUG: is_multi={is_multi_category}, categories={categories_to_search}")
+            
             # Construct embedding input: prioritize original search query, enhanced with extracted info
             embedding_parts = []
             
@@ -963,9 +1235,11 @@ class AIService:
             if search_query and search_query.strip():
                 embedding_parts.append(search_query.strip())
             
-            # Add category if detected and different from search query
-            if product_category and product_category not in search_query.lower():
-                embedding_parts.append(product_category)
+            # Add categories if detected and different from search query
+            if categories_to_search:
+                for cat in categories_to_search:
+                    if cat and cat not in search_query.lower():
+                        embedding_parts.append(cat)
             
             # Add product name if specifically mentioned
             if product_name:
@@ -985,53 +1259,86 @@ class AIService:
             if not query_embedding:
                 return {"status": "error", "message": "Failed to create query embedding"}
 
-            # STEP 1: Semantic search first (without price filters) - get more results for better filtering
-            search_params = {
-                "query_embeddings": [query_embedding],
-                "n_results": min(50, limit * 5),  # Get 5x more results for better filtering
-                "include": ["metadatas", "documents", "distances"]
-            }
-            # Only apply category filter in ChromaDB, NOT price filters
-            if filters.get("category"):
-                # Title case category to match database format (e.g., "camping gear" -> "Camping Gear")
-                category_value = filters.get("category").title()
-                search_params["where"] = {"category": {"$eq": category_value}}
-                
-            results = self.collection.query(**search_params)
-
-            products = []
-            valid_categories = ["phone", "camera", "laptop", "watch", "camping gear"]
+            all_products = []  # Collect products from all categories
             
-            if results["metadatas"] and results["metadatas"][0]:
-                for i, metadata in enumerate(results["metadatas"][0]):
-                    # Only include products from valid categories
-                    if metadata["category"].lower() not in valid_categories:
-                        continue
-                        
-                    # For cosine distance: distance ranges from 0 (identical) to 2 (opposite)
-                    # Convert to similarity: similarity = 1 - (distance / 2) to get range [0, 1]
-                    distance = results["distances"][0][i]
-                    similarity_score = 1 - (distance / 2)  # Normalize to [0, 1] range
+            # 🔥 **NEW: SEARCH MULTIPLE CATEGORIES OR SINGLE** 🔥
+            if is_multi_category:
+                # Search each category separately and combine results
+                for category in categories_to_search:
+                    print(f"🔍 Searching category: {category}")
                     
-                    # Lower threshold since we're now getting proper similarity scores
-                    if similarity_score > 0.3:  # Much lower threshold for better results
-                        product_data = {
-                            "id": metadata["id"],  # Keep as string, don't convert to int
-                            "name": metadata["name"],
-                            "category": metadata["category"],
-                            "price": metadata["price"],
-                            "original_price": metadata["original_price"],
-                            "rating": metadata["rating"],
-                            "discount": metadata["discount"],
-                            "imageUrl": metadata["imageUrl"],
-                            "similarity_score": similarity_score,
-                            "rec_source": RecommendationSourceEnum.PRODUCT if searchFromTool == "find_products" else (RecommendationSourceEnum.GIFT if searchFromTool == "find_gifts" else None)
-                        }
-                        products.append(product_data)
-                        
+                    search_params = {
+                        "query_embeddings": [query_embedding],
+                        "n_results": min(50, limit * 3),  # Get fewer per category for multi-search
+                        "include": ["metadatas", "documents", "distances"]
+                    }
+                    
+                    # Apply category filter
+                    if category:
+                        category_value = category.title()  # "phone" -> "Phone"
+                        search_params["where"] = {"category": {"$eq": category_value}}
+                    
+                    results = self.collection.query(**search_params)
+                    category_products = self._process_search_results(results, searchFromTool)
+                    
+                    # Add category info to each product
+                    for product in category_products:
+                        product["source_category"] = category
+                    
+                    all_products.extend(category_products)
+                    print(f"✅ Found {len(category_products)} products in {category}")
+                
+                # 🔥 FIX: For multi-category, ensure balanced results from each category
+                # Instead of sorting all together, take top products from each category proportionally
+                if len(categories_to_search) > 1:
+                    # Calculate products per category (balanced approach)
+                    products_per_category = max(1, limit // len(categories_to_search))
+                    balanced_products = []
+                    
+                    for category in categories_to_search:
+                        category_products = [p for p in all_products if p.get("source_category") == category]
+                        # Sort within each category and take top products
+                        category_products.sort(key=lambda x: x.get("final_score", x.get("similarity_score", 0)), reverse=True)
+                        balanced_products.extend(category_products[:products_per_category])
+                    
+                    # If we still have room for more products, add the best remaining ones
+                    if len(balanced_products) < limit:
+                        remaining_slots = limit - len(balanced_products)
+                        used_ids = {p["id"] for p in balanced_products}
+                        remaining_products = [p for p in all_products if p["id"] not in used_ids]
+                        remaining_products.sort(key=lambda x: x.get("final_score", x.get("similarity_score", 0)), reverse=True)
+                        balanced_products.extend(remaining_products[:remaining_slots])
+                    
+                    all_products = balanced_products
+                    print(f"🎯 BALANCED MULTI-CATEGORY: {products_per_category} products per category")
+                else:
+                    # Sort all products by relevance score (single category logic)
+                    all_products.sort(key=lambda x: x.get("final_score", x.get("similarity_score", 0)), reverse=True)
+                
+            else:
+                # Single category search (existing logic)
+                search_params = {
+                    "query_embeddings": [query_embedding],
+                    "n_results": min(50, limit * 5),  # Get 5x more results for better filtering
+                    "include": ["metadatas", "documents", "distances"]
+                }
+                
+                # Apply single category filter if exists
+                if categories_to_search and categories_to_search[0]:
+                    category_value = categories_to_search[0].title()
+                    search_params["where"] = {"category": {"$eq": category_value}}
+                    
+                results = self.collection.query(**search_params)
+                all_products = self._process_search_results(results, searchFromTool)
+
+            print(f"DEBUG: Semantic search found {len(all_products)} total")
+            
+            # Continue with existing filtering and scoring logic...
+            print(f"DEBUG: Semantic search found {len(all_products)} total")
+            
             # STEP 2: Apply additional filters (price, rating, etc.) after semantic search
             filtered_products = []
-            for product in products:
+            for product in all_products:
                 # Apply price filters
                 if filters.get("min_price") and product["price"] < filters["min_price"]:
                     continue
@@ -1057,6 +1364,39 @@ class AIService:
                 search_words = search_lower.split()
                 
                 relevance_score = 0
+                
+                # METHOD 0: SPECIFIC ITEM NAME MATCHING (HIGHEST PRIORITY)
+                # Vietnamese to English item mappings for camping gear
+                item_mappings = {
+                    "lều": ["tent"],
+                    "túi ngủ": ["sleeping bag", "sleeping"],
+                    "bếp gas": ["stove"],
+                    "bếp nấu ăn": ["stove"],
+                    "đèn pin": ["lantern", "light"],
+                    "đèn": ["lantern", "light"],
+                    "ba lô": ["backpack", "pack"],
+                    "giày": ["boots", "shoe"],
+                    "boots": ["boots"],
+                    "cooler": ["cooler"],
+                    "thùng lạnh": ["cooler"]
+                }
+                
+                # Check for specific item matches
+                for vietnamese_term, english_terms in item_mappings.items():
+                    if vietnamese_term in search_lower:
+                        for english_term in english_terms:
+                            if english_term in product_name:
+                                relevance_score += 100  # MAXIMUM priority for specific item matches
+                                print(f"🎯 SPECIFIC ITEM MATCH: {product_name} - '{vietnamese_term}' matches '{english_term}' (+100)")
+                                return relevance_score  # Return immediately for highest priority
+                
+                # Check for direct English item matches
+                specific_items = ["tent", "sleeping bag", "stove", "lantern", "backpack", "boots", "cooler"]
+                for item in specific_items:
+                    if item in search_lower and item in product_name:
+                        relevance_score += 100  # MAXIMUM priority for direct English matches
+                        print(f"🎯 DIRECT ITEM MATCH: {product_name} - '{item}' (+100)")
+                        return relevance_score  # Return immediately for highest priority
                 
                 # Method 1: Category relevance (for camping gear, etc.)
                 category_keywords = {
@@ -1141,7 +1481,7 @@ class AIService:
             # Limit results to requested amount
             products = filtered_products[:limit]
             
-            print(f"DEBUG: Semantic search found {len(results['metadatas'][0] if results['metadatas'] else [])} total")
+            print(f"DEBUG: Semantic search found {len(all_products)} total")
             print(f"DEBUG: After similarity filter: {len(products)} products") 
             print(f"DEBUG: After price/rating filters: {len(filtered_products)} products")
             print(f"DEBUG: Final result (limited to {limit}): {len(products)} products")
@@ -1189,8 +1529,12 @@ class AIService:
             
             # Check if AI automatically chose a category (when search_query != user_input)
             auto_chosen_category = None
-            if search_query and search_query.lower() != user_input.lower() and search_query in ["phone", "camera", "laptop", "watch", "camping gear"]:
+            # 🔥 FIX: For multi-category searches, don't set auto_chosen_category
+            if not is_multi_category and search_query and search_query.lower() != user_input.lower() and search_query in ["phone", "camera", "laptop", "watch", "camping gear"]:
                 auto_chosen_category = search_query
+            # For multi-category, keep auto_chosen_category as None to show all products
+            elif is_multi_category:
+                auto_chosen_category = None  # This will trigger show_all behavior
             
             # STEP 4: Product Relationship Logic - Check for complementary product queries
             if self.relationship_service:
@@ -1234,7 +1578,7 @@ class AIService:
                     print(f"DEBUG: Error in relationship logic: {e}")
                     # Continue with original products if relationship service fails
             
-            composed_response = self.make_intro_sentence(user_input, products, lang, result_analysis, auto_chosen_category, displayed_count=3)
+            composed_response = self.make_intro_sentence(user_input, products, lang, result_analysis, auto_chosen_category, displayed_count=3, is_multi_category=is_multi_category)
             print(f"DEBUG: Composed response: {composed_response}")
 
             return {
@@ -1313,10 +1657,14 @@ class AIService:
 
     # ---------- Copy helpers ----------
 
-    def make_intro_sentence(self, user_input: str, products: List[Dict], lang_code: str, result_analysis: Dict[str, Any] = None, auto_chosen_category: str = None, displayed_count: int = 3) -> Dict[str, str]:
+    def make_intro_sentence(self, user_input: str, products: List[Dict], lang_code: str, result_analysis: Dict[str, Any] = None, auto_chosen_category: str = None, displayed_count: int = 3, is_multi_category: bool = False) -> Dict[str, str]:
         try:
             product_count = len(products)
             remaining_count = max(0, product_count - displayed_count)
+            
+            # 🔥 FIX: For multi-category searches, don't show "show_all" - show all found products immediately
+            if is_multi_category:
+                remaining_count = 0  # Force no "show_all" for multi-category searches
             
             # Extract analysis data
             if result_analysis:
@@ -1370,6 +1718,7 @@ class AIService:
             RELATED PRODUCTS: {related_products}
             CONTEXT: {context_info}
             AUTO_CHOSEN_CATEGORY: {auto_chosen_category or "None"}
+            IS_MULTI_CATEGORY: {is_multi_category}
             LANGUAGE CODE: {lang_code}
             {use_case_hint}
 
@@ -1386,10 +1735,11 @@ class AIService:
             - Be specific about exact matches vs related products
             - If searching for a brand, mention the brand in intro
             - If AUTO_CHOSEN_CATEGORY is provided, mention it naturally in intro (e.g., "I've selected camera products for you" or "Here are some phone options I picked")
+            - If IS_MULTI_CATEGORY is true, use phrases like "Here are the products I found from multiple categories" or "Mixed results from different categories"
             - For show_all_product: MUST use the exact remaining count ({remaining_count}) - do not use other numbers
             - Always include question about viewing the remaining {remaining_count} products with this EXACT number
             - Keep it natural and helpful
-            - If remaining_count <= 0: return empty string for show_all_product
+            - If remaining_count <= 0 OR IS_MULTI_CATEGORY is true: return empty string for show_all_product
             - Language consistency: Use the specified language code throughout
 
             AUTO_CHOSEN_CATEGORY Examples:
@@ -1665,7 +2015,59 @@ class AIService:
         msgs = response["messages"]
         tool_msgs = [m for m in msgs if isinstance(m, ToolMessage) and getattr(m, "name", None) in self.TOOL_NAMES]
 
-        ai_response = tool_msgs[-1].content if tool_msgs else msgs[-1].content
+        # 🔥 NEW: Handle multiple tool calls (merge results)
+        if len(tool_msgs) > 1:
+            print(f"DEBUG: Found {len(tool_msgs)} tool responses - merging multi-category results")
+            
+            # Check if multiple find_products calls
+            find_product_msgs = [m for m in tool_msgs if getattr(m, "name", None) == "find_products"]
+            
+            if len(find_product_msgs) > 1:
+                # Merge multiple product search results
+                merged_products = []
+                all_intros = []
+                all_headers = []
+                
+                for i, tool_msg in enumerate(find_product_msgs):
+                    try:
+                        tool_data = json.loads(tool_msg.content)
+                        if tool_data.get("products"):
+                            # Add source info to products 
+                            for product in tool_data["products"]:
+                                product["search_source"] = f"search_{i+1}"
+                            merged_products.extend(tool_data["products"])
+                            
+                        if tool_data.get("intro"):
+                            all_intros.append(tool_data["intro"])
+                        if tool_data.get("header"):
+                            all_headers.append(tool_data["header"])
+                            
+                    except json.JSONDecodeError:
+                        print(f"DEBUG: Failed to parse tool response {i+1}")
+                        continue
+                
+                # Sort merged products by final_score 
+                merged_products.sort(key=lambda x: x.get("final_score", x.get("similarity_score", 0)), reverse=True)
+                
+                # Create combined response
+                ai_response = json.dumps({
+                    "status": "success",
+                    "intro": f"Tôi đã tìm được {len(merged_products)} sản phẩm từ nhiều danh mục cho bạn!",
+                    "header": "Đây là các sản phẩm tốt nhất từ các danh mục bạn yêu cầu:",
+                    "products": merged_products[:10],  # Limit to top 10
+                    "show_all_product": f"Muốn xem thêm {max(0, len(merged_products) - 10)} sản phẩm khác không?",
+                    "total_results": len(merged_products),
+                    "multi_category": True
+                }, ensure_ascii=False)
+                
+                print(f"DEBUG: Merged {len(find_product_msgs)} search results into {len(merged_products)} total products")
+            else:
+                # Single tool or different tool types - use last response
+                ai_response = tool_msgs[-1].content
+        else:
+            # Single tool response - existing logic
+            ai_response = tool_msgs[-1].content if tool_msgs else msgs[-1].content
+            
         print(f"DEBUG: Final AI response (raw): {ai_response}")
 
         # parse JSON if tool returned JSON string
@@ -1674,7 +2076,7 @@ class AIService:
             print(f"DEBUG: Successfully parsed JSON: {ai_response_data}")
             
             # Save products to context if this was a find_products call
-            if tool_msgs and tool_msgs[-1].name == "find_products" and ai_response_data.get("products"):
+            if ai_response_data.get("products"):
                 self._context_products = ai_response_data["products"]
                 print(f"DEBUG: Saved {len(self._context_products)} products to context for analysis")
                 
