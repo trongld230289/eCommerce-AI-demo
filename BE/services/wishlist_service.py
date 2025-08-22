@@ -1,5 +1,7 @@
 import time
 from typing import List, Optional
+import httpx
+from fastapi import HTTPException
 from firebase_config import get_firestore_db
 from models import (
     Wishlist, WishlistCreate, WishlistUpdate, WishlistItem, ShareType, 
@@ -105,21 +107,19 @@ class WishlistService:
             print(f"Saving wishlist to Firestore with dict: {wishlist_dict}")
             doc_ref.set(wishlist_dict)
 
-            try:
-                # Thuong implementation - create the wishlist
-                with httpx.Client() as client:
-                    neo_data = {
-                        "id": wishlist_dict["id"],
-                        "name": wishlist_dict["name"],
-                        "user_id": wishlist_dict["user_id"],
-                        "note": None,  # Assuming note is not provided in WishlistCreate
-                    }
-                    response = client.post("http://localhost:8003/api/wishlist", json=neo_data)
-                    if response.status_code != 200:
-                        print(f"Failed to sync create with external service: {response.text}")
-            except Exception as e:
-                print(f"Error syncing create with external service: {e}")
-
+             # thangnaozay
+             # Thuong implementation - create the wishlist
+            with httpx.Client() as client:
+                neo_data = {
+                    "id": wishlist_dict["id"],
+                    "name": wishlist_dict["name"],
+                    "user_id": wishlist_dict["user_id"],
+                    "note": None,  # Assuming note is not provided in WishlistCreate
+                }
+                response = client.post("http://localhost:8003/api/wishlist", json=neo_data)
+                if response.status_code != 200:
+                    raise HTTPException(status_code=500, detail=f"Failed to sync create with external service: {response.text}")
+            # ...existing code...
             return Wishlist(**wishlist_dict)
             
         except Exception as e:
@@ -228,6 +228,17 @@ class WishlistService:
                 update_dict["name"] = update_data.name
             
             doc_ref.update(update_dict)
+
+            # Thuong implementation - update the wishlist
+            with httpx.Client() as client:
+                response = client.put(
+                    f"http://localhost:8003/api/wishlist/{wishlist_id}",
+                    params={"user_id": user_id},
+                    json=update_data.dict(exclude_unset=True)
+                )
+                if response.status_code != 200:
+                    raise HTTPException(status_code=500, detail=f"Failed to sync update with external service: {response.text}")
+
             
             # Return updated wishlist
             updated_doc = doc_ref.get()
@@ -250,10 +261,25 @@ class WishlistService:
                 return False
             
             doc_ref.delete()
+
+            print(f"Wishlist '{wishlist_id}' deleted successfully")
+            # Thuong implementation - delete wishlist
+            with httpx.Client() as client:
+                try:
+                    response = client.delete(
+                        f"http://localhost:8003/api/wishlist/{wishlist_id}",
+                        params={"user_id": user_id},
+                        timeout=5.0
+                    )
+                    if response.status_code != 200:
+                        print(f"Warning: Failed to sync delete with external service: {response.text}")
+                except Exception as sync_error:
+                    print(f"Warning: External sync failed (service may be down): {sync_error}")
+                    
             return True
             
         except Exception as e:
-            raise Exception(f"Error deleting wishlist: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error deleting wishlist: {str(e)}")
 
     def add_product_to_wishlist(self, wishlist_id: str, user_id: str, product_id: int) -> Optional[Wishlist]:
         """Add a product to wishlist"""
@@ -318,7 +344,21 @@ class WishlistService:
                 updated_data['created_at'] = updated_data['created_at'].timestamp()
             if 'updated_at' in updated_data and hasattr(updated_data['updated_at'], 'timestamp'):
                 updated_data['updated_at'] = updated_data['updated_at'].timestamp()
-            
+
+            with httpx.Client() as client:
+                try:
+                    response = client.post(
+                        f"http://localhost:8003/api/wishlist/{wishlist_id}/products",
+                        params={"user_id": user_id},
+                        json=new_item,
+                        timeout=5.0
+                    )
+                    print(f"DEBUG BE ROUTER: Neo4j service response - status: {response.status_code}, text: {response.text[:200]}")
+                    if response.status_code != 200:
+                        print(f"Warning: Failed to sync add product with external service: {response.text}")
+                except Exception as sync_error:
+                    print(f"Warning: External sync failed (service may be down): {sync_error}")
+                
             return Wishlist(**updated_data)
             
         except Exception as e:
@@ -451,6 +491,19 @@ class WishlistService:
                 "created_at": updated_data["created_at"],
                 "updated_at": updated_data["updated_at"]
             }
+
+            # Thuong implementation - remove product from wishlist
+            with httpx.Client() as client:
+                try:
+                    response = client.delete(
+                        f"http://localhost:8003/api/wishlist/{wishlist_id}/products/{product_id}",
+                        params={"user_id": user_id},
+                        timeout=5.0
+                    )
+                    if response.status_code != 200:
+                        print(f"Warning: Failed to sync remove product with external service: {response.text}")
+                except Exception as sync_error:
+                    print(f"Warning: External sync failed (service may be down): {sync_error}")
             
             return Wishlist(**wishlist_dict)
             
@@ -478,6 +531,18 @@ class WishlistService:
             }
             
             doc_ref.update(update_dict)
+
+            with httpx.Client() as client:
+                try:
+                    response = client.post(
+                        f"http://localhost:8003/api/wishlist/{wishlist_id}/clear",
+                        params={"user_id": user_id},
+                        timeout=5.0
+                    )
+                    if response.status_code != 200:
+                        print(f"Warning: Failed to sync clear with external service: {response.text}")
+                except Exception as sync_error:
+                    print(f"Warning: External sync failed (service may be down): {sync_error}")
             
             # Return updated wishlist
             updated_doc = doc_ref.get()

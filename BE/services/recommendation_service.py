@@ -7,8 +7,7 @@ from firebase_config import get_firestore_db
 from models import UserEvent, UserEventCreate, RecommendationRequest, RecommendationResponse, EventType, RecommendationSourceEnum, ALGORITHM_TO_REC_SOURCE
 from product_service import product_service
 import random
-
-from services.middleware_service import get_recommendations_external
+import httpx
 
 class RecommendationService:
     def __init__(self):
@@ -240,6 +239,33 @@ class RecommendationService:
         except Exception as e:
             print(f"Error getting category recommendations: {e}")
             return []
+
+    def get_recommendations_external(self, product_ids: Optional[List[int]], user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Find gifts external function that fetches gift recommendations from the recommendation endpoint.
+       
+        Args:
+            product_ids: List of product IDs to base recommendations on.
+            user_id: Optional user ID for personalized recommendations.
+       
+        Returns:
+            List of gift recommendation dictionaries with labels and product IDs
+        """
+        # Thuong implementation - get recommendation endpoint
+       
+        url = "http://localhost:8003/get-recommendations"
+        payload = {
+            "product_ids": product_ids,
+            "user_id": user_id
+        }
+       
+        with httpx.Client() as client:
+            response = client.post(url, json=payload)
+            if response.status_code != 200:
+                raise ValueError(f"Failed to fetch recommendations: {response.text}")
+           
+        recommendations = response.json()
+        return recommendations
     
     async def get_recommendations(self, request: RecommendationRequest) -> RecommendationResponse:
         """Main recommendation endpoint"""
@@ -261,7 +287,7 @@ class RecommendationService:
                 # get product_ids from personalized recommendations
                 product_ids = [p['id'] for p in personalized]
                 # implement get_recommendations_external input user id
-                external_recs = await get_recommendations_external(product_ids=product_ids, user_id=request.user_id)
+                external_recs = self.get_recommendations_external(product_ids=product_ids, user_id=request.user_id)
                 print(f"External recommendations for user {request.user_id}: {len(external_recs)} found")
                 for recommendation in external_recs:
                     label = recommendation.get("label")
