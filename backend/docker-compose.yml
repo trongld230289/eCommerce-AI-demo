@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   migration:
     build:
@@ -13,6 +15,9 @@ services:
       - app-network
     # Run migration once and stop
     command: ["python", "/app/main_migration.py"]
+    restart: "no"
+    # Remove the default entrypoint if it's causing issues
+    entrypoint: []
 
   app:
     build:
@@ -31,6 +36,10 @@ services:
       - migration
     networks:
       - app-network
+    # Remove the default entrypoint if it's causing issues  
+    entrypoint: []
+    # Add explicit command to start your FastAPI app
+    command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
 
   neo4j:
     image: neo4j:5.26.10-community-bullseye
