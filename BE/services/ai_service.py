@@ -84,6 +84,8 @@ You are a shopping assistant that helps users find products in 5 categories: pho
 
 ⚠️ CRITICAL: You MUST ALWAYS use tools (find_products or find_gifts) to search for products. NEVER create product lists, product names, or product responses yourself.
 
+🎯 ANALYSIS PRIORITY: If products were already shown in conversation and user asks for analysis (tốt nhất/rẻ nhất/mắc nhất/tầm trung), ALWAYS use analyze_products tool, NOT find_products.
+
 🚫 ABSOLUTELY FORBIDDEN:
 - Creating fake product names like "Dell Inspiron 16", "Lenovo IdeaPad 5 Pro", etc.
 - Generating product lists manually
@@ -137,9 +139,9 @@ NOTE: explain_choice tool will use conversation context and general knowledge to
 
 🎯 PRODUCT ANALYSIS QUERIES - Use analyze_products tool:
 For follow-up requests that need analysis of previously found products:
-- "tốt nhất", "best", "cái tốt nhất đi", "which is the best"
-- "rẻ nhất", "cheapest", "cái rẻ nhất", "most affordable"  
-- "mắc nhất", "most expensive", "premium", "cao cấp"
+- "tốt nhất", "best", "cái tốt nhất đi", "which is the best", "tìm cái tốt nhất", "tìm tốt nhất"
+- "rẻ nhất", "cheapest", "cái rẻ nhất", "most affordable", "tìm cái rẻ nhất", "tìm rẻ nhất"  
+- "mắc nhất", "most expensive", "premium", "cao cấp", "tìm cái mắc nhất", "cao cấp nhất"
 - "chọn 1 cái", "pick one", "recommend one", "suggest one"
 - "trung bình", "average", "moderate", "tầm trung"
 - "vừa phải", "reasonable", "mid-range", "not too expensive"
@@ -161,10 +163,10 @@ NOTE: analyze_products tool will analyze the product list from conversation cont
 - "chọn cái tốt nhất" / "choose the best one" → MUST call analyze_products("tốt nhất")
 - "tốt nhất là gì" / "which is the best" → MUST call analyze_products("tốt nhất") 
 - "recommend best" / "suggest best" → MUST call analyze_products("tốt nhất")
-- "tốt nhất" / "best" / "cái tốt nhất đi" → MUST call analyze_products("tốt nhất")
-- "rẻ nhất" / "cheapest" / "cái rẻ nhất" → MUST call analyze_products("rẻ nhất")
+- "tốt nhất" / "best" / "cái tốt nhất đi" / "tìm cái tốt nhất" / "tìm tốt nhất" → MUST call analyze_products("tốt nhất")
+- "rẻ nhất" / "cheapest" / "cái rẻ nhất" / "tìm cái rẻ nhất" / "tìm rẻ nhất" → MUST call analyze_products("rẻ nhất")
 - "trung bình" / "average" / "cái trung bình thôi" → MUST call analyze_products("tầm trung")
-- "mắc nhất" / "most expensive" → MUST call analyze_products("mắc nhất")
+- "mắc nhất" / "most expensive" / "tìm cái mắc nhất" / "cao cấp nhất" → MUST call analyze_products("mắc nhất")
 - "cái nào" / "which one" / "sài được" / "cái nào sài được là được" → MUST call analyze_products("tốt nhất")
 - "tìm cái" / "find one" / "tìm 1 cái" → MUST call analyze_products("tốt nhất")
 - NEVER manually list products - ALWAYS use tools for ANY product-related response
@@ -183,10 +185,13 @@ FOLLOW-UP ANALYSIS LOGIC:
 - "chọn 1 cái"/"pick one" → analyze_products("tốt nhất", products_list)
 
 CONTEXT MEMORY EXAMPLES:
-✅ User: "watch" → find_products("watch") [gets 10 products]
-✅ User: "tốt nhất đi" → analyze_products("tốt nhất", [products_from_previous_search])
-✅ User: "rẻ nhất" → analyze_products("rẻ nhất", [products_from_previous_search])  
-✅ User: "tầm trung thôi" → analyze_products("tầm trung", [products_from_previous_search])
+✅ User: "laptop" → find_products("laptop") [gets 10 laptop products]
+✅ User: "tốt nhất đi" → analyze_products("tốt nhất") [analyzes the 10 laptops shown above]
+✅ User: "tìm cái rẻ nhất đi" → analyze_products("rẻ nhất") [analyzes the 10 laptops shown above]  
+✅ User: "tầm trung thôi" → analyze_products("tầm trung") [analyzes the 10 laptops shown above]
+✅ User: "mắc nhất là gì" → analyze_products("mắc nhất") [analyzes the 10 laptops shown above]
+
+🚨 IMPORTANT: If products were already shown and user asks for analysis, NEVER call find_products again - ALWAYS use analyze_products!
 
 - If no previous product context, ask for clarification: "Bạn muốn tôi tìm sản phẩm nào? Laptop, phone, camera, watch hay camping gear?"
 
@@ -383,6 +388,7 @@ class AIService:
             
             # Try to get products from conversation context - this will be set by the agent
             products = getattr(self, '_context_products', [])
+            print(f"DEBUG analyze_products: Found {len(products)} products in context for analysis request: {request_type}")
             
             if not products:
                 return json.dumps({
@@ -1704,10 +1710,6 @@ class AIService:
             }
 
         print(f"DEBUG: Returning tool response")
-        
-        # Store products in context for analyze_products tool
-        if ai_response_data.get("products"):
-            self._context_products = ai_response_data["products"]
         
         return {
             "status": ai_response_data.get("status", "success"),
