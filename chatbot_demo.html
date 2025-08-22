@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Electro Assistant Chat</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+    }
+    .chatbot-container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .chatbot-header {
+      background: #0d6efd;
+      color: #fff;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chatbot-header-info {
+      display: flex;
+      align-items: center;
+    }
+    .chatbot-avatar {
+      font-size: 22px;
+      margin-right: 10px;
+    }
+    .chatbot-status {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    .chatbot-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+    .chatbot-message {
+      margin-bottom: 14px;
+    }
+    .chatbot-message.bot .chatbot-message-content {
+      background: #e9f3ff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 70%;
+    }
+    .chatbot-message.user .chatbot-message-content {
+      background: #d1ffd6;
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 70%;
+      margin-left: auto;
+    }
+    .chatbot-message-time {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+    .chatbot-products {
+      margin-top: 10px;
+    }
+    .chatbot-products-grid {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .chatbot-product-card {
+      width: 180px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .chatbot-product-image {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+    .chatbot-product-info {
+      padding: 8px 10px;
+    }
+    .chatbot-product-name {
+      font-size: 14px;
+      margin: 0 0 4px;
+    }
+    .chatbot-product-price {
+      font-weight: bold;
+      color: #d9534f;
+    }
+    .chatbot-footer {
+      text-align: center;
+      font-size: 12px;
+      padding: 6px;
+      border-top: 1px solid #eee;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <div class="chatbot-container">
+    <div class="chatbot-header">
+      <div class="chatbot-header-info">
+        <div class="chatbot-avatar">🤖</div>
+        <div>
+          <h4 style="margin:0;">Electro Assistant</h4>
+          <span class="chatbot-status">Online • 9 exchanges</span>
+        </div>
+      </div>
+      <div>
+        <button style="margin-right:6px;">🔄</button>
+        <button>✕</button>
+      </div>
+    </div>
+    <div class="chatbot-messages">
+
+      <!-- Bot chào -->
+      <div class="chatbot-message bot"><div class="chatbot-message-content">Hello! Welcome to Electro. How can I help you today?</div><div class="chatbot-message-time">07:25 PM</div></div>
+      <div class="chatbot-message user"><div class="chatbot-message-content">hello</div><div class="chatbot-message-time">07:25 PM</div></div>
+      <div class="chatbot-message bot"><div class="chatbot-message-content">Hello! How can I assist you today?</div><div class="chatbot-message-time">07:25 PM</div></div>
+      <div class="chatbot-message user"><div class="chatbot-message-content">how are you today</div><div class="chatbot-message-time">07:25 PM</div></div>
+      <div class="chatbot-message bot"><div class="chatbot-message-content">I'm just a program, but I'm here and ready to help you! What can I assist you with today?</div><div class="chatbot-message-time">07:25 PM</div></div>
+      <div class="chatbot-message user"><div class="chatbot-message-content">Nói mệt đi</div><div class="chatbot-message-time">07:25 PM</div></div>
+      <div class="chatbot-message bot"><div class="chatbot-message-content">Tôi chỉ là một chương trình, không có cảm giác mệt mỏi. Nhưng tôi luôn sẵn sàng giúp bạn! Bạn cần tìm gì hôm nay?</div><div class="chatbot-message-time">07:25 PM</div></div>
+
+      <!-- Đi chơi xa -->
+      <div class="chatbot-message user"><div class="chatbot-message-content">Giờ tôi muốn đi chơi xa</div><div class="chatbot-message-time">07:26 PM</div></div>
+      <div class="chatbot-message bot"><div class="chatbot-message-content">Bạn đang có kế hoạch đi đâu? Bạn có cần tìm thiết bị cắm trại nào không? Tôi có thể gợi ý cho bạn về túi ngủ, đèn pin, bếp gas, hoặc các thiết bị khác cho chuyến đi của bạn!</div><div class="chatbot-message-time">07:26 PM</div></div>
+      <div class="chatbot-message user"><div class="chatbot-message-content">mua lều đi má</div><div class="chatbot-message-time">07:26 PM</div></div>
+
+      <!-- Lều -->
+      <div class="chatbot-message bot">
+        <div class="chatbot-message-content">
+          Tôi đã tìm thấy 3 sản phẩm lều chính xác và 7 sản phẩm liên quan cho bạn!<br><br>Dưới đây là những lựa chọn về lều mà bạn có thể thích.
+        </div>
+        <div class="chatbot-products">
+          <div class="chatbot-products-grid">
+            <div class="chatbot-product-card">
+              <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=500&h=500&fit=crop&crop=center" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">Nature Hike Cloud-Up 2 Tent</h4><p class="chatbot-product-price">$169.99 <span style="text-decoration:line-through; color:#999;">$199.99</span></p></div>
+            </div>
+            <div class="chatbot-product-card">
+              <img src="https://images.unsplash.com/photo-1487730116645-74489c95b41b?w=500&h=500&fit=crop&crop=center" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">Quechua Base Camp Tent 4.1</h4><p class="chatbot-product-price">$199.99 <span style="text-decoration:line-through; color:#999;">$249.99</span></p></div>
+            </div>
+            <div class="chatbot-product-card">
+              <img src="https://images.unsplash.com/photo-1445308394109-4ec2920981b1?w=500&h=500&fit=crop&crop=center" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">Coleman Sundome 6-Person Tent</h4><p class="chatbot-product-price">$159.99 <span style="text-decoration:line-through; color:#999;">$189.99</span></p></div>
+            </div>
+          </div>
+        </div>
+        <div class="chatbot-message-time">07:26 PM</div>
+      </div>
+      <div class="chatbot-message bot"><div class="chatbot-message-content">Muốn khám phá thêm 7 sản phẩm tương tự không?</div><div class="chatbot-message-time">07:26 PM</div></div>
+      <div class="chatbot-message user"><div class="chatbot-message-content">mua gì đi kèm đi</div><div class="chatbot-message-time">07:26 PM</div></div>
+
+      <!-- Gợi ý bổ sung -->
+      <div class="chatbot-message bot">
+        <div class="chatbot-message-content">
+          Dựa trên những sản phẩm bạn quan tâm, đây là những gợi ý bổ sung:<br><br>Sản phẩm liên quan bạn có thể cần:
+        </div>
+        <div class="chatbot-products">
+          <div class="chatbot-products-grid">
+            <div class="chatbot-product-card">
+              <img src="https://images.unsplash.com/photo-1556656793-08538906a9f8?w=500&h=500&fit=crop&crop=center" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">iPhone 15</h4><p class="chatbot-product-price">$799.99 <span style="text-decoration:line-through; color:#999;">$899.99</span></p></div>
+            </div>
+            <div class="chatbot-product-card">
+              <img src="https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=500&h=500&fit=crop&crop=center" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">iPhone 14</h4><p class="chatbot-product-price">$599.99 <span style="text-decoration:line-through; color:#999;">$699.99</span></p></div>
+            </div>
+            <div class="chatbot-product-card">
+              <img src="https://m.media-amazon.com/images/I/71FxOAGHqtL.__AC_SX300_SY300_QL70_FMwebp_.jpg" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">Canon PowerShot G7X Mark III</h4><p class="chatbot-product-price">$749.99 <span style="text-decoration:line-through; color:#999;">$849.99</span></p></div>
+            </div>
+          </div>
+        </div>
+        <div class="chatbot-message-time">07:26 PM</div>
+      </div>
+      <div class="chatbot-message bot"><div class="chatbot-message-content">Would you like to see all 6 results on the products page?</div><div class="chatbot-message-time">07:26 PM</div></div>
+      <div class="chatbot-message user"><div class="chatbot-message-content">tại sao chọn mấy thử xa xỉ này vậy</div><div class="chatbot-message-time">07:27 PM</div></div>
+
+      <!-- Lý do chọn sản phẩm xa xỉ -->
+      <div class="chatbot-message bot"><div class="chatbot-message-content">Chào bạn! Dưới đây là lý do tại sao những sản phẩm xa xỉ này lại được gợi ý cho bạn:<br><br>1. <b>Tỷ lệ giá-trị hiệu suất</b> ...<br><br>2. <b>Phù hợp với mục đích sử dụng</b> ...<br><br>3. <b>Ưu điểm về thông số kỹ thuật</b> ...<br><br>4. <b>Giá trị đề xuất</b> ...</div><div class="chatbot-message-time">07:27 PM</div></div>
+
+      <div class="chatbot-message user"><div class="chatbot-message-content">thôi chọn giùm cái camera vừa vừa túi tiền thôi</div><div class="chatbot-message-time">07:27 PM</div></div>
+
+      <!-- Camera tầm trung -->
+      <div class="chatbot-message bot">
+        <div class="chatbot-message-content">
+          Đây là 3 sản phẩm tầm trung tốt nhất trong 10 lựa chọn - cân bằng giữa chất lượng và giá cả!<br><br>
+          ⚖️ Camera tầm trung - Cân bằng hoàn hảo!<br><br>
+          🎯 Lý do chọn phân khúc tầm trung...
+        </div>
+        <div class="chatbot-products">
+          <div class="chatbot-products-grid">
+            <div class="chatbot-product-card">
+              <img src="https://promotion.sony.com.vn:5001/storage/2024/10/04/FX3_t%20(1).png" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">Sony Alpha FX30</h4><p class="chatbot-product-price">$1799.99 <span style="text-decoration:line-through; color:#999;">$1999.99</span></p></div>
+            </div>
+            <div class="chatbot-product-card">
+              <img src="https://mayanhshop.com/wp-content/uploads/2024/04/techradar_1280x720-800-resize.png" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">Sony Alpha 7 IV</h4><p class="chatbot-product-price">$2499.99 <span style="text-decoration:line-through; color:#999;">$2799.99</span></p></div>
+            </div>
+            <div class="chatbot-product-card">
+              <img src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=500&h=500&fit=crop&crop=center" class="chatbot-product-image">
+              <div class="chatbot-product-info"><h4 class="chatbot-product-name">Canon EOS R6 Mark II</h4><p class="chatbot-product-price">$2499.99 <span style="text-decoration:line-through; color:#999;">$2799.99</span></p></div>
+            </div>
+          </div>
+        </div>
+        <div class="chatbot-message-time">07:27 PM</div>
+      </div>
+
+      <div class="chatbot-message user"><div class="chatbot-message-content">Ok múc Sony Alpha FX30</div><div class="chatbot-message-time">07:28 PM</div></div>
+      <div class="chatbot-message bot"><div class="chatbot-message-content">Tuyệt vời! Sony Alpha FX30 là một sự lựa chọn tuyệt vời cho bạn. Bạn cần thêm thông tin gì về sản phẩm này không, hay bạn muốn tôi giúp bạn tìm nơi mua?</div><div class="chatbot-message-time">07:28 PM</div></div>
+
+    </div>
+    <div class="chatbot-footer">Powered by Electro AI</div>
+  </div>
+</body>
+</html>
