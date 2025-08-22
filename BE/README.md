@@ -1,124 +1,128 @@
-# eCommerce Backend API (FastAPI)
+# eCommerce AI Backend - Develop Branch 🚀
 
-A modern, high-performance backend API built with FastAPI for the eCommerce application.
+> **Branch**: `develop` | **Status**: Active Development  
+> Advanced AI-powered eCommerce backend with intelligent product recommendations and conversational search.
 
-## 🚀 Quick Start
+## 🎯 Quick Start
 
-### Option 1: Convenient Startup (Recommended)
+### Activate Virtual Environment & Run
 ```bash
+# Activate virtual environment
+venv312\Scripts\activate
+
+# Start the server
 python run_BE.py
 ```
 
-### Option 2: Direct Server Launch
+### Alternative Start Methods
 ```bash
-# Main FastAPI server
+# Direct FastAPI server
 python main.py
 
-# Alternative FastAPI server
+# Full-featured server
 python fastapi_server.py
-
-# Simple startup
-python start_simple.py
 ```
 
-### Option 3: Using Uvicorn
-```bash
-# Main server
-uvicorn main:app --reload --port 8000
+## 🧠 AI Features (Develop Branch)
 
-# Alternative server
-uvicorn fastapi_server:app --reload --port 8000
+- **Intelligent Search**: Context-aware product search with smart category mapping
+- **Conversational AI**: Natural language product recommendations  
+- **Vector Database**: ChromaDB for semantic product matching
+- **Smart Context Understanding**: Maps user intent to product categories
+- **Multi-language Support**: Vietnamese, English, and more
+
+## 🔧 Development Setup
+
+### Prerequisites
+```bash
+# Ensure Python 3.12+ is installed
+python --version
+
+# Navigate to backend directory
+cd BE
 ```
 
-## 📖 API Documentation
-
-Once the server is running, visit:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **Health Check**: http://localhost:8000/health
-
-## 🔧 Server Options
-
-| File | Description | Use Case |
-|------|-------------|----------|
-| `run_BE.py` | Smart startup with dependency checks | Production & Development |
-| `main.py` | Clean FastAPI with models | Primary development |
-| `fastapi_server.py` | Comprehensive server | Full feature testing |
-| `start_simple.py` | Minimal startup | Quick testing |
-
-## Features
-
-- **Product Management**: CRUD operations for products
-- **Wishlist System**: Full wishlist management with Firebase
-- **Firebase Integration**: Uses Firebase Admin SDK for database operations
-- **Search & Filtering**: Advanced product search with semantic search
-- **Recommendation System**: AI-powered product recommendations
-- **Chatbot Integration**: Customer support chatbot
-- **RESTful APIs**: Clean and documented API endpoints
-- **CORS Support**: Configured for frontend integration
-- **Type Safety**: Pydantic models with validation
-- **Async Support**: High-performance async/await implementation
-
-## Installation
-
-1. Install dependencies:
+### Virtual Environment
 ```bash
+# Activate environment
+venv312\Scripts\activate
+
+# Verify activation (Windows)
+echo $env:VIRTUAL_ENV
+
+# Install/Update dependencies
 pip install -r requirements.txt
 ```
 
-2. Set up Firebase Admin SDK:
-   - Download your Firebase service account key JSON file
-   - Place it in this directory as `serviceAccountKey.json`
-
-3. Run data migration (if needed):
+### Environment Configuration
+Create `.env` file:
 ```bash
-python migrate_to_firebase.py
+OPENAI_API_KEY=your_openai_key
+OPENAI_MODEL_ID=gpt-4o-mini
 ```
 
-## Running the Server
+### Firebase Setup
+1. Place `serviceAccountKey.json` in root directory
+2. Initialize Firebase connection
 
-### Recommended Method
+## 🚀 Development Workflow
+
+### 1. Environment Activation
 ```bash
+# Always start with this
+venv312\Scripts\activate
+```
+
+### 2. Server Launch
+```bash
+# Recommended for development
 python run_BE.py
+
+# Direct FastAPI (alternative)
+uvicorn main:app --reload --port 8000
 ```
 
-### Alternative Methods
-```bash
-# Main server
-python main.py
+### 3. API Testing
+- **Swagger UI**: http://localhost:8000/docs
+- **AI Search**: http://localhost:8000/api/ai/search
+- **Health Check**: http://localhost:8000/health
 
-# Using uvicorn directly
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+## 📡 Key API Endpoints
 
-## API Endpoints
+### AI & Search
+- `POST /api/ai/search` - Intelligent product search
+- `POST /api/ai/voice-search` - Voice-powered search
+- `GET /api/ai/embed-products` - Initialize vector database
 
-### Products
-- `GET /products` - Get all products
-- `GET /products/featured` - Get featured products
-- `GET /products/top-this-week` - Get top products
-- `GET /products/{id}` - Get specific product
-- `GET /search` - Search products
+### Products & Recommendations  
+- `GET /products` - All products
+- `GET /recommendations` - Personalized suggestions
+- `POST /events` - User activity tracking
 
-### Wishlists
-- `GET /api/wishlist` - Get user wishlists
+### Wishlists & User Data
+- `GET /api/wishlist` - User wishlists
 - `POST /api/wishlist` - Create wishlist
-- `DELETE /api/wishlist/{id}` - Delete wishlist
-- `POST /api/wishlist/{id}/products` - Add product to wishlist
-- `DELETE /api/wishlist/{id}/products/{pid}` - Remove product
+- `POST /api/wishlist/{id}/products` - Add to wishlist
 
-### Recommendations
-- `GET /recommendations` - Get personalized recommendations
-- `POST /events` - Track user events
-- `GET /recommendation-health` - Check recommendation system
+## 🎨 Development Notes
 
-### Other
-- `GET /categories` - Get product categories
-- `GET /brands` - Get product brands
-- `POST /chatbot` - Chatbot endpoint
-- `GET /health` - Health check
+### Current Focus Areas
+- Smart context understanding for search queries
+- Enhanced conversation flow handling  
+- Improved product recommendation algorithms
+- Vector database optimization
 
-## API Documentation
+### Debug Commands
+```bash
+# Test AI service directly
+python -c "from services.ai_service import AIService; ai = AIService(); print('AI Service loaded')"
 
-Visit `http://localhost:8000/docs` for interactive Swagger UI documentation.
-Visit `http://localhost:8000/redoc` for ReDoc documentation.
+# Check database connection
+python -c "from product_service import ProductService; ps = ProductService(); print(f'Products: {len(ps.get_all_products())}')"
+```
+
+## 📚 Documentation
+
+- **Interactive API Docs**: http://localhost:8000/docs
+- **ReDoc Documentation**: http://localhost:8000/redoc
+- **AI Service Guide**: See `AI_SERVICE_README.md`
