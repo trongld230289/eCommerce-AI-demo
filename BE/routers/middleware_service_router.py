@@ -40,47 +40,6 @@ class UserRegistrationResponse(BaseModel):
     status: str
     message: str
 
-@router.get("/middleware/search")
-async def simple_search_get(
-    q: str = Query(..., description="Search query"),
-    limit: int = Query(10, description="Maximum number of results")
-):
-    """
-    Simple semantic search using query parameter.
-    Returns a list of products matching the search query.
-    """
-    try:
-        products = simple_semantic_search(q, limit)
-        # Thuong implementation
-        product_ids = [product["id"] for product in products]
-        return {
-            "status": "success",
-            "product_ids": product_ids,
-            "total_results": len(product_ids)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
-
-@router.post("/middleware/search", response_model=SimpleSearchResponse)
-async def simple_search_post(search_request: SimpleSearchRequest):
-    """
-    Simple semantic search using POST request.
-    Returns a list of products matching the search query.
-    """
-    try:
-        products = simple_semantic_search(search_request.query, search_request.limit)
-        
-        # Convert to response model
-        product_responses = [ProductResponse(**product) for product in products]
-        
-        return SimpleSearchResponse(
-            status="success",
-            products=product_responses,
-            total_results=len(products)
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
-
 @router.get("/middleware/health")
 async def health_check():
     """

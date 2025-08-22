@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional
 import numpy as np
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
+import httpx
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import BaseMessage
@@ -472,7 +473,7 @@ class AIService:
             raise
         
         self.collection_name = "products_embeddings"
-        self.embedding_model = "text-embedding-3-small"
+        self.embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         self._initialize_collection()
         self.product_service = ProductService()
         self.middleware_service = MiddlewareService()
@@ -742,11 +743,18 @@ class AIService:
             
             print(f"DEBUG find_gifts - search_query: {category}")
 
+   # Use the category for search
+            result = self.semantic_search(category, 5, self.USER_LANG_CODE, searchFromTool="find_gifts")
+
+            # get product_ids form result
+            product_ids = [product["id"] for product in result.get("products", [])]
             # Get external gift products with labels
-            external_products = self._get_external_gift_products(user_input)
+            external_products = self._get_external_gift_products(user_input, product_ids)
+
+            # result = self.semantic_search(category, 10, self.USER_LANG_CODE, searchFromTool="find_products")
 
             composed_response = self.make_intro_sentence(user_input, external_products, self.USER_LANG_CODE, displayed_count=3, is_multi_category=False)
-            print(f"DEBUG: Composed response: {composed_response}")
+            # print(f"DEBUG: Composed response: {composed_response}")
 
             result = {
                 "status": "success",
@@ -763,11 +771,8 @@ class AIService:
                 "total_results": len(external_products)
             }
             
-            # Use the category for search
-            #  result = self.semantic_search(category, 5, self.USER_LANG_CODE, searchFromTool="find_gifts")
-            
-            
-            
+         
+
             # result["recipient"] = recipient
             # result["requested_category"] = category
             # result["occasion"] = occasion
@@ -1914,7 +1919,7 @@ class AIService:
         header = self.HEADER_BY_LANG.get(lang_code, self.HEADER_BY_LANG["en"])
         return {"intro": intro, "header": header, "products": items}
 
-    def _get_external_gift_products(self, user_input: str) -> List[Dict[str, Any]]:
+    def _get_external_gift_products(self, user_input: str, product_ids: List[int]) -> List[Dict[str, Any]]:
         """
         Get products from external gift recommendations with labels assigned to showLabel.
         
@@ -1923,7 +1928,7 @@ class AIService:
         """
         try:
             # Get external gift recommendations
-            gift_recommendations = self.middleware_service.find_gifts_external(user_input, 10)
+            gift_recommendations = self.find_gifts_external(user_input, product_ids, 10)
             print(f"DEBUG _get_external_gift_products - external recommendations: {gift_recommendations}")
             
             external_products = []
@@ -1956,7 +1961,62 @@ class AIService:
             print(f"Error getting external gift products: {str(e)}")
             return []
 
+    def find_gifts_external(self, query: str, product_ids: List[int], limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Find gifts external function that fetches gift recommendations from the gifting endpoint.
+        
+        Args:
+            query: The search query for gifting.
+            limit: The maximum number of results per label (default: 10).
+        
+        Returns:
+            List of gift recommendation dictionaries with labels and product IDs
+        """
+        # Thuong implementation - gift endpoint
 
+        url = "http://localhost:8003/gift"  # Assuming the main backend runs on port 8003
+        payload = {
+            "query": query,
+            "product_ids": product_ids,
+            "limit": limit
+        }
+        
+        with httpx.Client() as client:
+            response = client.post(url, json=payload)
+            if response.status_code != 200:
+                raise ValueError(f"Failed to fetch gifts: {response.text}")
+            
+            recommendations = response.json()
+            return recommendations
+
+    def get_recommendations_external(self, product_ids: Optional[List[int]], user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Find gifts external function that fetches gift recommendations from the recommendation endpoint.
+        
+        Args:
+            product_ids: List of product IDs to base recommendations on.
+            user_id: Optional user ID for personalized recommendations.
+        
+        Returns:
+            List of gift recommendation dictionaries with labels and product IDs
+        """
+        # Thuong implementation - get recommendation endpoint
+        
+        url = "http://localhost:8003/get-recommendations"
+        payload = {
+            "product_ids": product_ids,
+            "user_id": user_id
+        }
+        
+        with httpx.Client() as client:
+            response = client.post(url, json=payload)
+            if response.status_code != 200:
+                raise ValueError(f"Failed to fetch recommendations: {response.text}")
+            
+            recommendations = response.json()
+            return recommendations
+
+    
     def truncate_conversation_history(self, messages: List[Dict[str, str]], max_messages: int = 25) -> List[Dict[str, str]]:
         """Keep system message + last N conversation messages to prevent token overflow"""
         

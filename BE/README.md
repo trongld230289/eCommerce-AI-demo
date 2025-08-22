@@ -126,3 +126,7 @@ python -c "from product_service import ProductService; ps = ProductService(); pr
 - **Interactive API Docs**: http://localhost:8000/docs
 - **ReDoc Documentation**: http://localhost:8000/redoc
 - **AI Service Guide**: See `AI_SERVICE_README.md`
+
+
+# my note (note change or remove)
+# python -m services.product_relationship_service
